@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --canvas: #faf9f5;
+    --bg-alt: #f1eee6;
+    --ink: #16140f;
+    --ink-soft: #5c5748;
+    --accent: #2748ff;
+    --accent-dark: #1732c9;
+    --coral: #ff6a3d;
+    --ok: #1f7a4d;
+    --line: rgba(22, 20, 15, 0.12);
+    --card: #ffffff;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background-color: var(--canvas);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* WCAG Accessible Focus Indicator */
+  *:focus-visible {
+    outline: 2px solid var(--stitch) !important;
+    outline-offset: 2px !important;
+  }
+}
+
+/* SIGNATURE ELEMENT: Exposed Stitch Animate Underline */
+.stitch-underline {
+  position: relative;
+}
+
+.stitch-underline::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-image: repeating-linear-gradient(
+    to right,
+    var(--stitch) 0,
+    var(--stitch) 4px,
+    transparent 4px,
+    transparent 8px
+  );
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.stitch-underline:hover::after,
+.stitch-underline:focus-visible::after,
+.stitch-underline[data-selected="true"]::after {
+  transform: scaleX(1);
+}
+
+/* Reduced Motion Compliance */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
