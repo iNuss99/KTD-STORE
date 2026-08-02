@@ -4,27 +4,43 @@ export default {
   theme: {
     extend: {
       colors: {
-        canvas: '#faf9f5',
-        'bg-alt': '#f1eee6',
-        ink: '#16140f',
-        'ink-soft': '#5c5748',
-        accent: '#2748ff',
-        'accent-dark': '#1732c9',
-        coral: '#ff6a3d',
-        ok: '#1f7a4d',
-        line: 'rgba(22, 20, 15, 0.12)',
+        // === KTD Logo Color System ===
+        // Logo: #F5A623 orange border, #E07B00 deep orange, #2D2D2D charcoal, #FFFFFF white
+
+        canvas: '#ffffff',
+        'bg-alt': '#fdf8f2',
+        ink: '#2D2D2D',
+        'ink-soft': '#6B6560',
         card: '#ffffff',
+        line: 'rgba(45, 45, 45, 0.10)',
+
+        // Brand Orange — extracted from logo
+        accent: '#E8920A',
+        'accent-dark': '#C47608',
+        'accent-light': '#FEF3E2',
+        'accent-border': '#F5A623',
+
+        // Status
+        coral: '#E05A2B',
+        ok: '#1f7a4d',
+
+        // Legacy tokens (kept for backward compat)
+        stitch: '#E8920A',
         smoke: '#64748B',
-        steel: '#2B2B2B',
+        steel: '#2D2D2D',
         chalk: '#E2E8F0',
         'warm-white': '#FFFFFF',
-        stitch: '#E59210',
+
+        // Brand scale — used for amber-style utilities
         brand: {
-          50: '#fffbeb',
-          100: '#fef3c7',
-          500: '#E59210',
-          600: '#D4820B',
-          900: '#1E1E1E',
+          50:  '#fff8ed',
+          100: '#FEF3E2',
+          200: '#fde0a5',
+          400: '#F5A623',   // logo border orange
+          500: '#E8920A',   // primary accent
+          600: '#C47608',   // pressed/dark
+          700: '#E07B00',   // logo body deep orange
+          900: '#2D2D2D',   // charcoal
         },
       },
       fontFamily: {

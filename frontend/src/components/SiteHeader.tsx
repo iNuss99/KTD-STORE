@@ -80,7 +80,7 @@ export const SiteHeader: React.FC = () => {
             <Link
               to="/"
               className={`font-sans text-sm font-medium transition-colors ${
-                isActive('/') ? 'text-accent font-semibold' : 'text-ink hover:text-accent'
+                isActive('/') ? 'text-accent font-semibold border-b-2 border-accent pb-0.5' : 'text-ink hover:text-accent'
               }`}
             >
               Trang chủ
@@ -88,7 +88,7 @@ export const SiteHeader: React.FC = () => {
             <Link
               to="/products"
               className={`font-sans text-sm font-medium transition-colors ${
-                isActive('/products') ? 'text-accent font-semibold' : 'text-ink hover:text-accent'
+                isActive('/products') ? 'text-accent font-semibold border-b-2 border-accent pb-0.5' : 'text-ink hover:text-accent'
               }`}
             >
               {t('nav.products')}
@@ -96,7 +96,7 @@ export const SiteHeader: React.FC = () => {
             <Link
               to="/my-orders"
               className={`font-sans text-sm font-medium transition-colors flex items-center gap-1.5 ${
-                isActive('/my-orders') ? 'text-accent font-semibold' : 'text-ink hover:text-accent'
+                isActive('/my-orders') ? 'text-accent font-semibold border-b-2 border-accent pb-0.5' : 'text-ink hover:text-accent'
               }`}
             >
               <Package className="w-4 h-4 text-ink-soft" />
@@ -123,7 +123,7 @@ export const SiteHeader: React.FC = () => {
             >
               <ShoppingBag className="w-5 h-5" />
               {cartCount > 0 && (
-                <span className="absolute top-1 right-1 bg-accent text-white font-mono text-[10px] font-medium w-4 h-4 rounded-full flex items-center justify-center shadow-xs">
+                <span className="absolute top-1 right-1 bg-accent text-white font-mono text-[10px] font-medium w-4 h-4 rounded-full flex items-center justify-center shadow-xs ring-2 ring-white">
                   {cartCount}
                 </span>
               )}
@@ -181,7 +181,7 @@ export const SiteHeader: React.FC = () => {
             ) : (
               <Link
                 to="/login"
-                className="inline-flex items-center gap-1.5 px-4 py-2 bg-ink hover:bg-accent text-white font-sans text-xs font-semibold uppercase tracking-wider rounded-full transition-colors shadow-xs"
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-accent hover:bg-accent-dark text-white font-sans text-xs font-semibold uppercase tracking-wider rounded-full transition-colors shadow-sm"
               >
                 <User className="w-3.5 h-3.5" /> Đăng nhập
               </Link>

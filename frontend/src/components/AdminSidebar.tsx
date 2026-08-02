@@ -111,7 +111,7 @@ export const AdminSidebar: React.FC = () => {
               <span className="font-extrabold text-base text-slate-900 tracking-tight">
                 Knot To Detail
               </span>
-              <span className="px-2 py-0.5 text-[10px] font-bold bg-amber-50 text-amber-600 rounded-full border border-amber-200">
+              <span className="px-2 py-0.5 text-[10px] font-bold bg-accent-light text-accent rounded-full border border-accent-border">
                 Admin
               </span>
             </div>
@@ -133,7 +133,7 @@ export const AdminSidebar: React.FC = () => {
             </p>
             <Link
               to="/products"
-              className="inline-block w-full text-center py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-[11px] transition shadow-xs"
+              className="inline-block w-full text-center py-2 bg-accent hover:bg-accent-dark text-white font-bold rounded-xl text-[11px] transition shadow-xs"
             >
               Chuyển tới Cửa hàng
             </Link>
@@ -155,18 +155,18 @@ export const AdminSidebar: React.FC = () => {
                         to={item.path}
                         className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs transition-all duration-150 ${
                           isActive
-                            ? 'bg-amber-50 text-amber-600 font-bold shadow-xs'
-                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-medium'
+                            ? 'bg-accent-light text-accent font-bold shadow-xs'
+                            : 'text-ink-soft hover:text-ink hover:bg-bg-alt font-medium'
                         }`}
                       >
                         <div className="flex items-center gap-3">
-                          <span className={isActive ? 'text-amber-600' : 'text-slate-400'}>
+                          <span className={isActive ? 'text-accent' : 'text-ink-soft'}>
                             {item.icon}
                           </span>
                           <span>{item.name}</span>
                         </div>
                         {item.tag && (
-                          <span className="px-1.5 py-0.5 text-[9px] font-semibold bg-amber-100 text-amber-800 rounded-md">
+                          <span className="px-1.5 py-0.5 text-[9px] font-semibold bg-accent-light text-accent rounded-md">
                             {item.tag}
                           </span>
                         )}
@@ -197,7 +197,7 @@ export const AdminSidebar: React.FC = () => {
                         }`}
                       >
                         <div className="flex items-center gap-3">
-                          <span className={isActive ? 'text-amber-600' : 'text-slate-400'}>
+                          <span className={isActive ? 'text-accent' : 'text-ink-soft'}>
                             {item.icon}
                           </span>
                           <span>{item.name}</span>
@@ -215,7 +215,7 @@ export const AdminSidebar: React.FC = () => {
       {/* Sidebar Footer */}
       <div className="p-4 border-t border-slate-100 bg-slate-50/50 m-3 rounded-2xl">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-amber-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+          <div className="w-8 h-8 rounded-full bg-accent text-white flex items-center justify-center font-bold text-xs shadow-xs">
             {role ? role.charAt(0) : 'A'}
           </div>
           <div className="flex-1 min-w-0">
