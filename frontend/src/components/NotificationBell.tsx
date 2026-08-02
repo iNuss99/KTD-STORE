@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Bell, CheckCheck, Clock } from 'lucide-react';
-import { io, Socket } from 'socket.io-client';
+import { getSocket } from '../lib/socketClient';
 
 interface NotificationItem {
   id: string;
@@ -37,13 +37,8 @@ export const NotificationBell: React.FC = () => {
 
     if (!token) return;
 
-    // Connect to WebSockets
-    const SOCKET_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000';
-    const socket: Socket = io(SOCKET_URL, {
-      auth: { token },
-      transports: ['websocket', 'polling'],
-      autoConnect: true,
-    });
+    // Connect to WebSockets via centralized client (proxy-aware)
+    const socket = getSocket(token);
 
     socket.on('notification', (newNotif: NotificationItem) => {
       setNotifications((prev) => [newNotif, ...prev]);

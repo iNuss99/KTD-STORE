@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Order } from '../types';
 import { ArrowLeft, Package, MapPin, CreditCard, Clock, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { OrderStatusBadge } from '../components/OrderStatusBadge';
-import { io, Socket } from 'socket.io-client';
+import { getSocket } from '../lib/socketClient';
 
 import { getAuthToken, getAuthHeader } from '../lib/auth-storage';
 import { useToast } from '../context/ToastContext';
@@ -54,12 +54,8 @@ export const OrderDetailPage: React.FC = () => {
     const token = getAuthToken();
     if (!token) return;
 
-    // Join WebSocket room for real-time updates
-    const SOCKET_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000';
-    const socket: Socket = io(SOCKET_URL, {
-      auth: { token },
-      transports: ['websocket', 'polling'],
-    });
+    // Join WebSocket room for real-time updates via centralized client (proxy-aware)
+    const socket = getSocket(token);
 
     socket.on('order_updated', (data: any) => {
       if (data?.orderId === id || data?.id === id) {

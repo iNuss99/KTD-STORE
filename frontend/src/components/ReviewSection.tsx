@@ -38,7 +38,7 @@ export const ReviewSection: React.FC<ReviewSectionProps> = ({ productId }) => {
 
   const fetchReviews = async () => {
     try {
-      const res = await fetch(`http://localhost:3000/products/${productId}/reviews`);
+      const res = await fetch(`/api/products/${productId}/reviews`);
       if (res.ok) {
         const data = await res.json();
         setReviews(data.reviews || []);
@@ -54,7 +54,7 @@ export const ReviewSection: React.FC<ReviewSectionProps> = ({ productId }) => {
   const checkEligibility = async () => {
     if (!token) return;
     try {
-      const res = await fetch('http://localhost:3000/orders/my-orders', {
+      const res = await fetch('/api/orders/my-orders', {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -89,7 +89,7 @@ export const ReviewSection: React.FC<ReviewSectionProps> = ({ productId }) => {
     setMessage(null);
 
     try {
-      const res = await fetch('http://localhost:3000/reviews', {
+      const res = await fetch('/api/reviews', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
