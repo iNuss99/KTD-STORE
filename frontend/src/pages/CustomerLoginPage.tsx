@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { ArrowLeft, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Loader2, AlertCircle, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 import { setAuthToken, setRefreshToken, setUserId } from '../lib/auth-storage';
 
 export const CustomerLoginPage: React.FC = () => {
@@ -9,6 +9,7 @@ export const CustomerLoginPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -47,8 +48,8 @@ export const CustomerLoginPage: React.FC = () => {
           localStorage.setItem('user_name', data.user.full_name || email.split('@')[0]);
         }
         window.dispatchEvent(new Event('auth-change'));
-        
-        setSuccess('Đăng nhập thành công!');
+
+        setSuccess('Đăng nhập thành công! Đang chuyển hướng...');
         setTimeout(() => {
           if (data.user?.role && data.user.role !== 'CUSTOMER') {
             navigate('/admin');
@@ -61,7 +62,7 @@ export const CustomerLoginPage: React.FC = () => {
       }
     } catch (err) {
       console.error(err);
-      setError('Không thể kết nối đến máy chủ. Vui lòng thử lại.');
+      setError('Không thể kết nối đến máy chủ. Vui lòng thử lại sau.');
     } finally {
       setLoading(false);
     }
@@ -109,234 +110,610 @@ export const CustomerLoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F9F9F7] flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 font-sans relative overflow-hidden">
-      
-      {/* Back Button */}
-      <div className="absolute top-6 left-6 z-40">
-        <Link
-          to="/products"
-          className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-900 hover:text-slate-500 transition-colors py-2 px-4"
-        >
-          <ArrowLeft className="w-4 h-4" /> TRỞ VỀ CỬA HÀNG
-        </Link>
-      </div>
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
-      <div className="mx-auto w-full max-w-[400px] lg:max-w-[1000px] relative z-10">
-        
-        {/* The Box */}
-        <div className="bg-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden relative min-h-[650px] lg:min-h-[600px] flex flex-col lg:block">
-          
-          {/* Mobile Tab Switcher */}
-          <div className="flex lg:hidden border-b border-slate-100 relative z-30 bg-white">
-            <button 
-              onClick={() => { setIsLogin(true); clearMessages(); }} 
-              className={`flex-1 py-5 text-[11px] font-bold uppercase tracking-[0.15em] transition-colors ${isLogin ? 'border-b-2 border-slate-900 text-slate-900' : 'text-slate-400 hover:text-slate-600'}`}
+        .friendly-customer-root {
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          min-height: 100vh;
+          width: 100%;
+          background-color: #f8fafc;
+          color: #0f172a;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          padding: 60px 16px 60px;
+          position: relative;
+          box-sizing: border-box;
+        }
+
+        .back-nav {
+          position: absolute;
+          top: 14px;
+          left: 16px;
+          z-index: 50;
+        }
+        @media (min-width: 640px) {
+          .back-nav {
+            top: 24px;
+            left: 24px;
+          }
+        }
+        .back-link-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 0.82rem;
+          font-weight: 600;
+          color: #475569;
+          text-decoration: none;
+          padding: 8px 14px;
+          border-radius: 8px;
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+          transition: all 0.2s ease;
+        }
+        .back-link-btn:hover {
+          color: #d97706;
+          border-color: #fcd34d;
+        }
+
+        .friendly-card-box {
+          width: 100%;
+          max-width: 1000px;
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          border-radius: 16px;
+          box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.06);
+          position: relative;
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
+        }
+        @media (min-width: 1024px) {
+          .friendly-card-box {
+            display: block;
+            min-height: 620px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.07);
+          }
+        }
+
+        /* Mobile Nav Tabs */
+        .mobile-tabs {
+          display: flex;
+          border-bottom: 1px solid #e2e8f0;
+          background: #ffffff;
+          position: relative;
+          z-index: 30;
+        }
+        @media (min-width: 1024px) {
+          .mobile-tabs { display: none; }
+        }
+        .tab-btn {
+          flex: 1;
+          padding: 14px;
+          font-size: 0.88rem;
+          font-weight: 700;
+          border: none;
+          background: none;
+          cursor: pointer;
+          color: #64748b;
+          transition: all 0.2s ease;
+        }
+        .tab-btn.active {
+          color: #d97706;
+          border-bottom: 2px solid #d97706;
+        }
+
+        /* Form Pane Base */
+        .form-pane {
+          position: relative;
+          top: 0;
+          left: 0;
+          width: 100%;
+          padding: 24px 20px;
+          background: #ffffff;
+          display: flex;
+          flex-direction: column;
+          justify-content: flex-start;
+          box-sizing: border-box;
+          transition: transform 0.7s cubic-bezier(0.76, 0, 0.24, 1), opacity 0.7s cubic-bezier(0.76, 0, 0.24, 1);
+        }
+        .form-pane.pane-inactive-mobile {
+          display: none !important;
+        }
+        @media (min-width: 1024px) {
+          .form-pane {
+            position: absolute;
+            top: 0;
+            width: 50%;
+            height: 100%;
+            padding: 48px 56px;
+            justify-content: center;
+          }
+          .form-pane.pane-inactive-mobile {
+            display: flex !important;
+          }
+        }
+
+        .pane-brand-header {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-bottom: 12px;
+        }
+        .pane-logo {
+          width: 32px;
+          height: 32px;
+          object-fit: contain;
+          border-radius: 8px;
+        }
+        .pane-brand-name {
+          font-size: 0.9rem;
+          font-weight: 800;
+          color: #0f172a;
+          letter-spacing: -0.01em;
+        }
+        .pane-brand-name span {
+          color: #d97706;
+        }
+
+        .form-header-title {
+          font-size: 1.5rem;
+          font-weight: 800;
+          color: #0f172a;
+          letter-spacing: -0.02em;
+          margin-bottom: 4px;
+        }
+        @media (min-width: 640px) {
+          .form-header-title { font-size: 1.85rem; }
+        }
+        .form-header-sub {
+          font-size: 0.82rem;
+          color: #64748b;
+          margin-bottom: 18px;
+        }
+
+        /* Input styling */
+        .friendly-field {
+          margin-bottom: 14px;
+        }
+        .friendly-label {
+          display: block;
+          font-size: 0.82rem;
+          font-weight: 600;
+          color: #334155;
+          margin-bottom: 6px;
+        }
+        .friendly-input-wrap {
+          position: relative;
+        }
+        .friendly-input {
+          width: 100%;
+          box-sizing: border-box;
+          padding: 12px 16px;
+          padding-right: 44px;
+          background: #ffffff;
+          border: 1px solid #cbd5e1;
+          border-radius: 10px;
+          font-size: 0.92rem;
+          color: #0f172a;
+          outline: none;
+          transition: all 0.2s ease;
+        }
+        .friendly-input::placeholder {
+          color: #94a3b8;
+        }
+        .friendly-input:focus {
+          border-color: #d97706;
+          box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.12);
+        }
+
+        .pwd-toggle {
+          position: absolute;
+          right: 14px;
+          top: 50%;
+          transform: translateY(-50%);
+          background: none;
+          border: none;
+          cursor: pointer;
+          color: #94a3b8;
+          padding: 4px;
+        }
+        .pwd-toggle:hover { color: #d97706; }
+
+        .friendly-btn-submit {
+          width: 100%;
+          padding: 14px;
+          margin-top: 10px;
+          background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+          color: #ffffff;
+          border: none;
+          border-radius: 10px;
+          font-size: 0.9rem;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          box-shadow: 0 4px 14px rgba(217, 119, 6, 0.25);
+        }
+        .friendly-btn-submit:hover:not(:disabled) {
+          box-shadow: 0 6px 18px rgba(217, 119, 6, 0.35);
+          transform: translateY(-1px);
+        }
+
+        /* Sliding Overlay Panel for Desktop */
+        .overlay-sliding-panel {
+          display: none;
+          position: absolute;
+          top: 0;
+          left: 50%;
+          width: 50%;
+          height: 100%;
+          background: #0f172a;
+          color: #ffffff;
+          overflow: hidden;
+          z-index: 30;
+          transition: transform 0.7s cubic-bezier(0.76, 0, 0.24, 1);
+        }
+        @media (min-width: 1024px) {
+          .overlay-sliding-panel { display: block; }
+        }
+
+        .overlay-bg-img {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          filter: brightness(0.65) contrast(1.05);
+          transition: transform 8s ease;
+        }
+        .overlay-sliding-panel:hover .overlay-bg-img {
+          transform: scale(1.04);
+        }
+
+        .overlay-vignette {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(180deg, rgba(15, 23, 42, 0.45) 0%, rgba(15, 23, 42, 0.88) 100%);
+        }
+
+        .overlay-content-box {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 48px;
+          text-align: center;
+          z-index: 10;
+          transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+
+        .overlay-title {
+          font-size: 2.2rem;
+          font-weight: 800;
+          line-height: 1.2;
+          margin-bottom: 14px;
+          color: #ffffff;
+          letter-spacing: -0.02em;
+        }
+        .overlay-title span {
+          color: #f59e0b;
+        }
+
+        .overlay-desc {
+          font-size: 0.92rem;
+          color: #cbd5e1;
+          line-height: 1.6;
+          max-width: 360px;
+          margin-bottom: 32px;
+        }
+
+        .overlay-btn-switch {
+          padding: 13px 32px;
+          border: 2px solid #f59e0b;
+          background: rgba(245, 158, 11, 0.1);
+          color: #ffffff;
+          font-size: 0.88rem;
+          font-weight: 700;
+          border-radius: 10px;
+          cursor: pointer;
+          transition: all 0.25s ease;
+        }
+        .overlay-btn-switch:hover {
+          background: #f59e0b;
+          color: #0f172a;
+          border-color: #f59e0b;
+        }
+
+        .alert-message-box {
+          display: flex;
+          align-items: flex-start;
+          gap: 10px;
+          padding: 12px 14px;
+          border-radius: 8px;
+          font-size: 0.84rem;
+          margin-bottom: 18px;
+          line-height: 1.45;
+        }
+      `}</style>
+
+      <div className="friendly-customer-root">
+        {/* Back Link */}
+        <div className="back-nav">
+          <Link to="/products" className="back-link-btn">
+            <ArrowLeft size={16} /> Trở Về Cửa Hàng
+          </Link>
+        </div>
+
+        {/* Main Card Box */}
+        <div className="friendly-card-box">
+          {/* Mobile Tabs */}
+          <div className="mobile-tabs">
+            <button
+              onClick={() => { setIsLogin(true); clearMessages(); }}
+              className={`tab-btn ${isLogin ? 'active' : ''}`}
             >
-              Đăng nhập
+              Đăng Nhập
             </button>
-            <button 
-              onClick={() => { setIsLogin(false); clearMessages(); }} 
-              className={`flex-1 py-5 text-[11px] font-bold uppercase tracking-[0.15em] transition-colors ${!isLogin ? 'border-b-2 border-slate-900 text-slate-900' : 'text-slate-400 hover:text-slate-600'}`}
+            <button
+              onClick={() => { setIsLogin(false); clearMessages(); }}
+              className={`tab-btn ${!isLogin ? 'active' : ''}`}
             >
-              Đăng ký
+              Tạo Tài Khoản
             </button>
           </div>
 
-          {/* SIGN IN CONTAINER */}
-          <div className={`absolute top-[65px] lg:top-0 left-0 w-full lg:w-1/2 h-[calc(100%-65px)] lg:h-full transition-all duration-700 ease-[cubic-bezier(0.76,0,0.24,1)] px-8 sm:px-14 py-8 bg-white flex flex-col justify-center
-            ${isLogin ? 'translate-x-0 opacity-100 z-20' : '-translate-x-[20%] lg:translate-x-full opacity-0 z-10 pointer-events-none'}`}>
-            
-            <div className="mb-10 text-center lg:text-left">
-              <h2 className="text-3xl font-serif text-slate-900 mb-3 tracking-tight">Đăng nhập</h2>
-              <p className="text-sm text-slate-500">Chào mừng bạn trở lại với Knot To Detail.</p>
+          {/* SIGN IN PANE */}
+          <div
+            className={`form-pane ${
+              isLogin
+                ? 'translate-x-0 opacity-100 z-20'
+                : 'pane-inactive-mobile -translate-x-[20%] lg:translate-x-full opacity-0 z-10 pointer-events-none'
+            }`}
+          >
+            <div className="pane-brand-header">
+              <img src="/logo.png" alt="KTD Logo" className="pane-logo" />
+              <div className="pane-brand-name">Knot To <span>Detail</span></div>
             </div>
-            
+
+            <div className="mb-2">
+              <h2 className="form-header-title">Đăng Nhập</h2>
+              <p className="form-header-sub">
+                Chào mừng bạn trở lại với Knot To Detail.
+              </p>
+            </div>
+
             {error && isLogin && (
-              <div className="mb-6 p-3 bg-red-50 text-red-600 text-xs font-medium flex items-center gap-2 border border-red-100">
-                <AlertCircle className="w-4 h-4 shrink-0" /> {error}
+              <div className="alert-message-box bg-red-50 text-red-700 border border-red-200">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>{error}</span>
               </div>
             )}
 
             {success && isLogin && (
-              <div className="mb-6 p-3 bg-green-50 text-green-700 text-xs font-medium flex items-center gap-2 border border-green-100">
-                <CheckCircle2 className="w-4 h-4 shrink-0" /> {success}
+              <div className="alert-message-box bg-emerald-50 text-emerald-800 border border-emerald-200">
+                <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>{success}</span>
               </div>
             )}
 
-            <form onSubmit={handleLogin} className="space-y-6">
-              <div>
-                <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">
-                  Địa chỉ Email *
-                </label>
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="block w-full border-b border-slate-300 bg-transparent py-2 text-slate-900 text-sm focus:outline-none focus:border-slate-900 transition-colors placeholder:text-slate-300"
-                  placeholder="name@example.com"
-                />
+            <form onSubmit={handleLogin}>
+              <div className="friendly-field">
+                <label className="friendly-label">Địa chỉ Email *</label>
+                <div className="friendly-input-wrap">
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="friendly-input"
+                    placeholder="vd: name@gmail.com"
+                    autoComplete="email"
+                  />
+                </div>
               </div>
 
-              <div>
-                <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">
-                  Mật khẩu *
-                </label>
-                <input
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full border-b border-slate-300 bg-transparent py-2 text-slate-900 text-sm focus:outline-none focus:border-slate-900 transition-colors placeholder:text-slate-300"
-                  placeholder="••••••••"
-                />
+              <div className="friendly-field">
+                <label className="friendly-label">Mật khẩu *</label>
+                <div className="friendly-input-wrap">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="friendly-input"
+                    placeholder="Nhập mật khẩu của bạn"
+                    autoComplete="current-password"
+                  />
+                  <button
+                    type="button"
+                    className="pwd-toggle"
+                    onClick={() => setShowPassword((v) => !v)}
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
 
-              <div className="pt-4">
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-4 bg-slate-900 text-white text-xs font-bold uppercase tracking-[0.2em] hover:bg-slate-800 transition-colors flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
-                >
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Đăng nhập ngay'}
-                </button>
-              </div>
+              <button type="submit" disabled={loading} className="friendly-btn-submit">
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Đăng Nhập Ngay'}
+              </button>
             </form>
           </div>
 
-          {/* SIGN UP CONTAINER */}
-          <div className={`absolute top-[65px] lg:top-0 left-0 w-full lg:w-1/2 h-[calc(100%-65px)] lg:h-full transition-all duration-700 ease-[cubic-bezier(0.76,0,0.24,1)] px-8 sm:px-14 py-8 bg-white flex flex-col justify-center
-            ${isLogin ? 'translate-x-[20%] lg:translate-x-0 opacity-0 z-10 pointer-events-none' : 'translate-x-0 lg:translate-x-full opacity-100 z-20'}`}>
-            
-            <div className="mb-10 text-center lg:text-left">
-              <h2 className="text-3xl font-serif text-slate-900 mb-3 tracking-tight">Tạo tài khoản</h2>
-              <p className="text-sm text-slate-500">Trải nghiệm mua sắm thời trang nam cao cấp.</p>
+          {/* SIGN UP PANE */}
+          <div
+            className={`form-pane ${
+              isLogin
+                ? 'pane-inactive-mobile translate-x-[20%] lg:translate-x-0 opacity-0 z-10 pointer-events-none'
+                : 'translate-x-0 lg:translate-x-full opacity-100 z-20'
+            }`}
+          >
+            <div className="pane-brand-header">
+              <img src="/logo.png" alt="KTD Logo" className="pane-logo" />
+              <div className="pane-brand-name">Knot To <span>Detail</span></div>
+            </div>
+
+            <div className="mb-2">
+              <h2 className="form-header-title">Tạo Tài Khoản</h2>
+              <p className="form-header-sub">
+                Trải nghiệm mua sắm thời trang nam cao cấp cùng KTD.
+              </p>
             </div>
 
             {error && !isLogin && (
-              <div className="mb-6 p-3 bg-red-50 text-red-600 text-xs font-medium flex items-center gap-2 border border-red-100">
-                <AlertCircle className="w-4 h-4 shrink-0" /> {error}
+              <div className="alert-message-box bg-red-50 text-red-700 border border-red-200">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>{error}</span>
               </div>
             )}
 
-            <form onSubmit={handleRegister} className="space-y-6">
-              <div>
-                <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">
-                  Họ và tên *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="block w-full border-b border-slate-300 bg-transparent py-2 text-slate-900 text-sm focus:outline-none focus:border-slate-900 transition-colors placeholder:text-slate-300"
-                  placeholder="Nguyễn Văn A"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">
-                  Địa chỉ Email *
-                </label>
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="block w-full border-b border-slate-300 bg-transparent py-2 text-slate-900 text-sm focus:outline-none focus:border-slate-900 transition-colors placeholder:text-slate-300"
-                  placeholder="name@example.com"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">
-                    Mật khẩu *
-                  </label>
+            <form onSubmit={handleRegister}>
+              <div className="friendly-field">
+                <label className="friendly-label">Họ và tên *</label>
+                <div className="friendly-input-wrap">
                   <input
-                    type="password"
+                    type="text"
                     required
-                    minLength={6}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="block w-full border-b border-slate-300 bg-transparent py-2 text-slate-900 text-sm focus:outline-none focus:border-slate-900 transition-colors placeholder:text-slate-300"
-                    placeholder="••••••••"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">
-                    Số điện thoại
-                  </label>
-                  <input
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="block w-full border-b border-slate-300 bg-transparent py-2 text-slate-900 text-sm focus:outline-none focus:border-slate-900 transition-colors placeholder:text-slate-300"
-                    placeholder="0912..."
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className="friendly-input"
+                    placeholder="Nguyễn Văn A"
                   />
                 </div>
               </div>
 
-              <div className="pt-4">
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-4 bg-slate-900 text-white text-xs font-bold uppercase tracking-[0.2em] hover:bg-slate-800 transition-colors flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
-                >
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Đăng ký tài khoản'}
-                </button>
+              <div className="friendly-field">
+                <label className="friendly-label">Địa chỉ Email *</label>
+                <div className="friendly-input-wrap">
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="friendly-input"
+                    placeholder="vd: name@gmail.com"
+                  />
+                </div>
               </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="friendly-field">
+                  <label className="friendly-label">Mật khẩu *</label>
+                  <div className="friendly-input-wrap">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      minLength={6}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="friendly-input"
+                      placeholder="Mật khẩu (tối thiểu 6 ký tự)"
+                    />
+                  </div>
+                </div>
+
+                <div className="friendly-field">
+                  <label className="friendly-label">Số điện thoại</label>
+                  <div className="friendly-input-wrap">
+                    <input
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      className="friendly-input"
+                      placeholder="0912..."
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <button type="submit" disabled={loading} className="friendly-btn-submit">
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Đăng Ký Tài Khoản'}
+              </button>
             </form>
           </div>
 
-          {/* OVERLAY CONTAINER (DESKTOP ONLY) */}
-          <div className={`hidden lg:block absolute top-0 left-1/2 w-1/2 h-full transition-transform duration-700 ease-[cubic-bezier(0.76,0,0.24,1)] z-30 ${isLogin ? 'translate-x-0' : '-translate-x-full'}`}>
-            <div className="absolute inset-0 bg-slate-900 text-white overflow-hidden">
-               {/* Background Image */}
-               <img 
-                  src="https://images.unsplash.com/photo-1594938298598-7c87c4b69395?q=80&w=800" 
-                  alt="Fashion" 
-                  className="absolute inset-0 w-full h-full object-cover opacity-30 mix-blend-overlay" 
-               />
-               
-               {/* Overlay Content - Register Prompt */}
-               <div className={`absolute inset-0 flex flex-col items-center justify-center p-14 text-center transition-all duration-700 ease-in-out ${isLogin ? 'opacity-100 translate-x-0 delay-100' : 'opacity-0 translate-x-[20%] pointer-events-none'}`}>
-                  <h2 className="text-4xl font-serif mb-6 leading-tight">Khách hàng mới?</h2>
-                  <p className="text-sm text-slate-300 mb-10 leading-relaxed font-light">Đăng ký thành viên để nhận các đặc quyền riêng biệt và trải nghiệm mua sắm chuẩn mực Quý ông.</p>
-                  <button 
-                    onClick={() => { setIsLogin(false); clearMessages(); }} 
-                    className="px-10 py-4 border border-white/50 hover:bg-white hover:text-slate-900 transition-all uppercase tracking-[0.2em] text-[10px] font-bold"
-                  >
-                    Tạo tài khoản
-                  </button>
-               </div>
+          {/* SLIDING OVERLAY PANEL (DESKTOP ONLY) */}
+          <div
+            className={`overlay-sliding-panel ${
+              isLogin ? 'translate-x-0' : '-translate-x-full'
+            }`}
+          >
+            <img
+              src="/atelier_fashion_editorial.png"
+              alt="Fashion Editorial"
+              className="overlay-bg-img"
+            />
+            <div className="overlay-vignette" />
 
-               {/* Overlay Content - Login Prompt */}
-               <div className={`absolute inset-0 flex flex-col items-center justify-center p-14 text-center transition-all duration-700 ease-in-out ${!isLogin ? 'opacity-100 translate-x-0 delay-100' : 'opacity-0 -translate-x-[20%] pointer-events-none'}`}>
-                  <h2 className="text-4xl font-serif mb-6 leading-tight">Đã có tài khoản?</h2>
-                  <p className="text-sm text-slate-300 mb-10 leading-relaxed font-light">Đăng nhập để xem các bộ sưu tập mới nhất và quản lý đơn hàng của bạn.</p>
-                  <button 
-                    onClick={() => { setIsLogin(true); clearMessages(); }} 
-                    className="px-10 py-4 border border-white/50 hover:bg-white hover:text-slate-900 transition-all uppercase tracking-[0.2em] text-[10px] font-bold"
-                  >
-                    Đăng nhập ngay
-                  </button>
-               </div>
+            {/* Prompt for Sign Up */}
+            <div
+              className={`overlay-content-box ${
+                isLogin
+                  ? 'opacity-100 translate-x-0 delay-100'
+                  : 'opacity-0 translate-x-[20%] pointer-events-none'
+              }`}
+            >
+              <h2 className="overlay-title">
+                Khách Hàng <span>Mới?</span>
+              </h2>
+              <p className="overlay-desc">
+                Đăng ký tài khoản để nhận thêm nhiều ưu đãi thành viên và trải nghiệm mua sắm tuyệt vời.
+              </p>
+              <button
+                onClick={() => { setIsLogin(false); clearMessages(); }}
+                className="overlay-btn-switch"
+              >
+                Tạo Tài Khoản
+              </button>
+            </div>
+
+            {/* Prompt for Sign In */}
+            <div
+              className={`overlay-content-box ${
+                !isLogin
+                  ? 'opacity-100 translate-x-0 delay-100'
+                  : 'opacity-0 -translate-x-[20%] pointer-events-none'
+              }`}
+            >
+              <h2 className="overlay-title">
+                Đã Có <span>Tài Khoản?</span>
+              </h2>
+              <p className="overlay-desc">
+                Đăng nhập ngay để xem giỏ hàng, theo dõi đơn hàng và cập nhật sản phẩm mới nhất.
+              </p>
+              <button
+                onClick={() => { setIsLogin(true); clearMessages(); }}
+                className="overlay-btn-switch"
+              >
+                Đăng Nhập Ngay
+              </button>
             </div>
           </div>
-
         </div>
 
         {/* Footer info link */}
-        <div className="mt-8 text-center relative z-10">
-          <p className="text-[11px] text-slate-500 tracking-wide">
+        <div className="mt-6 text-center relative z-10">
+          <p className="text-xs text-slate-500 tracking-wide">
             Dành cho nhân viên quản trị?{' '}
-            <Link to="/crm" className="font-bold text-slate-900 hover:underline">
+            <Link to="/admin/login" className="font-bold text-amber-700 hover:underline">
               Đăng nhập CRM
             </Link>
           </p>
         </div>
       </div>
-    </div>
+    </>
   );
 };

@@ -49,38 +49,39 @@ export const SiteHeader: React.FC = () => {
     clearAuthToken();
     window.dispatchEvent(new Event('auth-change'));
     setShowUserMenu(false);
+    setMobileMenuOpen(false);
     navigate('/login');
   };
 
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <header className="sticky top-0 z-50 bg-card/90 backdrop-blur-md border-b border-line font-sans transition-all">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 sm:h-20">
+    <header className="sticky top-0 z-50 bg-card/95 backdrop-blur-md border-b border-line font-sans transition-all">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-14 sm:h-20">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-3 group" title="Knot To Detail">
+          <Link to="/" className="flex items-center gap-2 sm:gap-3 group shrink-0" title="Knot To Detail">
             <img
               src="/logo.png"
               alt="Knot To Detail Logo"
-              className="w-9 h-9 object-contain rounded-lg shadow-xs group-hover:scale-105 transition-transform"
+              className="w-8 h-8 sm:w-9 sm:h-9 object-contain rounded-lg shadow-xs group-hover:scale-105 transition-transform"
             />
             <div className="flex flex-col">
-              <span className="font-display font-bold text-xl text-ink tracking-tight leading-none group-hover:text-accent transition-colors">
+              <span className="font-display font-bold text-base sm:text-xl text-ink tracking-tight leading-none group-hover:text-accent transition-colors">
                 Knot To Detail
               </span>
-              <span className="font-mono text-[10px] text-ink-soft font-medium uppercase tracking-widest mt-1">
-                Menswear Atelier
+              <span className="font-mono text-[9px] sm:text-[10px] text-ink-soft font-medium uppercase tracking-wider sm:tracking-widest mt-0.5">
+                Menswear
               </span>
             </div>
           </Link>
 
-          {/* Navigation Links */}
+          {/* Navigation Links (Desktop) */}
           <nav className="hidden md:flex items-center space-x-8">
             <Link
               to="/"
               className={`font-sans text-sm font-medium transition-colors ${
-                isActive('/') ? 'text-accent font-semibold border-b-2 border-accent pb-0.5' : 'text-ink hover:text-accent'
+                isActive('/') ? 'text-[#d97706] font-bold border-b-2 border-[#d97706] pb-0.5' : 'text-ink hover:text-[#d97706]'
               }`}
             >
               Trang chủ
@@ -88,7 +89,7 @@ export const SiteHeader: React.FC = () => {
             <Link
               to="/products"
               className={`font-sans text-sm font-medium transition-colors ${
-                isActive('/products') ? 'text-accent font-semibold border-b-2 border-accent pb-0.5' : 'text-ink hover:text-accent'
+                isActive('/products') ? 'text-[#d97706] font-bold border-b-2 border-[#d97706] pb-0.5' : 'text-ink hover:text-[#d97706]'
               }`}
             >
               {t('nav.products')}
@@ -96,7 +97,7 @@ export const SiteHeader: React.FC = () => {
             <Link
               to="/my-orders"
               className={`font-sans text-sm font-medium transition-colors flex items-center gap-1.5 ${
-                isActive('/my-orders') ? 'text-accent font-semibold border-b-2 border-accent pb-0.5' : 'text-ink hover:text-accent'
+                isActive('/my-orders') ? 'text-[#d97706] font-bold border-b-2 border-[#d97706] pb-0.5' : 'text-ink hover:text-[#d97706]'
               }`}
             >
               <Package className="w-4 h-4 text-ink-soft" />
@@ -105,25 +106,25 @@ export const SiteHeader: React.FC = () => {
           </nav>
 
           {/* Actions */}
-          <div className="flex items-center gap-3 sm:gap-4">
+          <div className="flex items-center gap-1.5 sm:gap-3">
             <NotificationBell />
 
             <Link
               to="/wishlist"
               aria-label="Danh sách yêu thích"
-              className="p-2 text-ink hover:text-accent transition-colors block"
+              className="p-1.5 sm:p-2 text-ink hover:text-[#d97706] transition-colors block"
             >
-              <Heart className="w-5 h-5" />
+              <Heart className="w-4 h-4 sm:w-5 sm:h-5" />
             </Link>
 
             <Link
               to="/cart"
               aria-label="Giỏ hàng"
-              className="p-2 text-ink hover:text-accent transition-colors relative block"
+              className="p-1.5 sm:p-2 text-ink hover:text-[#d97706] transition-colors relative block"
             >
-              <ShoppingBag className="w-5 h-5" />
+              <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5" />
               {cartCount > 0 && (
-                <span className="absolute top-1 right-1 bg-accent text-white font-mono text-[10px] font-medium w-4 h-4 rounded-full flex items-center justify-center shadow-xs ring-2 ring-white">
+                <span className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 bg-[#d97706] text-white font-mono text-[9px] sm:text-[10px] font-bold w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full flex items-center justify-center shadow-xs ring-2 ring-white">
                   {cartCount}
                 </span>
               )}
@@ -135,13 +136,13 @@ export const SiteHeader: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-bg-alt hover:bg-line/20 text-ink border border-line rounded-lg transition font-sans text-xs font-semibold"
+                  className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-bg-alt hover:bg-line/20 text-ink border border-line rounded-lg transition font-sans text-xs font-semibold"
                 >
-                  <div className="w-6 h-6 rounded-full bg-ink text-white flex items-center justify-center font-bold text-[11px] uppercase">
+                  <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-[#d97706] text-white flex items-center justify-center font-bold text-[10px] sm:text-[11px] uppercase shrink-0">
                     {userName.charAt(0)}
                   </div>
-                  <span className="max-w-[100px] truncate hidden sm:inline">{userName}</span>
-                  <ChevronDown className="w-3.5 h-3.5 text-ink-soft" />
+                  <span className="max-w-[80px] sm:max-w-[100px] truncate hidden sm:inline">{userName}</span>
+                  <ChevronDown className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-ink-soft" />
                 </button>
 
                 {showUserMenu && (
@@ -149,23 +150,23 @@ export const SiteHeader: React.FC = () => {
                     <Link
                       to="/my-orders"
                       onClick={() => setShowUserMenu(false)}
-                      className="flex items-center gap-2 px-4 py-2.5 text-ink hover:bg-bg-alt hover:text-accent"
+                      className="flex items-center gap-2 px-4 py-2.5 text-ink hover:bg-bg-alt hover:text-[#d97706]"
                     >
-                      <Package className="w-4 h-4 text-accent" /> Đơn hàng của tôi
+                      <Package className="w-4 h-4 text-[#d97706]" /> Đơn hàng của tôi
                     </Link>
                     <Link
                       to="/addresses"
                       onClick={() => setShowUserMenu(false)}
-                      className="flex items-center gap-2 px-4 py-2.5 text-ink hover:bg-bg-alt hover:text-accent"
+                      className="flex items-center gap-2 px-4 py-2.5 text-ink hover:bg-bg-alt hover:text-[#d97706]"
                     >
-                      <User className="w-4 h-4 text-accent" /> Sổ địa chỉ giao hàng
+                      <User className="w-4 h-4 text-[#d97706]" /> Sổ địa chỉ giao hàng
                     </Link>
                     <Link
                       to="/wishlist"
                       onClick={() => setShowUserMenu(false)}
-                      className="flex items-center gap-2 px-4 py-2.5 text-ink hover:bg-bg-alt hover:text-accent"
+                      className="flex items-center gap-2 px-4 py-2.5 text-ink hover:bg-bg-alt hover:text-[#d97706]"
                     >
-                      <Heart className="w-4 h-4 text-accent" /> Sản phẩm yêu thích
+                      <Heart className="w-4 h-4 text-[#d97706]" /> Sản phẩm yêu thích
                     </Link>
                     <div className="my-1 border-t border-line" />
                     <button
@@ -181,9 +182,9 @@ export const SiteHeader: React.FC = () => {
             ) : (
               <Link
                 to="/login"
-                className="inline-flex items-center gap-1.5 px-4 py-2 bg-accent hover:bg-accent-dark text-white font-sans text-xs font-semibold uppercase tracking-wider rounded-full transition-colors shadow-sm"
+                className="inline-flex items-center gap-1 px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-[#d97706] to-[#b45309] hover:from-[#b45309] hover:to-[#92400e] text-white font-sans text-[11px] sm:text-xs font-bold uppercase tracking-wider rounded-full transition-colors shadow-xs shrink-0"
               >
-                <User className="w-3.5 h-3.5" /> Đăng nhập
+                <User className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> <span className="hidden xs:inline">Đăng nhập</span>
               </Link>
             )}
 
@@ -191,39 +192,59 @@ export const SiteHeader: React.FC = () => {
             <button
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 text-ink"
+              className="md:hidden p-1.5 text-ink hover:bg-bg-alt rounded-lg transition"
               aria-label="Toggle menu"
             >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
         </div>
       </div>
 
-      {/* Mobile nav dropdown */}
+      {/* Mobile nav dropdown drawer */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-line bg-card px-4 py-4 space-y-3 font-sans text-sm">
+        <div className="md:hidden border-t border-line bg-card px-4 py-4 space-y-3 font-sans text-sm shadow-lg animate-fade-in">
           <Link
             to="/"
             onClick={() => setMobileMenuOpen(false)}
-            className="block py-2 text-ink font-medium hover:text-accent"
+            className={`block py-2 font-medium ${isActive('/') ? 'text-[#d97706] font-bold' : 'text-ink'}`}
           >
             Trang chủ
           </Link>
           <Link
             to="/products"
             onClick={() => setMobileMenuOpen(false)}
-            className="block py-2 text-ink font-medium hover:text-accent"
+            className={`block py-2 font-medium ${isActive('/products') ? 'text-[#d97706] font-bold' : 'text-ink'}`}
           >
-            Sản phẩm
+            Tất cả sản phẩm
           </Link>
           <Link
             to="/my-orders"
             onClick={() => setMobileMenuOpen(false)}
-            className="block py-2 text-ink font-medium hover:text-accent"
+            className={`flex items-center gap-2 py-2 font-medium ${isActive('/my-orders') ? 'text-[#d97706] font-bold' : 'text-ink'}`}
           >
-            Đơn hàng của tôi
+            <Package className="w-4 h-4 text-[#d97706]" /> Đơn hàng của tôi
           </Link>
+          <Link
+            to="/wishlist"
+            onClick={() => setMobileMenuOpen(false)}
+            className={`flex items-center gap-2 py-2 font-medium ${isActive('/wishlist') ? 'text-[#d97706] font-bold' : 'text-ink'}`}
+          >
+            <Heart className="w-4 h-4 text-[#d97706]" /> Sản phẩm yêu thích
+          </Link>
+
+          {userName && (
+            <div className="pt-2 border-t border-line flex items-center justify-between">
+              <span className="text-xs font-bold text-ink truncate">Tài khoản: {userName}</span>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="text-xs font-bold text-coral hover:underline"
+              >
+                Đăng xuất
+              </button>
+            </div>
+          )}
         </div>
       )}
     </header>

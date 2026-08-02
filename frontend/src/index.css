@@ -18,10 +18,10 @@
     --ink-soft: #6B6560;
 
     /* Brand Orange — primary accent from logo */
-    --accent: #E8920A;           /* Mid-orange (between logo border #F5A623 and body #E07B00) */
-    --accent-dark: #C47608;      /* Pressed state */
-    --accent-light: #FEF3E2;     /* Orange tint for backgrounds / hover fills */
-    --accent-border: #F5A623;    /* Logo border orange — badges, outlines */
+    --accent: #d97706;           /* Warm Amber Gold matching logo */
+    --accent-dark: #b45309;      /* Darker Pressed state */
+    --accent-light: #fef3c7;     /* Light tint for hover fills */
+    --accent-border: #f59e0b;    /* Logo border accent */
 
     /* Status & utility */
     --coral: #E05A2B;            /* Errors / destructive — warm, not clashing */

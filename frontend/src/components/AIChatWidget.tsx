@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Bot, X, Send, Sparkles, Loader2, ShoppingBag } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -18,10 +18,15 @@ interface Message {
 }
 
 export const AIChatWidget: React.FC = () => {
+  const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const { formatPrice } = useLanguage();
+
+  // Hide AI Chat Widget on Login & Auth pages so it doesn't obscure forms
+  const isAuthPage = ['/login', '/crm', '/customer/login', '/admin/login'].includes(location.pathname);
+  if (isAuthPage) return null;
 
   const [messages, setMessages] = useState<Message[]>([
     {

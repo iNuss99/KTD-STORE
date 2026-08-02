@@ -131,9 +131,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           <button
             onClick={toggleWishlist}
             aria-label={isWished ? 'Xóa khỏi yêu thích' : 'Thêm vào yêu thích'}
-            className="absolute top-3 right-3 p-2 bg-card/90 backdrop-blur-xs border border-line rounded-full text-ink-soft hover:text-accent transition-all duration-200 shadow-xs z-10"
+            className="absolute top-3 right-3 p-2 bg-card/90 backdrop-blur-xs border border-line rounded-full text-ink-soft hover:text-[#d97706] transition-all duration-200 shadow-xs z-10"
           >
-            <Heart className={`w-4 h-4 ${isWished ? 'fill-accent text-accent' : ''}`} />
+            <Heart className={`w-4 h-4 ${isWished ? 'fill-[#d97706] text-[#d97706]' : ''}`} />
           </button>
         )}
 
@@ -142,7 +142,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           <span className="text-[11px] font-mono font-medium uppercase tracking-wider text-card">
             Xem sản phẩm
           </span>
-          <ArrowUpRight className="w-4 h-4 text-accent" />
+          <ArrowUpRight className="w-4 h-4 text-[#d97706]" />
         </div>
       </div>
 
@@ -152,7 +152,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           <span className="text-[11px] font-mono font-medium uppercase tracking-wider text-ink-soft block mb-1">
             {category}
           </span>
-          <h3 className="font-display font-medium text-base text-ink line-clamp-1 group-hover:text-accent transition-colors">
+          <h3 className="font-display font-medium text-base text-ink line-clamp-1 group-hover:text-[#d97706] transition-colors">
             <Link to={targetLink} className="after:absolute after:inset-0">
               {name}
             </Link>

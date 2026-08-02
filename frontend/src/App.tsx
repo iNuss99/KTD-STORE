@@ -1,7 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { queryClient } from './lib/queryClient';
 import { HomePage } from './pages/HomePage';
 import { ProductListPage } from './pages/ProductListPage';
@@ -69,7 +68,6 @@ export const App: React.FC = () => {
           </Route>
         </Routes>
         <AIChatWidget />
-        {(import.meta as any).env?.DEV && <ReactQueryDevtools initialIsOpen={false} />}
         </Router>
       </ToastProvider>
     </QueryClientProvider>
