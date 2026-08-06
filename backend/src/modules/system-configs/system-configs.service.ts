@@ -59,12 +59,12 @@ export class SystemConfigsService implements OnApplicationBootstrap {
       },
       {
         key: SYSTEM_CONFIG_KEYS.BANK_ACCOUNT_NO,
-        value: '999988888',
+        value: '0931143830',
         description: 'Số tài khoản ngân hàng nhận thanh toán VietQR',
       },
       {
         key: SYSTEM_CONFIG_KEYS.BANK_ACCOUNT_NAME,
-        value: 'KNOT TO DETAIL',
+        value: 'DO MINH KHOA',
         description: 'Tên chủ tài khoản nhận thanh toán VietQR',
       },
     ];
@@ -74,6 +74,9 @@ export class SystemConfigsService implements OnApplicationBootstrap {
       if (!exists) {
         const config = this.configRepo.create(item);
         await this.configRepo.save(config);
+      } else if (exists.value === '999988888' || exists.value === 'KNOT TO DETAIL') {
+        exists.value = item.value;
+        await this.configRepo.save(exists);
       }
     }
   }
