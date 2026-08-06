@@ -37,7 +37,7 @@
     min-height: 100vh;
     background-color: var(--canvas);
     color: var(--ink);
-    font-family: 'Inter', sans-serif;
+    font-family: 'Open Sans', sans-serif;
   }
 
   /* WCAG Accessible Focus Indicator */

@@ -117,9 +117,12 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpenMobile, onClos
         />
       )}
 
+      {/* Desktop: sticky placeholder giữ chỗ trong flex row */}
+      {/* Mobile: fixed overlay drawer */}
       <aside
-        className={`bg-white border-r border-slate-100 flex flex-col shrink-0 h-full min-h-screen select-none font-sans z-50 transition-transform duration-300 ease-in-out
-          fixed lg:static inset-y-0 left-0 w-64 shadow-xl lg:shadow-none
+        className={`bg-white border-r border-slate-100 flex flex-col w-64 shrink-0 select-none font-sans z-50 transition-transform duration-300 ease-in-out
+          fixed inset-y-0 left-0 shadow-xl
+          lg:sticky lg:top-0 lg:h-screen lg:shadow-none lg:translate-x-0
           ${isOpenMobile ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
       >
@@ -241,7 +244,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpenMobile, onClos
         </div>
 
         {/* Sidebar Footer */}
-        <div className="p-4 border-t border-slate-100 bg-slate-50/50 m-3 rounded-2xl">
+        <div className="p-4 border-t border-slate-100 bg-slate-50/50">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-accent text-white flex items-center justify-center font-bold text-xs shadow-xs">
               {role ? role.charAt(0) : 'A'}

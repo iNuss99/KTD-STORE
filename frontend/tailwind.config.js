@@ -44,10 +44,10 @@ export default {
         },
       },
       fontFamily: {
-        display: ['"Space Grotesk"', 'sans-serif'],
-        sans: ['"Inter"', 'sans-serif'],
+        display: ['"Open Sans"', 'sans-serif'],
+        sans: ['"Open Sans"', 'sans-serif'],
         mono: ['"IBM Plex Mono"', 'monospace'],
-        serif: ['"Be Vietnam Pro"', 'sans-serif'],
+        serif: ['"Open Sans"', 'sans-serif'],
       },
     },
   },

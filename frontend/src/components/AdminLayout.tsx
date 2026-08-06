@@ -34,7 +34,7 @@ export const AdminLayout: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50/60 flex font-sans antialiased text-slate-800 relative overflow-x-hidden">
+    <div className="min-h-screen bg-slate-50/60 flex font-sans antialiased text-slate-800 relative">
       <AdminSidebar
         isOpenMobile={mobileSidebarOpen}
         onCloseMobile={() => setMobileSidebarOpen(false)}

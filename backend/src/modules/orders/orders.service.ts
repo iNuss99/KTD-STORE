@@ -536,4 +536,149 @@ export class OrdersService {
 
     return { success: true, order_id: order.id, status: order.status };
   }
+
+  async processCassoWebhook(payload: any) {
+    const transactions = Array.isArray(payload?.data)
+      ? payload.data
+      : Array.isArray(payload)
+      ? payload
+      : [payload];
+
+    const results: any[] = [];
+
+    for (const txn of transactions) {
+      if (!txn) continue;
+      const content = txn.description || txn.content || '';
+      const transferAmount = Number(txn.amount || txn.transferAmount || 0);
+
+      const shortIdMatch = content.match(/KTD\s*([a-f0-9]{8})/i);
+      const phoneMatch = content.match(/KTD\s+.*?\s*(\d{9,11})/i);
+
+      let order: Order | null = null;
+
+      if (shortIdMatch) {
+        const shortId = shortIdMatch[1].toLowerCase();
+        order = await this.orderRepo
+          .createQueryBuilder('order')
+          .leftJoinAndSelect('order.payments', 'payments')
+          .where('order.id::text LIKE :shortId', { shortId: `${shortId}%` })
+          .getOne();
+      }
+
+      if (!order && phoneMatch) {
+        const phone = phoneMatch[1];
+        order = await this.orderRepo
+          .createQueryBuilder('order')
+          .leftJoinAndSelect('order.payments', 'payments')
+          .leftJoinAndSelect('order.address', 'address')
+          .where('address.phone = :phone', { phone })
+          .orderBy('order.created_at', 'DESC')
+          .getOne();
+      }
+
+      if (!order) {
+        results.push({ success: false, txnId: txn.id || txn.tid, message: 'Không tìm thấy đơn hàng phù hợp' });
+        continue;
+      }
+
+      let payment = order.payments && order.payments.length > 0 ? order.payments[0] : null;
+
+      if (!payment) {
+        payment = this.paymentRepo.create({
+          order_id: order.id,
+          method: PaymentMethod.BANK_TRANSFER,
+          status: PaymentStatus.PENDING,
+        });
+      }
+
+      payment.status = PaymentStatus.COMPLETED;
+      payment.paid_at = new Date();
+      await this.paymentRepo.save(payment);
+
+      if (order.status === OrderStatus.PENDING || order.status === OrderStatus.CONFIRMED) {
+        order.status = OrderStatus.PROCESSING;
+        await this.orderRepo.save(order);
+      }
+
+      try {
+        await this.auditLogsService.log(
+          order.user_id || 'SYSTEM',
+          'CASSO_WEBHOOK_PAYMENT_SUCCESS',
+          'Payment',
+          payment.id,
+          { order_id: order.id, transferAmount, referenceCode: txn.tid || txn.id },
+        );
+      } catch (e) {}
+
+      results.push({ success: true, order_id: order.id, status: order.status });
+    }
+
+    return { error: 0, message: 'Xử lý webhook Casso thành công', results };
+  }
+
+  async processPayosWebhook(payload: any) {
+    const data = payload?.data || payload;
+    const content = data?.description || data?.content || '';
+    const transferAmount = Number(data?.amount || data?.transferAmount || 0);
+
+    const shortIdMatch = content.match(/KTD\s*([a-f0-9]{8})/i);
+    const phoneMatch = content.match(/KTD\s+.*?\s*(\d{9,11})/i);
+
+    let order: Order | null = null;
+
+    if (shortIdMatch) {
+      const shortId = shortIdMatch[1].toLowerCase();
+      order = await this.orderRepo
+        .createQueryBuilder('order')
+        .leftJoinAndSelect('order.payments', 'payments')
+        .where('order.id::text LIKE :shortId', { shortId: `${shortId}%` })
+        .getOne();
+    }
+
+    if (!order && phoneMatch) {
+      const phone = phoneMatch[1];
+      order = await this.orderRepo
+        .createQueryBuilder('order')
+        .leftJoinAndSelect('order.payments', 'payments')
+        .leftJoinAndSelect('order.address', 'address')
+        .where('address.phone = :phone', { phone })
+        .orderBy('order.created_at', 'DESC')
+        .getOne();
+    }
+
+    if (!order) {
+      return { success: true, message: 'PayOS webhook endpoint active (Test ping verified)' };
+    }
+
+    let payment = order.payments && order.payments.length > 0 ? order.payments[0] : null;
+
+    if (!payment) {
+      payment = this.paymentRepo.create({
+        order_id: order.id,
+        method: PaymentMethod.BANK_TRANSFER,
+        status: PaymentStatus.PENDING,
+      });
+    }
+
+    payment.status = PaymentStatus.COMPLETED;
+    payment.paid_at = new Date();
+    await this.paymentRepo.save(payment);
+
+    if (order.status === OrderStatus.PENDING || order.status === OrderStatus.CONFIRMED) {
+      order.status = OrderStatus.PROCESSING;
+      await this.orderRepo.save(order);
+    }
+
+    try {
+      await this.auditLogsService.log(
+        order.user_id || 'SYSTEM',
+        'PAYOS_WEBHOOK_PAYMENT_SUCCESS',
+        'Payment',
+        payment.id,
+        { order_id: order.id, transferAmount, referenceCode: data?.reference || data?.orderCode },
+      );
+    } catch (e) {}
+
+    return { error: 0, message: 'Success', data: { order_id: order.id, status: order.status } };
+  }
 }

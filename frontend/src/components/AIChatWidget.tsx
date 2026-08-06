@@ -24,10 +24,6 @@ export const AIChatWidget: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const { formatPrice } = useLanguage();
 
-  // Hide AI Chat Widget on Login & Auth pages so it doesn't obscure forms
-  const isAuthPage = ['/login', '/crm', '/customer/login', '/admin/login'].includes(location.pathname);
-  if (isAuthPage) return null;
-
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'welcome',
@@ -47,6 +43,10 @@ export const AIChatWidget: React.FC = () => {
       scrollToBottom();
     }
   }, [messages, isOpen]);
+
+  // Hide AI Chat Widget on Login & Auth pages so it doesn't obscure forms
+  const isAuthPage = ['/login', '/crm', '/customer/login', '/admin/login'].includes(location.pathname);
+  if (isAuthPage) return null;
 
   const handleSend = async (customText?: string) => {
     const textToSend = customText || input;

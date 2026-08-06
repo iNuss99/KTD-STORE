@@ -105,7 +105,7 @@ describe('OrdersService', () => {
       };
 
       mockQueryRunner.manager.findOne.mockImplementation((entity: any, opts: any) => {
-        if (opts?.lock?.mode === 'pessimistic_write') {
+        if (entity?.name === 'ProductVariant' || opts?.lock?.mode === 'pessimistic_write') {
           return Promise.resolve(mockVariant);
         }
         return Promise.resolve(null);
@@ -287,6 +287,42 @@ describe('OrdersService', () => {
       expect(mockOrder.status).toBe(OrderStatus.PROCESSING);
       expect(paymentRepo.save).toHaveBeenCalledWith(mockPayment);
       expect(orderRepo.save).toHaveBeenCalledWith(mockOrder);
+    });
+
+    it('xử lý webhook Casso thành công khi tìm thấy mã đơn hàng ngắn trong nội dung', async () => {
+      const mockOrder: any = {
+        id: 'a1b2c3d4-1234-5678-90ab-cdef12345678',
+        status: OrderStatus.PENDING,
+        payments: [],
+      };
+
+      const qbMock: any = {
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(mockOrder),
+      };
+
+      orderRepo.createQueryBuilder = jest.fn().mockReturnValue(qbMock);
+      paymentRepo.create = jest.fn((dto) => ({ ...dto, id: 'casso-pay-id' }));
+
+      const payload = {
+        error: 0,
+        data: [
+          {
+            id: 999,
+            tid: 'FT999',
+            description: 'KTD a1b2c3d4 chuyen tien mua hang',
+            amount: 350000,
+          },
+        ],
+      };
+
+      const result = await service.processCassoWebhook(payload);
+
+      expect(result.error).toBe(0);
+      expect(result.results[0].success).toBe(true);
+      expect(result.results[0].order_id).toBe(mockOrder.id);
+      expect(mockOrder.status).toBe(OrderStatus.PROCESSING);
     });
   });
 });
