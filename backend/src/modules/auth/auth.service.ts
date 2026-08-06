@@ -19,7 +19,8 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto) {
-    const existing = await this.userRepo.findOne({ where: { email: dto.email } });
+    const email = dto.email.trim().toLowerCase();
+    const existing = await this.userRepo.findOne({ where: { email } });
     if (existing) {
       throw new BadRequestException('Email này đã được sử dụng');
     }
@@ -28,7 +29,7 @@ export class AuthService {
     const password_hash = await bcrypt.hash(dto.password, saltRounds);
 
     const user = this.userRepo.create({
-      email: dto.email,
+      email,
       password_hash,
       full_name: dto.full_name,
       phone: dto.phone,
@@ -52,7 +53,8 @@ export class AuthService {
   }
 
   async login(dto: LoginDto) {
-    const user = await this.userRepo.findOne({ where: { email: dto.email } });
+    const email = dto.email.trim().toLowerCase();
+    const user = await this.userRepo.findOne({ where: { email } });
     if (!user) {
       throw new UnauthorizedException('Email hoặc mật khẩu không chính xác');
     }

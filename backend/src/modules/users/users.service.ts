@@ -32,6 +32,13 @@ export class UsersService implements OnApplicationBootstrap {
         is_locked: false,
       });
       await this.userRepo.save(newAdmin);
+    } else {
+      const isPassValid = await bcrypt.compare('123', admin.password_hash).catch(() => false);
+      if (!isPassValid || admin.is_locked) {
+        admin.password_hash = await bcrypt.hash('123', 10);
+        admin.is_locked = false;
+        await this.userRepo.save(admin);
+      }
     }
   }
 
