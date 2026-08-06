@@ -74,6 +74,40 @@ export const SandboxPaymentModal: React.FC<SandboxPaymentModalProps> = ({
     }
   }, [orderId]);
 
+  // Auto-poll order status every 2.5s to detect PayOS/Casso/Bank webhook confirmation automatically
+  useEffect(() => {
+    if (!orderId) return;
+
+    const checkStatus = async () => {
+      try {
+        const res = await fetch(`/api/orders/${orderId}`, {
+          headers: getAuthHeader(),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const isPaid =
+            data.status === 'PROCESSING' ||
+            data.status === 'CONFIRMED' ||
+            data.status === 'COMPLETED' ||
+            data.payments?.some((p: any) => p.status === 'COMPLETED');
+
+          if (isPaid) {
+            showSuccess(
+              'Tự động xác nhận thành công!',
+              'Hệ thống đã nhận tiền từ Ngân hàng và duyệt đơn tự động.',
+            );
+            onSuccess();
+          }
+        }
+      } catch (err) {
+        console.error('Error polling order status:', err);
+      }
+    };
+
+    const intervalId = setInterval(checkStatus, 2500);
+    return () => clearInterval(intervalId);
+  }, [orderId, onSuccess, showSuccess]);
+
   const removeAccents = (str: string): string => {
     return str
       .normalize('NFD')
@@ -213,10 +247,10 @@ export const SandboxPaymentModal: React.FC<SandboxPaymentModalProps> = ({
             </div>
 
             {/* Note */}
-            <div className="flex items-start gap-1.5 bg-amber-50 p-2 rounded-lg text-amber-800 border border-amber-200/80">
-              <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-600" />
-              <p className="text-[10px] leading-tight">
-                Môi trường <b>Giả lập (Sandbox)</b>. Quét mã bằng app ngân hàng hoặc bấm xác nhận bên dưới.
+            <div className="flex items-start gap-1.5 bg-emerald-50 p-2.5 rounded-lg text-emerald-900 border border-emerald-200/80 shadow-2xs">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-ping shrink-0 mt-1"></span>
+              <p className="text-[11px] leading-tight font-medium">
+                <strong>Hệ thống đang tự động lắng nghe Ngân hàng...</strong> Quét mã QR bằng App Ngân hàng, ngay khi bạn chuyển tiền thành công, cửa sổ này sẽ <b>tự động duyệt & chuyển trang</b> mà không cần bấm nút.
               </p>
             </div>
           </div>
