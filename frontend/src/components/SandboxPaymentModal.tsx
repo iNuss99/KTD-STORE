@@ -83,9 +83,8 @@ export const SandboxPaymentModal: React.FC<SandboxPaymentModalProps> = ({
       .toUpperCase();
   };
 
-  const transferContent = customerName || customerPhone
-    ? `KTD ${removeAccents(customerName)} ${customerPhone}`.trim()
-    : `KTD ${orderId.slice(0, 8)}`;
+  const shortId = orderId ? orderId.slice(0, 8) : '';
+  const transferContent = `KTD ${shortId}`.toUpperCase();
 
   const isVnpay = paymentMethod === 'VNPAY';
 
