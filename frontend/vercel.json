@@ -5,10 +5,6 @@
       "destination": "https://ktd-store-backend.onrender.com/:path*"
     },
     {
-      "source": "/socket.io/:path*",
-      "destination": "https://ktd-store-backend.onrender.com/socket.io/:path*"
-    },
-    {
       "source": "/webhooks/:path*",
       "destination": "https://ktd-store-backend.onrender.com/webhooks/:path*"
     },
