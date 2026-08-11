@@ -29,6 +29,8 @@ import { Review } from './modules/reviews/entities/review.entity';
 import { Notification } from './modules/notifications/entities/notification.entity';
 import { WishlistItem } from './modules/wishlists/entities/wishlist-item.entity';
 import { SystemConfig } from './modules/system-configs/entities/system-config.entity';
+import { LoyaltyPoint } from './modules/loyalty/entities/loyalty-point.entity';
+import { InitialSchema1700000000000 } from './migrations/1700000000000-InitialSchema';
 import { CacheModule } from '@nestjs/cache-manager';
 
 import { AuthModule } from './modules/auth/auth.module';
@@ -49,6 +51,10 @@ import { ReportsModule } from './modules/reports/reports.module';
 import { WishlistsModule } from './modules/wishlists/wishlists.module';
 import { AiAssistantModule } from './modules/ai-assistant/ai-assistant.module';
 import { SystemConfigsModule } from './modules/system-configs/system-configs.module';
+import { HealthModule } from './modules/health/health.module';
+import { EmailModule } from './modules/email/email.module';
+import { PaymentsModule } from './modules/payments/payments.module';
+import { LoyaltyModule } from './modules/loyalty/loyalty.module';
 
 @Module({
   imports: [
@@ -109,8 +115,11 @@ import { SystemConfigsModule } from './modules/system-configs/system-configs.mod
             Notification,
             WishlistItem,
             SystemConfig,
+            LoyaltyPoint,
           ],
-          synchronize: true, // For dev auto migration
+          // Task T1.1: Disabled synchronize for production safety. Migrations are used instead.
+          synchronize: false,
+          migrations: [InitialSchema1700000000000],
           ssl: isSsl ? { rejectUnauthorized: false } : false,
         };
       },
@@ -133,6 +142,10 @@ import { SystemConfigsModule } from './modules/system-configs/system-configs.mod
     WishlistsModule,
     AiAssistantModule,
     SystemConfigsModule,
+    HealthModule,
+    EmailModule,
+    PaymentsModule,
+    LoyaltyModule,
   ],
   providers: [
     {

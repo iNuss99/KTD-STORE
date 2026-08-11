@@ -2,6 +2,7 @@ import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { SiteHeader } from './SiteHeader';
 import { SiteFooter } from './SiteFooter';
+import { AIChatWidget } from './AIChatWidget';
 
 export const CustomerLayout: React.FC = () => {
   return (
@@ -11,6 +12,7 @@ export const CustomerLayout: React.FC = () => {
         <Outlet />
       </div>
       <SiteFooter />
+      <AIChatWidget />
     </div>
   );
 };

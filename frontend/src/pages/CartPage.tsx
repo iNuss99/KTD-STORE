@@ -325,7 +325,14 @@ export const CartPage: React.FC = () => {
                 <button
                   type="button"
                   disabled={hasUnavailableItems || items.length === 0}
-                  onClick={() => navigate('/checkout')}
+                  onClick={() => {
+                    const token = getAuthToken();
+                    if (!token) {
+                      navigate('/login?redirect=/checkout', { state: { from: '/checkout' } });
+                    } else {
+                      navigate('/checkout');
+                    }
+                  }}
                   className={`w-full py-4 rounded-full font-sans text-xs uppercase tracking-wider font-semibold flex items-center justify-center gap-2 transition-all shadow-sm ${
                     !hasUnavailableItems && items.length > 0
                       ? 'bg-accent hover:bg-accent-dark text-white'

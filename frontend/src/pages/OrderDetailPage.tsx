@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Order } from '../types';
-import { ArrowLeft, Package, MapPin, CreditCard, Clock, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { ArrowLeft, Package, MapPin, CreditCard, Clock, CheckCircle2, AlertCircle, Loader2, RotateCcw } from 'lucide-react';
 import { OrderStatusBadge } from '../components/OrderStatusBadge';
+import { OrderTimeline } from '../components/OrderTimeline';
 import { getSocket } from '../lib/socketClient';
 
 import { getAuthToken, getAuthHeader } from '../lib/auth-storage';
@@ -57,20 +58,54 @@ export const OrderDetailPage: React.FC = () => {
     // Join WebSocket room for real-time updates via centralized client (proxy-aware)
     const socket = getSocket(token);
 
-    socket.on('order_updated', (data: any) => {
+    const handleOrderUpdated = (data: any) => {
       if (data?.orderId === id || data?.id === id) {
         fetchOrderDetail();
       }
-    });
+    };
 
-    socket.on('notification', () => {
+    const handleNotification = () => {
       fetchOrderDetail();
-    });
+    };
+
+    socket.on('order_updated', handleOrderUpdated);
+    socket.on('notification', handleNotification);
 
     return () => {
-      socket.disconnect();
+      socket.off('order_updated', handleOrderUpdated);
+      socket.off('notification', handleNotification);
     };
   }, [id]);
+
+  const [reordering, setReordering] = useState(false);
+
+  const handleReorder = async () => {
+    if (!order?.items || order.items.length === 0) return;
+    setReordering(true);
+    try {
+      for (const item of order.items) {
+        if (item.variant_id) {
+          await fetch('/api/cart/items', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...getAuthHeader(),
+            },
+            body: JSON.stringify({
+              variant_id: item.variant_id,
+              quantity: item.quantity || 1,
+            }),
+          });
+        }
+      }
+      showSuccess('Đã thêm vào giỏ hàng', 'Đã tải lại toàn bộ sản phẩm vào giỏ hàng của bạn.');
+      navigate('/cart');
+    } catch (err) {
+      showError('Có lỗi xảy ra', 'Không thể thêm lại một số sản phẩm vào giỏ.');
+    } finally {
+      setReordering(false);
+    }
+  };
 
   const handleCreateReturn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -204,13 +239,23 @@ export const OrderDetailPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={reordering}
+              onClick={handleReorder}
+              className="px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs rounded-xl transition flex items-center gap-1.5"
+            >
+              {reordering ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5" />}
+              <span>Mua lại đơn này</span>
+            </button>
+
             {canCancel && (
               <button
                 disabled={cancelling}
                 onClick={handleCancelOrder}
                 className="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-700 font-bold text-xs rounded-xl transition flex items-center gap-1"
               >
-                {cancelling ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Hủy đơn hàng này'}
+                {cancelling ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Hủy đơn hàng'}
               </button>
             )}
 
@@ -219,10 +264,15 @@ export const OrderDetailPage: React.FC = () => {
                 onClick={() => setShowReturnModal(true)}
                 className="px-4 py-2 bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold text-xs rounded-xl transition flex items-center gap-1"
               >
-                Yêu cầu Đổi trả / Hoàn tiền
+                Yêu cầu Đổi trả
               </button>
             )}
           </div>
+        </div>
+
+        {/* Order Visual Timeline */}
+        <div className="mb-6">
+          <OrderTimeline status={order.status} createdAt={order.created_at} />
         </div>
 
         {/* Active Return Request Banner */}

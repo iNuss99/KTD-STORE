@@ -86,12 +86,40 @@ export const MyOrdersPage: React.FC = () => {
                       <div className="text-[10px] text-smoke uppercase">Tổng thanh toán ({order.items?.length || 0} sản phẩm)</div>
                       <div className="font-bold text-ink text-base stitch-underline">{formattedTotal}</div>
                     </div>
-                    <Link
-                      to={`/orders/${order.id}`}
-                      className="px-4 py-2 bg-ink hover:bg-stitch text-warm-white font-mono text-xs uppercase tracking-wider flex items-center gap-1 transition-colors"
-                    >
-                      Chi tiết <ArrowRight className="w-3.5 h-3.5" />
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!order.items || order.items.length === 0) return;
+                          for (const item of order.items) {
+                            if (item.variant_id) {
+                              await fetch('/api/cart/items', {
+                                method: 'POST',
+                                headers: {
+                                  'Content-Type': 'application/json',
+                                  Authorization: `Bearer ${localStorage.getItem('token')}`,
+                                },
+                                body: JSON.stringify({
+                                  variant_id: item.variant_id,
+                                  quantity: item.quantity || 1,
+                                }),
+                              });
+                            }
+                          }
+                          window.location.href = '/cart';
+                        }}
+                        className="px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs rounded-xl transition"
+                      >
+                        Mua lại
+                      </button>
+
+                      <Link
+                        to={`/orders/${order.id}`}
+                        className="px-4 py-2 bg-ink hover:bg-accent text-white font-sans text-xs font-bold rounded-xl flex items-center gap-1 transition-colors"
+                      >
+                        Chi tiết <ArrowRight className="w-3.5 h-3.5" />
+                      </Link>
+                    </div>
                   </div>
                 </div>
               );

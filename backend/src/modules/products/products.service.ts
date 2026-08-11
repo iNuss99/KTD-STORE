@@ -326,9 +326,17 @@ export class ProductsService implements OnApplicationBootstrap {
       }
 
       if (filter.search) {
-        query.andWhere('(product.name ILIKE :search OR product.code ILIKE :search)', {
-          search: `%${filter.search}%`,
-        });
+        const cleanSearch = filter.search.trim();
+        query.andWhere(
+          `(
+            unaccent(product.name::text) ILIKE unaccent(:search) OR
+            product.code ILIKE :search OR
+            unaccent(coalesce(product.description, '')::text) ILIKE unaccent(:search) OR
+            unaccent(coalesce(brand.name, '')::text) ILIKE unaccent(:search) OR
+            unaccent(coalesce(category.name, '')::text) ILIKE unaccent(:search)
+          )`,
+          { search: `%${cleanSearch}%` },
+        );
       }
 
       query.skip(skip).take(limit).orderBy('product.created_at', 'DESC');
@@ -356,6 +364,41 @@ export class ProductsService implements OnApplicationBootstrap {
       console.error('Error in findAll:', err);
       throw new InternalServerErrorException(err.message || 'Lỗi lấy danh sách sản phẩm');
     }
+  }
+
+  async autocomplete(queryText: string, limit = 6) {
+    if (!queryText || !queryText.trim()) return [];
+
+    const clean = queryText.trim();
+    const products = await this.productRepo
+      .createQueryBuilder('product')
+      .leftJoinAndSelect('product.brand', 'brand')
+      .leftJoinAndSelect('product.category', 'category')
+      .leftJoinAndSelect('product.images', 'images')
+      .where('product.is_active = :isActive', { isActive: true })
+      .andWhere(
+        `(
+          unaccent(product.name::text) ILIKE unaccent(:search) OR
+          product.code ILIKE :search OR
+          unaccent(coalesce(brand.name, '')::text) ILIKE unaccent(:search) OR
+          unaccent(coalesce(category.name, '')::text) ILIKE unaccent(:search)
+        )`,
+        { search: `%${clean}%` },
+      )
+      .take(limit)
+      .orderBy('product.name', 'ASC')
+      .getMany();
+
+    return products.map((p) => ({
+      id: p.id,
+      name: p.name,
+      slug: p.slug,
+      code: p.code,
+      base_price: Number(p.base_price),
+      brand_name: p.brand?.name || null,
+      category_name: p.category?.name || null,
+      image_url: p.images?.[0]?.url || null,
+    }));
   }
 
   async findOne(idOrSlug: string) {

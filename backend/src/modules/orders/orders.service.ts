@@ -199,10 +199,13 @@ export class OrdersService {
 
       await queryRunner.commitTransaction();
 
+      const createdOrder = await this.findOne(savedOrder.id);
+
       if (this.eventEmitter) {
         this.eventEmitter.emit('order.created', {
           orderId: savedOrder.id,
           total: savedOrder.total,
+          order: createdOrder,
         });
         this.eventEmitter.emit('audit.log', {
           performedByUserId: userId,
@@ -213,7 +216,7 @@ export class OrdersService {
         });
       }
 
-      return this.findOne(savedOrder.id);
+      return createdOrder;
     } catch (err: any) {
       console.error('[OrdersService.create error]:', err);
       if (queryRunner?.rollbackTransaction) {

@@ -30,13 +30,13 @@ export class ReportsService {
   ) {}
 
   async seedMockData() {
-    let admin = await this.userRepo.findOne({ where: { email: 'admin@gmail.com' } });
+    let admin = await this.userRepo.findOne({ where: { email: 'admin@store.com' } }) || await this.userRepo.findOne({ where: { email: 'admin@gmail.com' } });
     if (!admin) {
       admin = await this.userRepo.save(
         this.userRepo.create({
-          email: 'admin@gmail.com',
+          email: 'admin@store.com',
           password_hash: 'hash',
-          full_name: 'Super Admin Default',
+          full_name: 'Super Admin',
           role: UserRole.SUPER_ADMIN,
         }),
       );

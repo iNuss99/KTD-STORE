@@ -19,17 +19,17 @@ coverage/
 .env
 .env.*
 !.env.example
+*.pem
+*.key
+*.cert
+credentials.json
 
 # ===========================
 # Internal Docs & Planning (local only)
 # ===========================
 docs/
-spec.md
-prd.md
-roadmap.md
-architecture.md
-design.md
-QUICKSTART.md
+*.md
+!README.md
 
 # ===========================
 # Test & QA Artifacts

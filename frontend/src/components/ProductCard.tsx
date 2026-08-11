@@ -170,6 +170,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               </span>
             )}
           </div>
+
+          <div className="flex items-center gap-1 text-[11px] font-semibold text-amber-600">
+            <span>★ 4.9</span>
+            <span className="text-[10px] text-ink-soft">(50+)</span>
+          </div>
         </div>
       </div>
     </div>

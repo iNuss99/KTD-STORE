@@ -16,7 +16,11 @@ export const CustomerLoginPage: React.FC = () => {
 
   const navigate = useNavigate();
   const location = useLocation();
-  const from = (location.state as { from?: string })?.from || '/products';
+  const searchParams = new URLSearchParams(location.search);
+  const redirectParam = searchParams.get('redirect');
+  const from = redirectParam || (location.state as { from?: string })?.from || '/products';
+
+  const isCheckoutRedirect = redirectParam === '/checkout' || from === '/checkout';
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,7 +60,7 @@ export const CustomerLoginPage: React.FC = () => {
           } else {
             navigate(from);
           }
-        }, 600);
+        }, 500);
       } else {
         setError(data.message || 'Email hoặc mật khẩu không chính xác.');
       }
@@ -89,6 +93,32 @@ export const CustomerLoginPage: React.FC = () => {
       const data = await res.json();
 
       if (res.ok) {
+        // Auto login immediately
+        try {
+          const loginRes = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password }),
+          });
+          if (loginRes.ok) {
+            const loginData = await loginRes.json();
+            setAuthToken(loginData.access_token);
+            if (loginData.refresh_token) setRefreshToken(loginData.refresh_token);
+            if (loginData.user) {
+              setUserId(loginData.user.id);
+              localStorage.setItem('user', JSON.stringify(loginData.user));
+              localStorage.setItem('user_role', loginData.user.role || 'CUSTOMER');
+              localStorage.setItem('user_name', loginData.user.full_name || email.split('@')[0]);
+            }
+            window.dispatchEvent(new Event('auth-change'));
+            setSuccess('Đăng ký thành công! Đang chuyển hướng đến thanh toán...');
+            setTimeout(() => navigate(from), 600);
+            return;
+          }
+        } catch {
+          // Fallback to manual login
+        }
+
         setSuccess('Tạo tài khoản thành công! Vui lòng đăng nhập.');
         setIsLogin(true);
         setPassword('');
@@ -494,6 +524,16 @@ export const CustomerLoginPage: React.FC = () => {
               </p>
             </div>
 
+            {isCheckoutRedirect && (
+              <div className="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-2 text-xs text-amber-900">
+                <span className="text-base">🛍️</span>
+                <div>
+                  <strong className="block font-bold text-amber-950">Đăng nhập để hoàn tất đơn hàng</strong>
+                  <span>Tự động đồng bộ giỏ hàng và áp dụng các ưu đãi tích lũy thành viên!</span>
+                </div>
+              </div>
+            )}
+
             {error && isLogin && (
               <div className="alert-message-box bg-red-50 text-red-700 border border-red-200">
                 <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
@@ -572,6 +612,16 @@ export const CustomerLoginPage: React.FC = () => {
                 Trải nghiệm mua sắm thời trang nam cao cấp cùng KTD.
               </p>
             </div>
+
+            {isCheckoutRedirect && (
+              <div className="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-2 text-xs text-amber-900">
+                <span className="text-base">🎁</span>
+                <div>
+                  <strong className="block font-bold text-amber-950">Đăng ký để tiếp tục thanh toán</strong>
+                  <span>Nhận ngay Voucher <strong>HELLOMENWEAR</strong> (giảm 10%) và theo dõi tiến trình giao hàng theo thời gian thực!</span>
+                </div>
+              </div>
+            )}
 
             {error && !isLogin && (
               <div className="alert-message-box bg-red-50 text-red-700 border border-red-200">

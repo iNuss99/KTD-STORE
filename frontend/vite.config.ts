@@ -20,15 +20,14 @@ export default defineConfig({
   },
   build: {
     sourcemap: false,
-    minify: 'esbuild',
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
         manualChunks: {
-          vendor: ['react', 'react-dom'],
           router: ['react-router-dom'],
           query: ['@tanstack/react-query'],
           charts: ['recharts'],
+          lucide: ['lucide-react'],
         },
       },
     },

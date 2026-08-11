@@ -8,7 +8,7 @@ import { MapPin, Plus, Check, CreditCard, Truck, ArrowLeft, Loader2, QrCode, Wal
 import { useCart } from '../hooks/useCart';
 import { useCreateOrderMutation } from '../hooks/useOrders';
 
-import { getAuthHeader } from '../lib/auth-storage';
+import { getAuthHeader, getAuthToken } from '../lib/auth-storage';
 
 import { useToast } from '../context/ToastContext';
 
@@ -53,6 +53,13 @@ export const CheckoutPage: React.FC = () => {
   const [newWard, setNewWard] = useState<string>('');
   const [newDistrict, setNewDistrict] = useState<string>('');
   const [newProvince, setNewProvince] = useState<string>('');
+
+  useEffect(() => {
+    const token = getAuthToken();
+    if (!token) {
+      navigate('/login?redirect=/checkout', { replace: true, state: { from: '/checkout' } });
+    }
+  }, [navigate]);
 
   useEffect(() => {
     if (addresses.length > 0 && !selectedAddressId) {

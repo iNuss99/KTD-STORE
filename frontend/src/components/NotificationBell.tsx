@@ -40,17 +40,15 @@ export const NotificationBell: React.FC = () => {
     // Connect to WebSockets via centralized client (proxy-aware)
     const socket = getSocket(token);
 
-    socket.on('notification', (newNotif: NotificationItem) => {
+    const handleNotification = (newNotif: NotificationItem) => {
       setNotifications((prev) => [newNotif, ...prev]);
       setUnreadCount((prev) => prev + 1);
-    });
+    };
+
+    socket.on('notification', handleNotification);
 
     return () => {
-      if (socket.connected) {
-        socket.disconnect();
-      } else {
-        socket.close();
-      }
+      socket.off('notification', handleNotification);
     };
   }, [token]);
 

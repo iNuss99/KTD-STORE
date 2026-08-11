@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { ShoppingBag, User, Package, Heart, LogOut, ChevronDown, Menu, X } from 'lucide-react';
 import { NotificationBell } from './NotificationBell';
+import { SearchAutocomplete } from './SearchAutocomplete';
 import { useLanguage } from '../context/LanguageContext';
 import { useCart } from '../hooks/useCart';
 import { getAuthToken, clearAuthToken } from '../lib/auth-storage';
@@ -58,7 +59,7 @@ export const SiteHeader: React.FC = () => {
   return (
     <header className="sticky top-0 z-50 bg-card/95 backdrop-blur-md border-b border-line font-sans transition-all">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-14 sm:h-20">
+        <div className="flex items-center justify-between h-14 sm:h-20 gap-2 sm:gap-4">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 sm:gap-3 group shrink-0" title="Knot To Detail">
             <img
@@ -77,7 +78,7 @@ export const SiteHeader: React.FC = () => {
           </Link>
 
           {/* Navigation Links (Desktop) */}
-          <nav className="hidden md:flex items-center space-x-8">
+          <nav className="hidden lg:flex items-center space-x-6 shrink-0">
             <Link
               to="/"
               className={`font-sans text-sm font-medium transition-colors ${
@@ -105,8 +106,13 @@ export const SiteHeader: React.FC = () => {
             </Link>
           </nav>
 
+          {/* Search Bar Autocomplete (Desktop & Tablet) */}
+          <div className="hidden sm:block flex-1 max-w-xs md:max-w-sm lg:max-w-md mx-2">
+            <SearchAutocomplete />
+          </div>
+
           {/* Actions */}
-          <div className="flex items-center gap-1.5 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             <NotificationBell />
 
             <Link
@@ -204,6 +210,11 @@ export const SiteHeader: React.FC = () => {
       {/* Mobile nav dropdown drawer */}
       {mobileMenuOpen && (
         <div className="md:hidden border-t border-line bg-card px-4 py-4 space-y-3 font-sans text-sm shadow-lg animate-fade-in">
+          {/* Mobile Search */}
+          <div className="pb-2">
+            <SearchAutocomplete onSearchSubmitted={() => setMobileMenuOpen(false)} />
+          </div>
+
           <Link
             to="/"
             onClick={() => setMobileMenuOpen(false)}

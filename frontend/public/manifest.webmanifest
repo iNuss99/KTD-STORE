@@ -1,0 +1,21 @@
+{
+  "name": "Knot To Detail — MenWear Hub",
+  "short_name": "KTD Menswear",
+  "description": "Thời trang nam cao cấp, tối giản và thanh lịch dành cho quý ông hiện đại.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#d97706",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

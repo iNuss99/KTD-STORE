@@ -17,6 +17,11 @@ export class ProductsController {
     return this.productsService.findAll(filter);
   }
 
+  @Get('autocomplete')
+  autocomplete(@Query('q') queryText: string, @Query('limit') limit?: number) {
+    return this.productsService.autocomplete(queryText, limit ? Number(limit) : 6);
+  }
+
   @Get('sizes')
   getSizes() {
     return this.productsService.getSizes();

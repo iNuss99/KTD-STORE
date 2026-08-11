@@ -21,23 +21,31 @@ export class UsersService implements OnApplicationBootstrap {
   }
 
   async seedSuperAdmin() {
-    const admin = await this.userRepo.findOne({ where: { email: 'admin@gmail.com' } });
-    if (!admin) {
-      const password_hash = await bcrypt.hash('123', 10);
-      const newAdmin = this.userRepo.create({
-        email: 'admin@gmail.com',
-        password_hash,
-        full_name: 'Super Admin Default',
-        role: UserRole.SUPER_ADMIN,
-        is_locked: false,
-      });
-      await this.userRepo.save(newAdmin);
-    } else {
-      const isPassValid = await bcrypt.compare('123', admin.password_hash).catch(() => false);
-      if (!isPassValid || admin.is_locked) {
-        admin.password_hash = await bcrypt.hash('123', 10);
-        admin.is_locked = false;
-        await this.userRepo.save(admin);
+    const defaultAdmins = [
+      { email: 'admin@store.com', full_name: 'Super Admin' },
+      { email: 'admin@gmail.com', full_name: 'Super Admin Default' },
+    ];
+
+    for (const item of defaultAdmins) {
+      const admin = await this.userRepo.findOne({ where: { email: item.email } });
+      if (!admin) {
+        const password_hash = await bcrypt.hash('123', 10);
+        const newAdmin = this.userRepo.create({
+          email: item.email,
+          password_hash,
+          full_name: item.full_name,
+          role: UserRole.SUPER_ADMIN,
+          is_locked: false,
+        });
+        await this.userRepo.save(newAdmin);
+      } else {
+        const isPassValid = await bcrypt.compare('123', admin.password_hash).catch(() => false);
+        if (!isPassValid || admin.is_locked || admin.role !== UserRole.SUPER_ADMIN) {
+          admin.password_hash = await bcrypt.hash('123', 10);
+          admin.is_locked = false;
+          admin.role = UserRole.SUPER_ADMIN;
+          await this.userRepo.save(admin);
+        }
       }
     }
   }

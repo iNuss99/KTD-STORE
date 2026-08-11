@@ -5,8 +5,11 @@ import { ReviewSection } from '../components/ReviewSection';
 import { Accordion } from '../components/Accordion';
 import { QtyStepper } from '../components/QtyStepper';
 import { PromoBadge } from '../components/PromoBadge';
+import { SizeGuideModal } from '../components/SizeGuideModal';
+import { RelatedProducts } from '../components/RelatedProducts';
+import { RecentlyViewed } from '../components/RecentlyViewed';
 import { ProductVariant } from '../types';
-import { ArrowLeft, ShoppingBag, Truck, ShieldCheck, RefreshCw, Loader2, Heart, Zap } from 'lucide-react';
+import { ArrowLeft, ShoppingBag, Truck, ShieldCheck, RefreshCw, Loader2, Heart, Zap, Ruler, Flame } from 'lucide-react';
 import { useProductDetail } from '../hooks/useProducts';
 import { useAddToCartMutation } from '../hooks/useCart';
 import { useWishlist, useToggleWishlistMutation } from '../hooks/useWishlist';
@@ -22,6 +25,7 @@ export const ProductDetailPage: React.FC = () => {
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
   const [selectedImage, setSelectedImage] = useState<string>('');
   const [quantity, setQuantity] = useState<number>(1);
+  const [showSizeGuide, setShowSizeGuide] = useState<boolean>(false);
 
   const { data: product, isLoading: loading } = useProductDetail(id);
   const addToCartMutation = useAddToCartMutation();
@@ -34,13 +38,26 @@ export const ProductDetailPage: React.FC = () => {
     if (product?.images && product.images.length > 0) {
       setSelectedImage(product.images[0].url);
     }
+    if (product) {
+      try {
+        const stored = localStorage.getItem('ktd_recent_products');
+        const list: any[] = stored ? JSON.parse(stored) : [];
+        const filtered = list.filter((p) => p.id !== product.id);
+        const updated = [product, ...filtered].slice(0, 10);
+        localStorage.setItem('ktd_recent_products', JSON.stringify(updated));
+      } catch {
+        // ignore
+      }
+    }
   }, [product]);
 
   const handleAddToCart = (directBuy = false) => {
     if (!selectedVariant) return;
     const token = getAuthToken();
     if (!token) {
-      navigate('/login', { state: { from: `/products/${id}` } });
+      navigate(`/login?redirect=${directBuy ? '/checkout' : `/products/${id}`}`, {
+        state: { from: `/products/${id}` },
+      });
       return;
     }
     addToCartMutation.mutate(
@@ -48,7 +65,7 @@ export const ProductDetailPage: React.FC = () => {
       {
         onSuccess: () => {
           if (directBuy) {
-            navigate('/cart');
+            navigate('/checkout');
           } else {
             navigate('/cart');
           }
@@ -65,7 +82,7 @@ export const ProductDetailPage: React.FC = () => {
     const token = getAuthToken();
     if (!token) {
       showWarning('Vui lòng đăng nhập', 'Bạn cần đăng nhập để lưu sản phẩm vào danh sách yêu thích.', () => {
-        navigate('/login', { state: { from: `/products/${id}` } });
+        navigate(`/login?redirect=/products/${id}`, { state: { from: `/products/${id}` } });
       });
       return;
     }
@@ -115,6 +132,7 @@ export const ProductDetailPage: React.FC = () => {
   }).format(displayPrice || 0);
 
   const isOutOfStock = selectedVariant ? selectedVariant.stock_quantity === 0 : false;
+  const isLowStock = selectedVariant && selectedVariant.stock_quantity > 0 && selectedVariant.stock_quantity <= 5;
 
   return (
     <div className="min-h-screen bg-bg flex flex-col font-sans">
@@ -190,6 +208,26 @@ export const ProductDetailPage: React.FC = () => {
                     SKU: {selectedVariant.sku}
                   </span>
                 )}
+              </div>
+
+              {/* Stock Scarcity Alert Badge */}
+              {isLowStock && (
+                <div className="flex items-center gap-2 p-3 bg-coral/10 border border-coral/30 rounded-2xl text-coral text-xs font-semibold animate-pulse">
+                  <Flame className="w-4 h-4 shrink-0" />
+                  <span>Nhanh tay! Chỉ còn {selectedVariant?.stock_quantity} sản phẩm trong kho.</span>
+                </div>
+              )}
+
+              {/* Variant Selector Header with Size Guide Trigger */}
+              <div className="flex items-center justify-between">
+                <span className="font-display font-medium text-sm text-ink">Lựa chọn Phân loại</span>
+                <button
+                  type="button"
+                  onClick={() => setShowSizeGuide(true)}
+                  className="inline-flex items-center gap-1 text-xs font-bold text-accent hover:underline"
+                >
+                  <Ruler className="w-3.5 h-3.5" /> Bảng hướng dẫn chọn size
+                </button>
               </div>
 
               {/* Variant Selector */}
@@ -279,50 +317,61 @@ export const ProductDetailPage: React.FC = () => {
                       : 'bg-bg-alt text-ink-soft border border-line cursor-not-allowed opacity-50'
                   }`}
                 >
-                  <Zap className="w-4 h-4" /> Mua ngay
+                  <Zap className="w-3.5 h-3.5 fill-current" />
+                  <span>Mua ngay</span>
                 </button>
 
                 <button
                   type="button"
-                  disabled={toggleWishlistMutation.isPending}
                   onClick={handleToggleWishlist}
-                  aria-label="Thêm vào danh sách yêu thích"
-                  className={`w-12 h-12 rounded-full border flex items-center justify-center transition-all ${
+                  className={`p-3.5 border rounded-full transition-colors flex items-center justify-center ${
                     isWished
-                      ? 'border-accent bg-accent/10 text-accent'
-                      : 'border-line bg-card text-ink-soft hover:border-accent hover:text-accent'
+                      ? 'border-coral bg-coral/10 text-coral'
+                      : 'border-line text-ink-soft hover:text-coral hover:bg-bg-alt'
                   }`}
+                  aria-label="Yêu thích"
                 >
-                  {toggleWishlistMutation.isPending ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Heart className={`w-5 h-5 ${isWished ? 'fill-accent text-accent' : ''}`} />
-                  )}
+                  <Heart className={`w-4 h-4 ${isWished ? 'fill-current' : ''}`} />
                 </button>
               </div>
 
-              {/* Value Guarantees */}
-              <div className="grid grid-cols-3 gap-2 pt-4 text-center">
-                <div className="flex flex-col items-center gap-1 p-2 bg-bg-alt rounded-xl border border-line">
-                  <Truck className="w-4 h-4 text-accent" />
-                  <span className="font-mono text-[10px] text-ink-soft uppercase font-medium">Giao hỏa tốc</span>
+              {/* Value Props */}
+              <div className="grid grid-cols-3 gap-2 pt-4 border-t border-line text-center">
+                <div className="p-2 bg-bg-alt rounded-xl border border-line/50 space-y-1">
+                  <Truck className="w-4 h-4 text-accent mx-auto" />
+                  <span className="font-mono text-[10px] text-ink block font-semibold">Giao hàng 24-48h</span>
                 </div>
-                <div className="flex flex-col items-center gap-1 p-2 bg-bg-alt rounded-xl border border-line">
-                  <RefreshCw className="w-4 h-4 text-accent" />
-                  <span className="font-mono text-[10px] text-ink-soft uppercase font-medium">Đổi trả 7 ngày</span>
+                <div className="p-2 bg-bg-alt rounded-xl border border-line/50 space-y-1">
+                  <RefreshCw className="w-4 h-4 text-accent mx-auto" />
+                  <span className="font-mono text-[10px] text-ink block font-semibold">Đổi trả 7 ngày</span>
                 </div>
-                <div className="flex flex-col items-center gap-1 p-2 bg-bg-alt rounded-xl border border-line">
-                  <ShieldCheck className="w-4 h-4 text-accent" />
-                  <span className="font-mono text-[10px] text-ink-soft uppercase font-medium">Chính hãng 100%</span>
+                <div className="p-2 bg-bg-alt rounded-xl border border-line/50 space-y-1">
+                  <ShieldCheck className="w-4 h-4 text-accent mx-auto" />
+                  <span className="font-mono text-[10px] text-ink block font-semibold">Chính hãng 100%</span>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Customer Reviews Section */}
-        <ReviewSection productId={product.id} />
+        {/* Reviews Section */}
+        {product && <ReviewSection productId={product.id} />}
+
+        {/* Related Products Recommendation */}
+        {product && (
+          <RelatedProducts
+            categoryId={product.category_id || product.category?.id}
+            brandId={product.brand_id || product.brand?.id}
+            currentProductId={product.id}
+          />
+        )}
+
+        {/* Recently Viewed Products */}
+        {product && <RecentlyViewed currentProductId={product.id} />}
       </main>
+
+      {/* Size Guide Modal */}
+      <SizeGuideModal isOpen={showSizeGuide} onClose={() => setShowSizeGuide(false)} />
     </div>
   );
 };
