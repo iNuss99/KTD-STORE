@@ -92,33 +92,17 @@ graph TB
 
 ```
 KTD-Store/
+├── docs/                           # Tài liệu thiết kế, quy hoạch & hướng dẫn
+│   ├── architecture/               # Kiến trúc hệ thống & UI/UX spec (architecture.md, design.md)
+│   ├── planning/                   # Đặc tả yêu cầu & lộ trình (prd.md, spec.md, roadmap.md)
+│   ├── guides/                     # Hướng dẫn setup, bàn giao & tối ưu (QUICKSTART.md, HANDOFF.md)
+│   └── reports/                    # Báo cáo kiểm thử & Audit
+│
 ├── backend/                        # NestJS API Server (Port 3000)
 │   ├── src/
 │   │   ├── common/                 # Guards, Decorators, Enums, Filters
 │   │   ├── migrations/             # TypeORM Database Migrations
-│   │   ├── modules/                # 22 Phân hệ chức năng chính
-│   │   │   ├── addresses/          # Quản lý sổ địa chỉ giao hàng
-│   │   │   ├── ai-assistant/       # API AI Chatbot hỗ trợ khách hàng
-│   │   │   ├── audit-logs/         # Hệ thống ghi vết hoạt động (Audit Trails)
-│   │   │   ├── auth/               # Đăng nhập/Đăng ký, JWT Access & Refresh Token
-│   │   │   ├── brands/             # Quản lý thương hiệu
-│   │   │   ├── cart/               # Giỏ hàng & kiểm tra tồn kho tức thì
-│   │   │   ├── categories/         # Danh mục sản phẩm đa cấp
-│   │   │   ├── discounts/          # Mã giảm giá, Flash Sale, Coupon Scope
-│   │   │   ├── email/              # Dịch vụ gửi email thông báo đơn hàng
-│   │   │   ├── health/             # Healthcheck API
-│   │   │   ├── loyalty/            # Tích điểm thành viên & đổi quà
-│   │   │   ├── notifications/      # Hệ thống thông báo in-app & realtime
-│   │   │   ├── orders/             # Đơn hàng, State Machine, Payment entity
-│   │   │   ├── payments/           # Xử lý PayOS webhook, Sandbox QR
-│   │   │   ├── permissions/        # Bảng phân quyền Role-Permission Matrix
-│   │   │   ├── products/           # Sản phẩm, biến thể (Size/Color), Tồn kho
-│   │   │   ├── reports/            # Báo cáo thống kê doanh thu, khách hàng
-│   │   │   ├── returns/            # Yêu cầu đổi trả & hoàn tiền
-│   │   │   ├── reviews/            # Đánh giá sản phẩm & phản hồi
-│   │   │   ├── system-configs/     # Cấu hình tham số hệ thống
-│   │   │   ├── users/              # Quản lý tài khoản, nhân viên, khách hàng
-│   │   │   └── wishlists/          # Danh sách sản phẩm yêu thích
+│   │   ├── modules/                # 22 Phân hệ chức năng chính (auth, products, orders...)
 │   │   ├── app.module.ts           # Root Module liên kết toàn bộ phân hệ
 │   │   ├── main.ts                 # Điểm khởi động NestJS API
 │   │   └── typeorm.config.ts       # Cấu hình kết nối Neon PostgreSQL
@@ -127,33 +111,28 @@ KTD-Store/
 │
 ├── frontend/                       # React Single Page Application (Port 5173)
 │   ├── src/
-│   │   ├── components/             # Reusable UI Components
-│   │   │   ├── AIChatWidget.tsx    # Widget chat AI tương tác nổi
-│   │   │   ├── AdminHeader.tsx     # Header dành cho khu vực Admin CRM
-│   │   │   ├── AdminLayout.tsx     # Bố cục trang quản trị & Banner giả lập Role
-│   │   │   ├── AdminSidebar.tsx    # Sidebar menu phân quyền quản trị
-│   │   │   ├── CustomerLayout.tsx  # Bố cục chuẩn trang mua hàng
-│   │   │   ├── NotificationBell.tsx# Chuông thông báo realtime
-│   │   │   ├── OrderTimeline.tsx   # Dòng thời gian tiến trình đơn hàng
-│   │   │   ├── ProductCard.tsx     # Thẻ hiển thị sản phẩm & nhãn khuyến mãi
-│   │   │   ├── SandboxPaymentModal.tsx # Modal quét mã VietQR & Giả lập thanh toán
-│   │   │   ├── SearchAutocomplete.tsx  # Thanh tìm kiếm thông minh
-│   │   │   ├── SiteFooter.tsx      # Chân trang cửa hàng
-│   │   │   ├── SiteHeader.tsx      # Thanh điều hướng chính & giỏ hàng
-│   │   │   ├── SizeGuideModal.tsx  # Bảng tra cứu & tính size theo số đo
-│   │   │   └── VariantSelector.tsx # Trình chọn màu sắc, kích thước & số lượng
+│   │   ├── components/             # Reusable UI Components theo phân loại
+│   │   │   ├── common/             # UI Primitives: Accordion, EmptyState, QtyStepper, PromoBadge, ScrollToTop
+│   │   │   ├── layouts/            # Layout shells: AdminLayout, CustomerLayout, SiteHeader, SiteFooter...
+│   │   │   ├── storefront/         # ProductCard, VariantSelector, FilterSidebar, SandboxPaymentModal...
+│   │   │   ├── admin/              # OrderStatusBadge...
+│   │   │   ├── widgets/            # AIChatWidget, FloatingContactWidget, NotificationBell...
+│   │   │   ├── guards/             # PermissionGuard
+│   │   │   └── index.ts            # Barrel export toàn bộ components
+│   │   ├── pages/                  # Toàn bộ màn hình phân theo vai trò
+│   │   │   ├── admin/              # 9 Trang quản trị (Dashboard, Catalog, Orders, Staff, Settings...)
+│   │   │   ├── storefront/         # 11 Trang mua sắm (Home, Products, Detail, Cart, Checkout...)
+│   │   │   └── index.ts            # Barrel export toàn bộ pages
+│   │   ├── types/                  # Types phân tách theo Domain (product, order, cart, discount, return, user)
 │   │   ├── context/                # React Context (Toast notification, Đa ngôn ngữ)
 │   │   ├── hooks/                  # Custom React Query Hooks (useAuth, useCart, useOrders, ...)
 │   │   ├── lib/                    # API Client (Axios), Socket Client, Query Client
-│   │   ├── pages/                  # Toàn bộ màn hình Khách hàng & Quản trị viên
-│   │   ├── types/                  # TypeScript Types & Interfaces
 │   │   ├── App.tsx                 # Routing & Code-Splitting (React.lazy)
 │   │   └── main.tsx
 │   ├── vite.config.ts              # Cấu hình Vite, Proxy API, Rollup Chunks
 │   └── package.json
 │
 ├── e2e/                            # Playwright End-to-End Test Suites
-├── QUICKSTART.md                   # Hướng dẫn chạy nhanh 1 trang
 ├── README.md                       # Tài liệu tổng quan dự án
 └── package.json                    # Root script điều phối đồng thời Backend + Frontend
 ```

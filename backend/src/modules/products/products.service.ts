@@ -39,7 +39,6 @@ export class ProductsService implements OnApplicationBootstrap {
   }
 
   async seedMockProducts() {
-    await this.seedSizesAndColors();
     const existingCount = await this.productRepo.count();
     if (existingCount >= 10) return;
 
@@ -237,32 +236,38 @@ export class ProductsService implements OnApplicationBootstrap {
   }
 
   async seedSizesAndColors() {
-    const sizes = [
-      { name: 'S', code: 'S' },
-      { name: 'M', code: 'M' },
-      { name: 'L', code: 'L' },
-      { name: 'XL', code: 'XL' },
-      { name: 'XXL', code: 'XXL' },
-    ];
+    const sizeCount = await this.sizeRepo.count();
+    if (sizeCount < 5) {
+      const sizes = [
+        { name: 'S', code: 'S' },
+        { name: 'M', code: 'M' },
+        { name: 'L', code: 'L' },
+        { name: 'XL', code: 'XL' },
+        { name: 'XXL', code: 'XXL' },
+      ];
 
-    for (const item of sizes) {
-      const exists = await this.sizeRepo.findOne({ where: { code: item.code } });
-      if (!exists) {
-        await this.sizeRepo.save(this.sizeRepo.create(item));
+      for (const item of sizes) {
+        const exists = await this.sizeRepo.findOne({ where: { code: item.code } });
+        if (!exists) {
+          await this.sizeRepo.save(this.sizeRepo.create(item));
+        }
       }
     }
 
-    const colors = [
-      { name: 'Đen', code: 'BLK', hex_code: '#000000' },
-      { name: 'Trắng', code: 'WHT', hex_code: '#FFFFFF' },
-      { name: 'Xanh Navy', code: 'NVY', hex_code: '#000080' },
-      { name: 'Ghi / Xám', code: 'GRY', hex_code: '#808080' },
-    ];
+    const colorCount = await this.colorRepo.count();
+    if (colorCount < 4) {
+      const colors = [
+        { name: 'Đen', code: 'BLK', hex_code: '#000000' },
+        { name: 'Trắng', code: 'WHT', hex_code: '#FFFFFF' },
+        { name: 'Xanh Navy', code: 'NVY', hex_code: '#000080' },
+        { name: 'Ghi / Xám', code: 'GRY', hex_code: '#808080' },
+      ];
 
-    for (const item of colors) {
-      const exists = await this.colorRepo.findOne({ where: { code: item.code } });
-      if (!exists) {
-        await this.colorRepo.save(this.colorRepo.create(item));
+      for (const item of colors) {
+        const exists = await this.colorRepo.findOne({ where: { code: item.code } });
+        if (!exists) {
+          await this.colorRepo.save(this.colorRepo.create(item));
+        }
       }
     }
   }

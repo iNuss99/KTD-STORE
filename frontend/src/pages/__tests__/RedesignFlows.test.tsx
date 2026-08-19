@@ -4,8 +4,8 @@ import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { VariantSelector } from '../../components/VariantSelector';
-import { CartPage } from '../CartPage';
+import { VariantSelector } from '../../components/storefront/VariantSelector';
+import { CartPage } from '../storefront/CartPage';
 import { ProductVariant } from '../../types';
 
 // Mock auth storage token

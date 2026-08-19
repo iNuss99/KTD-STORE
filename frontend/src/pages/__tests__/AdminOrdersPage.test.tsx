@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
-import { AdminOrdersPage } from '../AdminOrdersPage';
+import { AdminOrdersPage } from '../admin/AdminOrdersPage';
 import { ToastProvider } from '../../context/ToastContext';
 
 describe('AdminOrdersPage Component', () => {

@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { CartPage } from '../CartPage';
+import { CartPage } from '../storefront/CartPage';
 import { LanguageProvider } from '../../context/LanguageContext';
 import * as useCartHook from '../../hooks/useCart';
 

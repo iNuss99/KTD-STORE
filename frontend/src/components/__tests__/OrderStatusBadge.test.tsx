@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
-import { OrderStatusBadge } from '../OrderStatusBadge';
+import { OrderStatusBadge } from '../admin/OrderStatusBadge';
 
 describe('OrderStatusBadge Component', () => {
   it('Render đúng nhãn và màu sắc cho trạng thái PENDING', () => {

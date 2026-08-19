@@ -31,6 +31,11 @@ export class SystemConfigsService implements OnApplicationBootstrap {
   }
 
   async seedDefaultConfigs() {
+    const configCount = await this.configRepo.count();
+    if (configCount >= 7) {
+      return; // Cấu hình hệ thống đã tồn tại đầy đủ
+    }
+
     const defaults = [
       {
         key: SYSTEM_CONFIG_KEYS.RETURN_DAYS_LIMIT,

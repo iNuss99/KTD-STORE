@@ -71,6 +71,12 @@ export class PermissionsService implements OnApplicationBootstrap {
       { code: PERMISSION_CODES.REPORT_VIEW, description: 'Xem báo cáo & dashboard' },
     ];
 
+    const permCount = await this.permissionRepo.count();
+    const rolePermCount = await this.rolePermissionRepo.count();
+    if (permCount >= permissionsToSeed.length && rolePermCount >= 40) {
+      return; // Đã seed đầy đủ permissions và role mappings, bỏ qua để tránh lag khởi động
+    }
+
     const permMap = new Map<string, Permission>();
 
     for (const item of permissionsToSeed) {
