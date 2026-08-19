@@ -262,12 +262,12 @@ Tệp mẫu cấu hình đặt tại `backend/.env` (tham khảo `backend/.env.e
 ```env
 PORT=3000
 
-# Kết nối Cơ sở dữ liệu Neon Cloud PostgreSQL
-DB_HOST=ep-morning-queen-az2lfhe5.c-3.ap-southeast-1.aws.neon.tech
+# Kết nối Cơ sở dữ liệu PostgreSQL (Neon Cloud / Local)
+DB_HOST=your-neon-host.aws.neon.tech
 DB_PORT=5432
-DB_USERNAME=neondb_owner
-DB_PASSWORD=********
-DB_NAME=neondb
+DB_USERNAME=your_db_username
+DB_PASSWORD=your_db_password
+DB_NAME=your_db_name
 DB_SSL=true
 
 # Khóa bảo mật JWT
