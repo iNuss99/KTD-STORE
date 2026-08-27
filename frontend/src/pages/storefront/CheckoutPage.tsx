@@ -6,6 +6,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { Address } from '../../types';
 import { MapPin, Plus, Check, CreditCard, Truck, ArrowLeft, Loader2, QrCode, Wallet, CheckCircle2, ChevronRight, ShieldCheck, Tag, Building, Home } from 'lucide-react';
 import { AddressSelector } from '../../components/storefront/AddressSelector';
+import { ProductImage } from '../../components/common/ProductImage';
 import { useCart } from '../../hooks/useCart';
 import { useCreateOrderMutation } from '../../hooks/useOrders';
 import { apiClient } from '../../lib/apiClient';
@@ -326,10 +327,11 @@ export const CheckoutPage: React.FC = () => {
                 {items.map((item) => (
                   <div key={item.id} className="flex items-center gap-3 text-xs">
                     <div className="w-10 h-12 bg-warm-white border border-chalk shrink-0 overflow-hidden">
-                      <img
-                        src={item.variant?.product?.images?.[0]?.url || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&q=80'}
+                      <ProductImage
+                        src={item.variant?.product?.images?.[0]?.url || null}
                         alt={item.variant?.product?.name}
-                        className="w-full h-full object-cover"
+                        category={item.variant?.product?.category?.name}
+                        aspectRatio="portrait"
                       />
                     </div>
                     <div className="flex-1 min-w-0">

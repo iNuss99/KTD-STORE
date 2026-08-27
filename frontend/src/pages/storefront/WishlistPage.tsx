@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Heart, Trash2, ArrowRight, Loader2 } from 'lucide-react';
 import { useWishlist, useToggleWishlistMutation } from '../../hooks/useWishlist';
 import { getAuthToken } from '../../lib/auth-storage';
+import { ProductImage } from '../../components/common/ProductImage';
 
 export const WishlistPage: React.FC = () => {
   const { data: items = [], isLoading: loading } = useWishlist();
@@ -77,13 +78,13 @@ export const WishlistPage: React.FC = () => {
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
                 <div className="relative aspect-[4/5] bg-canvas overflow-hidden">
-                  <img
-                    src={item.product.image_url || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500&q=80'}
+                  <ProductImage
+                    src={item.product.image_url}
                     alt={item.product.name}
-                    className="w-full h-full object-cover object-center group-hover:scale-[1.03] transition-transform duration-500"
+                    aspectRatio="portrait"
                   />
                   {!item.product.is_active && (
-                    <div className="absolute inset-0 bg-ink/60 flex items-center justify-center backdrop-blur-xs">
+                    <div className="absolute inset-0 bg-ink/60 flex items-center justify-center backdrop-blur-xs z-10">
                       <span className="font-mono text-[10px] uppercase text-warm-white bg-stitch px-3 py-1 tracking-widest">
                         Ngừng kinh doanh
                       </span>

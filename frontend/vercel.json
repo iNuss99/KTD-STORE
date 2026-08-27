@@ -2,11 +2,11 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://ktd-store-backend.onrender.com/:path*"
+      "destination": "https://ktd-store-backend.onrender.com/api/:path*"
     },
     {
       "source": "/webhooks/:path*",
-      "destination": "https://ktd-store-backend.onrender.com/webhooks/:path*"
+      "destination": "https://ktd-store-backend.onrender.com/api/webhooks/:path*"
     },
     {
       "source": "/(.*)",

@@ -176,7 +176,14 @@ export const ProductDetailPage: React.FC = () => {
                       selectedImage === img.url ? 'border-[#C8A96E] ring-1 ring-[#C8A96E]' : 'border-[#1A1A1A]/10 opacity-70 hover:opacity-100'
                     }`}
                   >
-                    <img src={img.url} alt="Thumb" className="w-full h-full object-cover" />
+                    <img
+                      src={img.url}
+                      alt="Thumb"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=400&q=80';
+                      }}
+                      className="w-full h-full object-cover"
+                    />
                   </button>
                 ))}
               </div>

@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { useProducts } from '../../hooks/useProducts';
 import { ProductCard } from '../../components/storefront/ProductCard';
 import { ProductImage } from '../../components/common/ProductImage';
-import { ArrowRight, Sparkles, ShieldCheck, Flame, Compass, RefreshCw } from 'lucide-react';
+import { ArrowRight, Sparkles, ShieldCheck, RefreshCw } from 'lucide-react';
 
 export const HomePage: React.FC = () => {
   const { data: productsData, isLoading, isError } = useProducts({ limit: 8 });
@@ -15,21 +15,25 @@ export const HomePage: React.FC = () => {
       id: 'ao-so-mi',
       name: 'Áo Sơ Mi Atelier',
       desc: 'Phom dáng tailoring, chất liệu oxford/linen',
+      image: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=800&auto=format&fit=crop&q=80',
     },
     {
       id: 'ao-polo',
       name: 'Áo Polo Cotton',
       desc: 'Sợi bông chải kỹ, cổ dệt 3D tối giản',
+      image: 'https://images.unsplash.com/photo-1586363104862-3a5e2ab60d99?w=800&auto=format&fit=crop&q=80',
     },
     {
       id: 'ao-tshirt',
       name: 'Áo T-Shirt Premium',
       desc: 'Cotton định lượng cao, thoáng mát chuẩn phom',
+      image: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&auto=format&fit=crop&q=80',
     },
     {
       id: 'ao-khoac',
       name: 'Áo Khoác Heritage',
       desc: 'Chất liệu trượt nước, lót lụa cao cấp',
+      image: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=800&auto=format&fit=crop&q=80',
     },
   ];
 
@@ -66,7 +70,7 @@ export const HomePage: React.FC = () => {
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-white border border-[#C8A96E]/40 shadow-xs">
               <Sparkles className="w-3.5 h-3.5 text-[#C8A96E]" />
               <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.25em] text-[#C8A96E]">
-                ESSENTIAL SHIRTS & TOPS — ISSUE N°24
+                ESSENTIAL SHIRTS &amp; TOPS — ISSUE N°24
               </span>
             </div>
 
@@ -107,7 +111,7 @@ export const HomePage: React.FC = () => {
           >
             <div className="relative w-full aspect-[3/4] bg-[#EFECE6] border border-[#1A1A1A]/10 p-3 shadow-2xl">
               <ProductImage
-                src={null}
+                src="https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=800&auto=format&fit=crop&q=80"
                 alt="Áo Sơ Mi Oxford Silk Cotton"
                 category="HERITAGE EDITION"
                 aspectRatio="portrait"
@@ -150,7 +154,7 @@ export const HomePage: React.FC = () => {
             >
               <div className="aspect-[4/5] overflow-hidden bg-[#EFECE6] mb-4 relative">
                 <ProductImage
-                  src={null}
+                  src={cat.image}
                   alt={cat.name}
                   category={cat.name}
                   aspectRatio="portrait"
@@ -209,12 +213,14 @@ export const HomePage: React.FC = () => {
               oldPrice={590000}
               category="Áo Polo"
               slug="ao-polo-supima"
+              images={['https://images.unsplash.com/photo-1586363104862-3a5e2ab60d99?w=800&auto=format&fit=crop&q=80']}
             />
             <ProductCard
               name="Áo T-Shirt Heavyweight Oversize"
               price={380000}
               category="Áo T-Shirt"
               slug="ao-tshirt-heavyweight"
+              images={['https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&auto=format&fit=crop&q=80']}
             />
             <ProductCard
               name="Áo Sơ Mi Linen Tự Nhiên"
@@ -222,6 +228,7 @@ export const HomePage: React.FC = () => {
               badge="sale"
               category="Áo Sơ Mi"
               slug="ao-so-mi-linen"
+              images={['https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=800&auto=format&fit=crop&q=80']}
             />
             <ProductCard
               name="Áo Khoác Blazer Tailored Classic"
@@ -229,6 +236,7 @@ export const HomePage: React.FC = () => {
               badge="out"
               category="Áo Khoác"
               slug="ao-khoac-blazer-classic"
+              images={['https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=800&auto=format&fit=crop&q=80']}
             />
           </div>
         ) : (
@@ -249,7 +257,7 @@ export const HomePage: React.FC = () => {
             </div>
             <h3 className="font-editorial text-2xl font-bold text-[#1A1A1A]">Chất Liệu Tuyển Chọn</h3>
             <p className="text-xs text-[#6E6E6E] font-sans leading-relaxed">
-              100% sợi tự nhiên Cotton Supima, Wool Blend & Linen Pháp thoáng khí, bền đẹp theo thời gian.
+              100% sợi tự nhiên Cotton Supima, Wool Blend &amp; Linen Pháp thoáng khí, bền đẹp theo thời gian.
             </p>
           </div>
 
@@ -257,9 +265,9 @@ export const HomePage: React.FC = () => {
             <div className="w-10 h-10 rounded-full bg-[#F5F2EE] border border-[#C8A96E]/40 flex items-center justify-center text-[#C8A96E] mx-auto md:mx-0">
               <ShieldCheck className="w-5 h-5" />
             </div>
-            <h3 className="font-editorial text-2xl font-bold text-[#1A1A1A]">Bảo Hành & Đổi Trả</h3>
+            <h3 className="font-editorial text-2xl font-bold text-[#1A1A1A]">Bảo Hành &amp; Đổi Trả</h3>
             <p className="text-xs text-[#6E6E6E] font-sans leading-relaxed">
-              Hỗ trợ 30 ngày đổi hàng miễn phí tận nhà. Cam kết 100% đúng hình ảnh & chất lượng công bố.
+              Hỗ trợ 30 ngày đổi hàng miễn phí tận nhà. Cam kết 100% đúng hình ảnh &amp; chất lượng công bố.
             </p>
           </div>
 
@@ -277,5 +285,3 @@ export const HomePage: React.FC = () => {
     </div>
   );
 };
-
-

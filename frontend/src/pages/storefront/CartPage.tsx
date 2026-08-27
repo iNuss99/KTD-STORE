@@ -5,6 +5,7 @@ import { useCart, useUpdateCartItemMutation, useRemoveCartItemMutation } from '.
 import { QtyStepper } from '../../components/common/QtyStepper';
 import { EmptyState } from '../../components/common/EmptyState';
 import { PromoBadge } from '../../components/common/PromoBadge';
+import { ProductImage } from '../../components/common/ProductImage';
 import { getAuthToken } from '../../lib/auth-storage';
 
 // Module-level formatter — tạo 1 lần, dùng lại mỗi render
@@ -187,9 +188,14 @@ export const CartPage: React.FC = () => {
                   >
                     {/* Thumbnail */}
                     <div className="w-20 h-24 bg-bg-alt border border-line rounded-xl overflow-hidden shrink-0 relative">
-                      <img src={image} alt={product?.name} className="w-full h-full object-cover" />
+                      <ProductImage
+                        src={product?.images?.[0]?.url || null}
+                        alt={product?.name}
+                        category={product?.category?.name}
+                        aspectRatio="portrait"
+                      />
                       {!item.isAvailable && (
-                        <div className="absolute inset-0 bg-ink/30 backdrop-blur-xs flex items-center justify-center">
+                        <div className="absolute inset-0 bg-ink/30 backdrop-blur-xs flex items-center justify-center z-10">
                           <PromoBadge type="out">Hết</PromoBadge>
                         </div>
                       )}

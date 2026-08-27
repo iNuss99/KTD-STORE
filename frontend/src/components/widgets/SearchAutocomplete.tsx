@@ -168,6 +168,9 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
                   <img
                     src={item.image_url || 'https://images.unsplash.com/photo-1586363104862-3a5e2ab60d99?w=200&q=80'}
                     alt={item.name}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1586363104862-3a5e2ab60d99?w=200&q=80';
+                    }}
                     className="w-10 h-10 object-cover rounded-lg shrink-0 border border-slate-100"
                   />
                   <div className="flex-1 min-w-0">
