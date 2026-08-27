@@ -15,48 +15,40 @@ export const AdminCatalogPage: React.FC = () => {
   const [autoCreating, setAutoCreating] = useState(false);
 
   // Modals
-  const [showBrandModal, setShowBrandModal] = useState(false);
-  const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showProductModal, setShowProductModal] = useState(false);
   const [productToDelete, setProductToDelete] = useState<{ id: string; name: string } | null>(null);
-
-  // Form states
-  const [brandForm, setBrandForm] = useState({ name: '', slug: '', code: '' });
-  const [catForm, setCatForm] = useState({ name: '', slug: '', parent_id: '' });
   const [productForm, setProductForm] = useState<{
     name: string;
     description: string;
-    brand_id: string;
     category_id: string;
     base_price: number;
     image_url: string;
     size_ids: string[];
     color_ids: string[];
     stock_quantity: number;
+    is_active: boolean;
   }>({
     name: '',
     description: '',
-    brand_id: '',
     category_id: '',
     base_price: 250000,
     image_url: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500&q=80',
     size_ids: [],
     color_ids: [],
     stock_quantity: 50,
+    is_active: true,
   });
 
   const loadAll = async () => {
     try {
       const headers = getAuthHeader();
-      const [bRes, cRes, sRes, clRes, pRes] = await Promise.all([
-        fetch('/api/brands', { headers }).then((r) => r.json()),
+      const [cRes, sRes, clRes, pRes] = await Promise.all([
         fetch('/api/categories', { headers }).then((r) => r.json()),
         fetch('/api/products/sizes', { headers }).then((r) => r.json()),
         fetch('/api/products/colors', { headers }).then((r) => r.json()),
         fetch('/api/products', { headers }).then((r) => r.json()),
       ]);
 
-      setBrands(Array.isArray(bRes) ? bRes : []);
       setCategories(Array.isArray(cRes) ? cRes : []);
       setSizes(Array.isArray(sRes) ? sRes : []);
       setColors(Array.isArray(clRes) ? clRes : []);
@@ -109,7 +101,6 @@ export const AdminCatalogPage: React.FC = () => {
       ];
 
       const item = presets[Math.floor(Math.random() * presets.length)];
-      const selectedBrand = brands[0]?.id || undefined;
       const selectedCategory = categories[0]?.id || undefined;
       const selectedSize = sizes[0]?.id || undefined;
       const selectedColor = colors[0]?.id || undefined;
@@ -130,7 +121,6 @@ export const AdminCatalogPage: React.FC = () => {
           code: item.code,
           slug,
           description: item.description,
-          brand_id: selectedBrand,
           category_id: selectedCategory,
           base_price: item.base_price,
           image_urls: [item.image_url],
@@ -158,55 +148,7 @@ export const AdminCatalogPage: React.FC = () => {
     }
   };
 
-  const handleCreateBrand = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setMsg(null);
-    try {
-      const res = await fetch('/api/brands', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
-        body: JSON.stringify(brandForm),
-      });
-      if (res.ok) {
-        setMsg({ type: 'success', text: 'Tạo thương hiệu thành công!' });
-        setBrandForm({ name: '', slug: '', code: '' });
-        setShowBrandModal(false);
-        loadAll();
-      } else {
-        const err = await res.json();
-        setMsg({ type: 'error', text: err.message || 'Lỗi khi tạo thương hiệu' });
-      }
-    } catch (err) {
-      setMsg({ type: 'error', text: 'Lỗi mạng khi tạo thương hiệu' });
-    }
-  };
 
-  const handleCreateCategory = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setMsg(null);
-    try {
-      const res = await fetch('/api/categories', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
-        body: JSON.stringify({
-          name: catForm.name,
-          slug: catForm.slug,
-          parent_id: catForm.parent_id || undefined,
-        }),
-      });
-      if (res.ok) {
-        setMsg({ type: 'success', text: 'Tạo danh mục thành công!' });
-        setCatForm({ name: '', slug: '', parent_id: '' });
-        setShowCategoryModal(false);
-        loadAll();
-      } else {
-        const err = await res.json();
-        setMsg({ type: 'error', text: err.message || 'Lỗi khi tạo danh mục' });
-      }
-    } catch (err) {
-      setMsg({ type: 'error', text: 'Lỗi mạng khi tạo danh mục' });
-    }
-  };
 
   const handleCreateProduct = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -246,9 +188,9 @@ export const AdminCatalogPage: React.FC = () => {
           code,
           slug,
           description: productForm.description,
-          brand_id: productForm.brand_id,
           category_id: productForm.category_id,
           base_price: Number(productForm.base_price),
+          is_active: productForm.is_active,
           image_urls: [productForm.image_url],
           variants: variantsToCreate,
         }),
@@ -296,23 +238,11 @@ export const AdminCatalogPage: React.FC = () => {
               <Package className="w-6 h-6 text-sky-600" /> Quản lý Sản phẩm & Catalog
             </h1>
             <p className="text-xs text-gray-500 mt-1">
-              Quản lý thương hiệu, danh mục và tạo thông tin cơ bản cho sản phẩm.
+              Quản lý danh mục và tạo thông tin cơ bản cho sản phẩm.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={() => setShowBrandModal(true)}
-              className="px-4 py-2 bg-white text-slate-700 font-bold text-xs rounded-xl shadow-sm hover:shadow-md transition border border-gray-200 flex items-center gap-2"
-            >
-              <Tag className="w-4 h-4" /> + Tạo thương hiệu
-            </button>
-            <button
-              onClick={() => setShowCategoryModal(true)}
-              className="px-4 py-2 bg-white text-slate-700 font-bold text-xs rounded-xl shadow-sm hover:shadow-md transition border border-gray-200 flex items-center gap-2"
-            >
-              <Layers className="w-4 h-4" /> + Tạo danh mục
-            </button>
             <button
               onClick={() => setShowProductModal(true)}
               className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-md hover:shadow-lg transition flex items-center gap-2"
@@ -355,7 +285,6 @@ export const AdminCatalogPage: React.FC = () => {
                 <tr>
                   <th className="p-3">Sản phẩm</th>
                   <th className="p-3">Mã Code</th>
-                  <th className="p-3">Thương hiệu</th>
                   <th className="p-3">Danh mục</th>
                   <th className="p-3">Giá cơ bản</th>
                   <th className="p-3">Số biến thể</th>
@@ -368,7 +297,6 @@ export const AdminCatalogPage: React.FC = () => {
                   <tr key={p.id} className="hover:bg-gray-50">
                     <td className="p-3 font-semibold text-slate-900">{p.name}</td>
                     <td className="p-3 font-mono">{p.code}</td>
-                    <td className="p-3">{p.brand?.name}</td>
                     <td className="p-3">{p.category?.name}</td>
                     <td className="p-3 font-bold">{new Intl.NumberFormat('vi-VN').format(p.base_price)} đ</td>
                     <td className="p-3 font-semibold">{p.variants?.length || 0} SKU</td>
@@ -395,176 +323,211 @@ export const AdminCatalogPage: React.FC = () => {
       </main>
 
       {/* MODALS */}
-      {showBrandModal && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl relative animate-in fade-in zoom-in duration-200">
-            <button onClick={() => setShowBrandModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-700">
-              <X className="w-5 h-5" />
-            </button>
-            <h3 className="font-bold text-slate-900 flex items-center gap-2 mb-4">
-              <Tag className="w-5 h-5 text-sky-600" /> Tạo thương hiệu
-            </h3>
-            <form onSubmit={handleCreateBrand} className="space-y-4">
-              <input type="text" placeholder="Tên thương hiệu (vd: Nike)" value={brandForm.name} onChange={(e) => setBrandForm({ ...brandForm, name: e.target.value })} required className="w-full text-sm p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-sky-500 outline-none transition" />
-              <input type="text" placeholder="Slug (vd: nike)" value={brandForm.slug} onChange={(e) => setBrandForm({ ...brandForm, slug: e.target.value })} required className="w-full text-sm p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-sky-500 outline-none transition" />
-              <input type="text" placeholder="Mã SKU Prefix (vd: NK)" value={brandForm.code} onChange={(e) => setBrandForm({ ...brandForm, code: e.target.value })} required className="w-full text-sm p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-sky-500 outline-none transition" />
-              <button type="submit" className="w-full py-3 mt-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition">
-                <Plus className="w-4 h-4" /> Tạo Thương Hiệu
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {showCategoryModal && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl relative animate-in fade-in zoom-in duration-200">
-            <button onClick={() => setShowCategoryModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-700">
-              <X className="w-5 h-5" />
-            </button>
-            <h3 className="font-bold text-slate-900 flex items-center gap-2 mb-4">
-              <Layers className="w-5 h-5 text-sky-600" /> Tạo danh mục
-            </h3>
-            <form onSubmit={handleCreateCategory} className="space-y-4">
-              <input type="text" placeholder="Tên danh mục (vd: Áo Thun)" value={catForm.name} onChange={(e) => setCatForm({ ...catForm, name: e.target.value })} required className="w-full text-sm p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-sky-500 outline-none transition" />
-              <input type="text" placeholder="Slug (vd: ao-thun)" value={catForm.slug} onChange={(e) => setCatForm({ ...catForm, slug: e.target.value })} required className="w-full text-sm p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-sky-500 outline-none transition" />
-              <select value={catForm.parent_id} onChange={(e) => setCatForm({ ...catForm, parent_id: e.target.value })} className="w-full text-sm p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-sky-500 outline-none transition">
-                <option value="">Không có (Danh mục gốc)</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
-              <button type="submit" className="w-full py-3 mt-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition">
-                <Plus className="w-4 h-4" /> Tạo Danh Mục
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
       {showProductModal && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-3xl p-8 w-full max-w-lg shadow-2xl relative animate-in fade-in zoom-in duration-200">
-            <button onClick={() => setShowProductModal(false)} className="absolute top-6 right-6 text-gray-400 hover:text-gray-700">
-              <X className="w-6 h-6" />
-            </button>
-            <h3 className="text-xl font-extrabold text-slate-900 flex items-center gap-2 mb-6">
-              <Package className="w-6 h-6 text-sky-600" /> Thêm sản phẩm mới
-            </h3>
-            <form onSubmit={handleCreateProduct} className="space-y-5">
-              <div>
-                <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Tên sản phẩm</label>
-                <input type="text" placeholder="VD: Áo thun Polo cao cấp" value={productForm.name} onChange={(e) => setProductForm({ ...productForm, name: e.target.value })} required className="w-full text-sm p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-sky-500 outline-none transition" />
-              </div>
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-3xl w-full max-w-3xl shadow-2xl relative animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh] overflow-hidden border border-gray-100">
+            {/* STICKY HEADER */}
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-white shrink-0">
+              <h3 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+                <Package className="w-5 h-5 text-sky-600" /> Thêm sản phẩm mới
+              </h3>
+              <button
+                onClick={() => setShowProductModal(false)}
+                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700 flex items-center justify-center transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Thương hiệu</label>
-                  <select value={productForm.brand_id} onChange={(e) => setProductForm({ ...productForm, brand_id: e.target.value })} required className="w-full text-sm p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-sky-500 outline-none transition">
-                    <option value="">Chọn Thương hiệu</option>
-                    {brands.map((b) => (
-                      <option key={b.id} value={b.id}>{b.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Danh mục</label>
-                  <select value={productForm.category_id} onChange={(e) => setProductForm({ ...productForm, category_id: e.target.value })} required className="w-full text-sm p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-sky-500 outline-none transition">
-                    <option value="">Chọn Danh mục</option>
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Giá cơ bản (VND)</label>
-                <input
-                  type="text"
-                  placeholder="VD: 250.000"
-                  value={productForm.base_price === 0 ? '' : new Intl.NumberFormat('vi-VN').format(productForm.base_price)}
-                  onChange={(e) => {
-                    const rawValue = e.target.value.replace(/[^0-9]/g, '');
-                    setProductForm({ ...productForm, base_price: rawValue ? Number(rawValue) : 0 });
-                  }}
-                  required
-                  className="w-full text-sm p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-sky-500 outline-none transition"
-                />
-              </div>
-
-              <div className="pt-2 border-t border-gray-100">
-                <label className="text-xs font-bold text-gray-500 uppercase block mb-2">Biến thể ban đầu (Tự động tổ hợp)</label>
-                
+            {/* FORM BODY (2 COLUMNS) */}
+            <form id="create-product-form" onSubmit={handleCreateProduct} className="flex-1 overflow-y-auto p-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                {/* LEFT COLUMN: Basic Info & Image */}
                 <div className="space-y-4">
                   <div>
-                    <label className="text-[10px] font-bold text-gray-400 uppercase block mb-2">Chọn Sizes</label>
-                    <div className="flex flex-wrap gap-2">
-                      {sizes.map((s) => (
-                        <button
-                          key={s.id}
-                          type="button"
-                          onClick={() => {
-                            setProductForm(prev => ({
-                              ...prev,
-                              size_ids: prev.size_ids.includes(s.id) ? prev.size_ids.filter(id => id !== s.id) : [...prev.size_ids, s.id]
-                            }));
-                          }}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${
-                            productForm.size_ids.includes(s.id) ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-600 border-gray-200 hover:border-slate-400'
-                          }`}
-                        >
-                          Size {s.code}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-[10px] font-bold text-gray-400 uppercase block mb-2">Chọn Màu sắc</label>
-                    <div className="flex flex-wrap gap-2">
-                      {colors.map((c) => (
-                        <button
-                          key={c.id}
-                          type="button"
-                          onClick={() => {
-                            setProductForm(prev => ({
-                              ...prev,
-                              color_ids: prev.color_ids.includes(c.id) ? prev.color_ids.filter(id => id !== c.id) : [...prev.color_ids, c.id]
-                            }));
-                          }}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${
-                            productForm.color_ids.includes(c.id) ? 'bg-sky-600 text-white border-sky-600' : 'bg-white text-slate-600 border-gray-200 hover:border-sky-400'
-                          }`}
-                        >
-                          {c.name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">Tồn kho chung cho mỗi biến thể sinh ra</label>
+                    <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Tên sản phẩm (*)</label>
                     <input
-                      type="number"
-                      placeholder="VD: 50"
-                      value={productForm.stock_quantity}
-                      onChange={(e) => setProductForm({ ...productForm, stock_quantity: Number(e.target.value) })}
+                      type="text"
+                      placeholder="VD: Áo thun Polo cao cấp"
+                      value={productForm.name}
+                      onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
+                      required
                       className="w-full text-sm p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-sky-500 outline-none transition"
                     />
                   </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Mô tả ngắn sản phẩm</label>
+                    <textarea
+                      rows={3}
+                      placeholder="VD: Áo sơ mi nam chất liệu Cotton cao cấp, kiểu dáng hiện đại thanh lịch..."
+                      value={productForm.description}
+                      onChange={(e) => setProductForm({ ...productForm, description: e.target.value })}
+                      className="w-full text-sm p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-sky-500 outline-none transition resize-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-gray-500 uppercase block mb-1">URL Hình ảnh đại diện (*)</label>
+                    <div className="flex gap-3 items-center">
+                      <input
+                        type="url"
+                        placeholder="https://images.unsplash.com/..."
+                        value={productForm.image_url}
+                        onChange={(e) => setProductForm({ ...productForm, image_url: e.target.value })}
+                        required
+                        className="flex-1 text-sm p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-sky-500 outline-none transition font-mono text-xs"
+                      />
+                      {productForm.image_url && (
+                        <div className="w-12 h-12 rounded-xl overflow-hidden border border-gray-200 shrink-0 bg-gray-50 shadow-2xs">
+                          <img
+                            src={productForm.image_url}
+                            alt="Preview"
+                            className="w-full h-full object-cover"
+                            onError={(e) => (e.currentTarget.style.display = 'none')}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3.5 bg-gray-50 rounded-2xl border border-gray-100">
+                    <div>
+                      <span className="text-xs font-bold text-slate-900 block">Trạng thái kích hoạt</span>
+                      <span className="text-[11px] text-gray-500">Hiển thị sản phẩm lên trang bán hàng</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setProductForm(f => ({ ...f, is_active: !f.is_active }))}
+                      className={`w-11 h-6 rounded-full p-0.5 transition-colors duration-200 ease-in-out ${productForm.is_active ? 'bg-sky-600' : 'bg-gray-300'}`}
+                    >
+                      <div className={`w-5 h-5 rounded-full bg-white transition-transform duration-200 ease-in-out shadow-xs ${productForm.is_active ? 'translate-x-5' : 'translate-x-0'}`} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* RIGHT COLUMN: Category, Price & Variants */}
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Danh mục (*)</label>
+                      <select
+                        value={productForm.category_id}
+                        onChange={(e) => setProductForm({ ...productForm, category_id: e.target.value })}
+                        required
+                        className="w-full text-sm p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-sky-500 outline-none transition"
+                      >
+                        <option value="">Chọn Danh mục</option>
+                        {categories.map((c) => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Giá cơ bản (VND) (*)</label>
+                      <input
+                        type="text"
+                        placeholder="VD: 250.000"
+                        value={productForm.base_price === 0 ? '' : new Intl.NumberFormat('vi-VN').format(productForm.base_price)}
+                        onChange={(e) => {
+                          const rawValue = e.target.value.replace(/[^0-9]/g, '');
+                          setProductForm({ ...productForm, base_price: rawValue ? Number(rawValue) : 0 });
+                        }}
+                        required
+                        className="w-full text-sm p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-sky-500 outline-none transition font-semibold"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-slate-50/80 rounded-2xl border border-gray-200/80 space-y-3">
+                    <label className="text-xs font-bold text-slate-800 uppercase block pb-1 border-b border-gray-200">
+                      Tổ hợp biến thể ban đầu
+                    </label>
+
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-500 uppercase block mb-1.5">Chọn Sizes</label>
+                      <div className="flex flex-wrap gap-1.5">
+                        {sizes.map((s) => (
+                          <button
+                            key={s.id}
+                            type="button"
+                            onClick={() => {
+                              setProductForm(prev => ({
+                                ...prev,
+                                size_ids: prev.size_ids.includes(s.id) ? prev.size_ids.filter(id => id !== s.id) : [...prev.size_ids, s.id]
+                              }));
+                            }}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition-colors ${
+                              productForm.size_ids.includes(s.id) ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-600 border-gray-200 hover:border-slate-400'
+                            }`}
+                          >
+                            Size {s.code}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-500 uppercase block mb-1.5">Chọn Màu sắc</label>
+                      <div className="flex flex-wrap gap-1.5">
+                        {colors.map((c) => (
+                          <button
+                            key={c.id}
+                            type="button"
+                            onClick={() => {
+                              setProductForm(prev => ({
+                                ...prev,
+                                color_ids: prev.color_ids.includes(c.id) ? prev.color_ids.filter(id => id !== c.id) : [...prev.color_ids, c.id]
+                              }));
+                            }}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition-colors ${
+                              productForm.color_ids.includes(c.id) ? 'bg-sky-600 text-white border-sky-600' : 'bg-white text-slate-600 border-gray-200 hover:border-sky-400'
+                            }`}
+                          >
+                            {c.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-500 uppercase block mb-1">Số lượng tồn kho mỗi biến thể</label>
+                      <input
+                        type="number"
+                        placeholder="VD: 50"
+                        value={productForm.stock_quantity}
+                        onChange={(e) => setProductForm({ ...productForm, stock_quantity: Number(e.target.value) })}
+                        className="w-full text-sm p-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-sky-500 outline-none transition bg-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-amber-50/80 text-amber-800 rounded-xl text-xs font-medium flex items-start gap-2 border border-amber-200/60">
+                    <Sparkles className="w-4 h-4 shrink-0 text-amber-600 mt-0.5" />
+                    <span>Mã SKU & URL sản phẩm sẽ được hệ thống tự động sinh ra.</span>
+                  </div>
                 </div>
               </div>
-              
-              <div className="p-4 bg-amber-50 text-amber-800 rounded-xl text-xs font-medium flex items-start gap-2 border border-amber-100">
-                 <Sparkles className="w-4 h-4 shrink-0 text-amber-500 mt-0.5" />
-                 Mã Code và URL (Slug) sẽ được hệ thống tự động sinh ra.
-              </div>
-
-              <button type="submit" className="w-full py-3 mt-4 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition">
-                <Plus className="w-5 h-5" /> Lưu Sản Phẩm
-              </button>
             </form>
+
+            {/* STICKY FOOTER */}
+            <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50 flex items-center justify-end gap-3 shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowProductModal(false)}
+                className="px-5 py-2.5 bg-white border border-gray-200 text-slate-700 hover:bg-gray-100 text-xs font-bold rounded-xl transition"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="submit"
+                form="create-product-form"
+                className="px-6 py-2.5 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-xl shadow-md hover:shadow-lg transition flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" /> Lưu Sản Phẩm
+              </button>
+            </div>
           </div>
         </div>
       )}

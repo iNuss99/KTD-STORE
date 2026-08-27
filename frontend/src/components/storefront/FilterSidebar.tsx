@@ -149,28 +149,7 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
         </div>
       </div>
 
-      {/* Brand Filter */}
-      {brands.length > 0 && (
-        <div className="pt-4 border-t border-line">
-          <h4 className="font-display text-sm font-semibold text-ink mb-3">Thương hiệu</h4>
-          <div className="flex flex-wrap gap-1.5">
-            {brands.map((b) => (
-              <button
-                key={b.id}
-                type="button"
-                onClick={() => onFilterChange({ brand_id: selectedBrand === b.id ? undefined : b.id })}
-                className={`text-xs font-mono px-3 py-1.5 border rounded-lg transition-all ${
-                  selectedBrand === b.id
-                    ? 'border-accent bg-accent text-white font-semibold shadow-xs'
-                    : 'border-line text-ink hover:border-ink bg-card font-medium'
-                }`}
-              >
-                {b.name}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+
 
       {/* Size Filter */}
       {sizes.length > 0 && (

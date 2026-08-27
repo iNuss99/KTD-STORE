@@ -74,4 +74,10 @@ export default new DataSource({
   migrations: [InitialSchema1700000000000],
   synchronize: false,
   ssl: isSsl ? { rejectUnauthorized: false } : false,
+  extra: {
+    max: 20,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 10000,
+    keepAlive: true,
+  },
 });

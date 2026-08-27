@@ -4,50 +4,42 @@ export default {
   theme: {
     extend: {
       colors: {
-        // === KTD Logo Color System ===
-        // Logo: #F5A623 orange border, #E07B00 deep orange, #2D2D2D charcoal, #FFFFFF white
+        canvas: '#F5F2EE',
+        surface: '#FFFFFF',
+        'bg-alt': '#EFECE6',
+        ink: '#1A1A1A',
+        'ink-soft': '#6E6E6E',
+        card: '#FFFFFF',
+        line: 'rgba(26, 26, 26, 0.08)',
 
-        canvas: '#ffffff',
-        'bg-alt': '#fdf8f2',
-        ink: '#2D2D2D',
-        'ink-soft': '#6B6560',
-        card: '#ffffff',
-        line: 'rgba(45, 45, 45, 0.10)',
-
-        // Brand Orange — extracted from logo
-        accent: '#E8920A',
-        'accent-dark': '#C47608',
-        'accent-light': '#FEF3E2',
-        'accent-border': '#F5A623',
+        // Editorial Accent — Antique Gold & Warm Amber
+        accent: '#C8A96E',
+        'accent-dark': '#A38345',
+        'accent-light': '#F7F2E8',
+        'accent-amber': '#E8920A',
 
         // Status
-        coral: '#E05A2B',
-        ok: '#1f7a4d',
+        coral: '#D4432A',
+        ok: '#2A7D4F',
 
-        // Legacy tokens (kept for backward compat)
-        stitch: '#E8920A',
-        smoke: '#64748B',
-        steel: '#2D2D2D',
-        chalk: '#E2E8F0',
-        'warm-white': '#FFFFFF',
-
-        // Brand scale — used for amber-style utilities
+        // Legacy / Brand Scale
         brand: {
-          50:  '#fff8ed',
-          100: '#FEF3E2',
-          200: '#fde0a5',
-          400: '#F5A623',   // logo border orange
-          500: '#E8920A',   // primary accent
-          600: '#C47608',   // pressed/dark
-          700: '#E07B00',   // logo body deep orange
-          900: '#2D2D2D',   // charcoal
+          50:  '#F7F2E8',
+          100: '#EFECE6',
+          200: '#DCCEA5',
+          400: '#C8A96E',
+          500: '#E8920A',
+          600: '#A38345',
+          700: '#836731',
+          900: '#1A1A1A',
         },
       },
       fontFamily: {
-        display: ['"Open Sans"', 'sans-serif'],
-        sans: ['"Open Sans"', 'sans-serif'],
-        mono: ['"IBM Plex Mono"', 'monospace'],
-        serif: ['"Open Sans"', 'sans-serif'],
+        display: ['"Be Vietnam Pro"', 'sans-serif'],
+        serif: ['"Be Vietnam Pro"', 'sans-serif'],
+        sans: ['"Lexend"', 'sans-serif'],
+        mono: ['"Barlow Condensed"', 'monospace'],
+        label: ['"Barlow Condensed"', 'sans-serif'],
       },
     },
   },

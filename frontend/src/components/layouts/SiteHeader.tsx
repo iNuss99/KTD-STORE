@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { ShoppingBag, User, Package, Heart, LogOut, ChevronDown, Menu, X, ShieldCheck } from 'lucide-react';
 import { NotificationBell } from '../widgets/NotificationBell';
@@ -19,7 +19,7 @@ export const SiteHeader: React.FC = () => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const checkAuth = () => {
+  const checkAuth = useCallback(() => {
     const token = getAuthToken();
     if (token) {
       const storedRole = localStorage.getItem('user_role');
@@ -53,7 +53,7 @@ export const SiteHeader: React.FC = () => {
       setUserName(null);
       setIsAdminUser(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     checkAuth();
@@ -72,52 +72,50 @@ export const SiteHeader: React.FC = () => {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <header className="sticky top-0 z-50 bg-card/95 backdrop-blur-md border-b border-line font-sans transition-all">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-14 sm:h-20 gap-2 sm:gap-4">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 sm:gap-3 group shrink-0" title="Knot To Detail">
-            <img
-              src="/logo.png"
-              alt="Knot To Detail Logo"
-              className="w-8 h-8 sm:w-9 sm:h-9 object-contain rounded-lg shadow-xs group-hover:scale-105 transition-transform"
-            />
+    <header className="sticky top-0 z-50 bg-[#F5F2EE]/90 backdrop-blur-md border-b border-[#1A1A1A]/10 transition-all duration-300">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16 sm:h-20 gap-4">
+          {/* Brand Logo */}
+          <Link to="/" className="flex items-center gap-3 group shrink-0" title="KTD Store">
+            <div className="w-8 h-8 rounded-full border border-[#C8A96E] bg-white flex items-center justify-center text-[#C8A96E] font-editorial font-bold text-lg group-hover:scale-105 transition-transform">
+              K
+            </div>
             <div className="flex flex-col">
-              <span className="font-display font-bold text-base sm:text-xl text-ink tracking-tight leading-none group-hover:text-accent transition-colors">
-                Knot To Detail
+              <span className="font-editorial font-bold text-lg sm:text-2xl text-[#1A1A1A] tracking-tight leading-none group-hover:text-[#C8A96E] transition-colors">
+                KNOT TO DETAIL
               </span>
-              <span className="font-mono text-[9px] sm:text-[10px] text-ink-soft font-medium uppercase tracking-wider sm:tracking-widest mt-0.5">
-                Menswear
+              <span className="font-mono text-[9px] text-[#6E6E6E] font-medium uppercase tracking-[0.25em] mt-0.5">
+                MENSWEAR & ATELIER
               </span>
             </div>
           </Link>
 
           {/* Navigation Links (Desktop) */}
-          <nav className="hidden lg:flex items-center space-x-6 shrink-0">
+          <nav className="hidden lg:flex items-center space-x-8 shrink-0">
             <Link
               to="/"
-              className={`font-sans text-sm font-medium transition-colors ${
-                isActive('/') ? 'text-[#d97706] font-bold border-b-2 border-[#d97706] pb-0.5' : 'text-ink hover:text-[#d97706]'
+              className={`font-mono text-xs uppercase tracking-[0.2em] transition-colors ${
+                isActive('/') ? 'text-[#C8A96E] font-bold border-b border-[#C8A96E] pb-0.5' : 'text-[#1A1A1A] hover:text-[#C8A96E]'
               }`}
             >
               Trang chủ
             </Link>
             <Link
               to="/products"
-              className={`font-sans text-sm font-medium transition-colors ${
-                isActive('/products') ? 'text-[#d97706] font-bold border-b-2 border-[#d97706] pb-0.5' : 'text-ink hover:text-[#d97706]'
+              className={`font-mono text-xs uppercase tracking-[0.2em] transition-colors ${
+                isActive('/products') ? 'text-[#C8A96E] font-bold border-b border-[#C8A96E] pb-0.5' : 'text-[#1A1A1A] hover:text-[#C8A96E]'
               }`}
             >
-              {t('nav.products')}
+              Bộ sưu tập
             </Link>
             <Link
               to="/my-orders"
-              className={`font-sans text-sm font-medium transition-colors flex items-center gap-1.5 ${
-                isActive('/my-orders') ? 'text-[#d97706] font-bold border-b-2 border-[#d97706] pb-0.5' : 'text-ink hover:text-[#d97706]'
+              className={`font-mono text-xs uppercase tracking-[0.2em] transition-colors flex items-center gap-1.5 ${
+                isActive('/my-orders') ? 'text-[#C8A96E] font-bold border-b border-[#C8A96E] pb-0.5' : 'text-[#1A1A1A] hover:text-[#C8A96E]'
               }`}
             >
-              <Package className="w-4 h-4 text-ink-soft" />
-              {t('nav.orders')}
+              <Package className="w-3.5 h-3.5 text-[#6E6E6E]" />
+              Đơn hàng
             </Link>
           </nav>
 
@@ -127,25 +125,25 @@ export const SiteHeader: React.FC = () => {
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
             <NotificationBell />
 
             <Link
               to="/wishlist"
-              aria-label="Danh sách yêu thích"
-              className="p-1.5 sm:p-2 text-ink hover:text-[#d97706] transition-colors block"
+              aria-label="Wishlist"
+              className="p-2 text-[#1A1A1A] hover:text-[#C8A96E] transition-colors block"
             >
               <Heart className="w-4 h-4 sm:w-5 sm:h-5" />
             </Link>
 
             <Link
               to="/cart"
-              aria-label="Giỏ hàng"
-              className="p-1.5 sm:p-2 text-ink hover:text-[#d97706] transition-colors relative block"
+              aria-label="Shopping Cart"
+              className="p-2 text-[#1A1A1A] hover:text-[#C8A96E] transition-colors relative block"
             >
               <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5" />
               {cartCount > 0 && (
-                <span className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 bg-[#d97706] text-white font-mono text-[9px] sm:text-[10px] font-bold w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full flex items-center justify-center shadow-xs ring-2 ring-white">
+                <span className="absolute top-1 right-1 bg-[#C8A96E] text-white font-mono text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-xs">
                   {cartCount}
                 </span>
               )}

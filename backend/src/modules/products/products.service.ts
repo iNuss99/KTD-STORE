@@ -433,9 +433,12 @@ export class ProductsService implements OnApplicationBootstrap {
       throw new BadRequestException('Mã sản phẩm (code) đã tồn tại');
     }
 
-    const brand = await this.brandRepo.findOne({ where: { id: dto.brand_id } });
+    let brand = dto.brand_id ? await this.brandRepo.findOne({ where: { id: dto.brand_id } }) : null;
     if (!brand) {
-      throw new NotFoundException('Thương hiệu không tồn tại');
+      brand = await this.brandRepo.findOne({ where: {} });
+    }
+    if (!brand) {
+      brand = await this.brandRepo.save(this.brandRepo.create({ name: 'Default Brand', code: 'DEF', slug: 'default-brand' }));
     }
 
     const category = await this.categoryRepo.findOne({ where: { id: dto.category_id } });
@@ -448,9 +451,10 @@ export class ProductsService implements OnApplicationBootstrap {
       code: dto.code,
       slug: dto.slug,
       description: dto.description,
-      brand_id: dto.brand_id,
+      brand_id: brand.id,
       category_id: dto.category_id,
       base_price: dto.base_price,
+      is_active: dto.is_active !== undefined ? dto.is_active : true,
     });
 
     const savedProduct = await this.productRepo.save(product);

@@ -6,6 +6,11 @@ import { getAuthToken } from '../../lib/auth-storage';
 import { PromoBadge } from '../common/PromoBadge';
 import { useToast } from '../../context/ToastContext';
 import { useWishlist, useToggleWishlistMutation } from '../../hooks/useWishlist';
+import { ProductImage } from '../common/ProductImage';
+
+// Module-level formatter — tạo 1 lần, dùng lại mỗi render
+const vndFormatter = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' });
+const formatVND = (amount: number) => vndFormatter.format(amount);
 
 export interface ProductCardProps {
   product?: Product;
@@ -25,7 +30,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   price: propPrice,
   oldPrice: propOldPrice,
   badge: propBadge,
-  thumbColorClass = 'bg-bg-alt',
+  thumbColorClass = 'bg-[#EFECE6]',
   category: propCategory,
   slug: propSlug,
   images: propImages,
@@ -37,28 +42,23 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const toggleWishlistMutation = useToggleWishlistMutation();
 
   const productId = product?.id || propSlug || '';
-  const name = product?.name || propName || 'Sản phẩm';
+  const name = product?.name || propName || 'Sản phẩm KTD';
   const price = product?.base_price ?? propPrice ?? 0;
   const oldPrice = propOldPrice;
-  const category = product?.category?.name || propCategory || 'Thời trang nam';
+  const category = product?.category?.name || propCategory || 'Bộ sưu tập Nam';
   const targetLink = product ? `/products/${product.slug || product.id}` : `/products/${propSlug || ''}`;
 
-  // Check wishlist state against cached list (0 network overhead)
   const isWished = product?.id
     ? wishlist.some((item) => item.product?.id === product.id)
     : false;
 
-  // Calculate stock status
   const isOutOfStock =
     propBadge === 'out' ||
     (product?.variants && product.variants.length > 0 && product.variants.every((v) => v.stock_quantity === 0));
-  
+
   const badgeType = isOutOfStock ? 'out' : propBadge === 'sale' || oldPrice ? 'sale' : undefined;
 
-  const mainImage =
-    product?.images?.[0]?.url ||
-    propImages?.[0] ||
-    'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500&q=80';
+  const mainImage = product?.images?.[0]?.url || propImages?.[0] || null;
 
   const toggleWishlist = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -85,29 +85,19 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     });
   };
 
-  const formattedPrice = new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency: 'VND',
-  }).format(price);
-
-  const formattedOldPrice = oldPrice
-    ? new Intl.NumberFormat('vi-VN', {
-        style: 'currency',
-        currency: 'VND',
-      }).format(oldPrice)
-    : null;
+  const formattedPrice = formatVND(price);
+  const formattedOldPrice = oldPrice ? formatVND(oldPrice) : null;
 
   return (
-    <div className="group relative bg-card border border-line rounded-2xl overflow-hidden shadow-xs hover:shadow-md hover:border-ink transition-all duration-300 flex flex-col">
+    <div className="group relative bg-white border border-[#1A1A1A]/10 rounded-none overflow-hidden hover:border-[#C8A96E] transition-all duration-500 flex flex-col">
       {/* Thumbnail Container */}
-      <div className={`relative aspect-[4/5] ${thumbColorClass} overflow-hidden`}>
-        <img
+      <div className={`relative aspect-[3/4] ${thumbColorClass} overflow-hidden`}>
+        <ProductImage
           src={mainImage}
           alt={name}
-          loading="lazy"
-          className={`w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-[1.03] ${
-            isOutOfStock ? 'grayscale opacity-75' : ''
-          }`}
+          category={category}
+          aspectRatio="portrait"
+          className={isOutOfStock ? 'grayscale opacity-70' : ''}
         />
 
         {/* Badges Overlay */}
@@ -118,7 +108,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             <PromoBadge type="sale">Giảm giá</PromoBadge>
           ) : null}
           {product?.brand && (
-            <span className="bg-ink text-white font-mono text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded-md shadow-xs">
+            <span className="bg-[#1A1A1A] text-white font-mono text-[9px] uppercase font-bold tracking-widest px-2 py-0.5 shadow-xs">
               {product.brand.name}
             </span>
           )}
@@ -129,52 +119,52 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           <button
             onClick={toggleWishlist}
             aria-label={isWished ? 'Xóa khỏi yêu thích' : 'Thêm vào yêu thích'}
-            className="absolute top-3 right-3 p-2 bg-card/90 backdrop-blur-xs border border-line rounded-full text-ink-soft hover:text-[#d97706] transition-all duration-200 shadow-xs z-10"
+            className="absolute top-3 right-3 p-2 bg-white/80 backdrop-blur-sm border border-[#1A1A1A]/10 rounded-full text-[#1A1A1A] hover:text-[#C8A96E] transition-all duration-300 shadow-xs z-10"
           >
-            <Heart className={`w-4 h-4 ${isWished ? 'fill-[#d97706] text-[#d97706]' : ''}`} />
+            <Heart className={`w-4 h-4 ${isWished ? 'fill-[#C8A96E] text-[#C8A96E]' : ''}`} />
           </button>
         )}
 
         {/* Hover Strip */}
-        <div className="absolute bottom-0 inset-x-0 bg-ink text-white p-3 transform translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out flex items-center justify-between z-10">
-          <span className="text-[11px] font-mono font-medium uppercase tracking-wider text-card">
-            Xem sản phẩm
+        <div className="absolute bottom-0 inset-x-0 bg-[#1A1A1A] text-white p-3 transform translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-out flex items-center justify-between z-10">
+          <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#F5F2EE]">
+            XEM CHI TIẾT
           </span>
-          <ArrowUpRight className="w-4 h-4 text-[#d97706]" />
+          <ArrowUpRight className="w-4 h-4 text-[#C8A96E]" />
         </div>
       </div>
 
       {/* Info Container */}
-      <div className="p-4 flex flex-col flex-1 justify-between bg-card space-y-3">
+      <div className="p-4 flex flex-col flex-1 justify-between bg-white space-y-3">
         <div>
-          <span className="text-[11px] font-mono font-medium uppercase tracking-wider text-ink-soft block mb-1">
+          <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#6E6E6E] block mb-1">
             {category}
           </span>
-          <h3 className="font-display font-medium text-base text-ink line-clamp-1 group-hover:text-[#d97706] transition-colors">
+          <h3 className="font-editorial font-medium text-lg text-[#1A1A1A] line-clamp-1 group-hover:text-[#C8A96E] transition-colors">
             <Link to={targetLink} className="after:absolute after:inset-0">
               {name}
             </Link>
           </h3>
         </div>
 
-        <div className="pt-2 border-t border-line flex items-baseline justify-between">
+        <div className="pt-2 border-t border-[#1A1A1A]/10 flex items-baseline justify-between">
           <div className="flex items-baseline gap-2">
-            <span className="font-mono text-base font-semibold text-ink tracking-tight">
+            <span className="font-mono text-sm font-semibold text-[#1A1A1A]">
               {formattedPrice}
             </span>
             {formattedOldPrice && (
-              <span className="font-mono text-xs text-ink-soft line-through">
+              <span className="font-mono text-xs text-[#6E6E6E] line-through">
                 {formattedOldPrice}
               </span>
             )}
           </div>
 
-          <div className="flex items-center gap-1 text-[11px] font-semibold text-amber-600">
+          <div className="flex items-center gap-1 font-mono text-[10px] font-semibold text-[#C8A96E]">
             <span>★ 4.9</span>
-            <span className="text-[10px] text-ink-soft">(50+)</span>
           </div>
         </div>
       </div>
     </div>
   );
 };
+

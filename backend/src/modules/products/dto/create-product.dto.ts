@@ -19,9 +19,9 @@ export class CreateProductDto {
   @IsString()
   description?: string;
 
-  @IsNotEmpty({ message: 'ID thương hiệu không được để trống' })
-  @IsUUID('4')
-  brand_id: string;
+  @IsOptional()
+  @IsString()
+  brand_id?: string;
 
   @IsNotEmpty({ message: 'ID danh mục không được để trống' })
   @IsUUID('4')
@@ -31,6 +31,9 @@ export class CreateProductDto {
   @IsNumber()
   @Min(0)
   base_price: number;
+
+  @IsOptional()
+  is_active?: boolean;
 
   @IsOptional()
   @IsArray()

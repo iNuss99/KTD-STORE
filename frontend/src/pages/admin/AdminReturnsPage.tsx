@@ -1,6 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { ReturnRequest, ReturnStatus } from '../../types';
-import { RotateCcw, Search, CheckCircle2, XCircle, PackageCheck, DollarSign, Loader2, AlertCircle, Sparkles } from 'lucide-react';
+import {
+  RotateCcw,
+  Search,
+  CheckCircle2,
+  XCircle,
+  PackageCheck,
+  DollarSign,
+  Loader2,
+  AlertCircle,
+  Sparkles,
+  Calendar,
+  Clock,
+  MessageSquareQuote,
+  Check,
+  X,
+} from 'lucide-react';
 import { getAuthHeader } from '../../lib/auth-storage';
 import { apiClient } from '../../lib/apiClient';
 
@@ -139,17 +154,46 @@ export const AdminReturnsPage: React.FC = () => {
   const getStatusBadge = (status: ReturnStatus) => {
     switch (status) {
       case 'REQUESTED':
-        return <span className="bg-amber-100 text-amber-800 text-xs font-bold px-2.5 py-1 rounded-full">Yêu cầu mới</span>;
+        return (
+          <span className="bg-amber-50 text-amber-700 border border-amber-200/70 text-xs font-bold px-2.5 py-1 rounded-full inline-flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+            Yêu cầu mới
+          </span>
+        );
       case 'APPROVED':
-        return <span className="bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-1 rounded-full">Đã duyệt (Chờ nhận hàng)</span>;
+        return (
+          <span className="bg-blue-50 text-blue-700 border border-blue-200/70 text-xs font-bold px-2.5 py-1 rounded-full inline-flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+            Đã duyệt (Chờ nhận hàng)
+          </span>
+        );
       case 'RECEIVED':
-        return <span className="bg-purple-100 text-purple-800 text-xs font-bold px-2.5 py-1 rounded-full">Đã nhận hàng kho</span>;
+        return (
+          <span className="bg-purple-50 text-purple-700 border border-purple-200/70 text-xs font-bold px-2.5 py-1 rounded-full inline-flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+            Đã nhận hàng kho
+          </span>
+        );
       case 'REFUNDED':
-        return <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-full">Đã hoàn tiền</span>;
+        return (
+          <span className="bg-emerald-50 text-emerald-700 border border-emerald-200/70 text-xs font-bold px-2.5 py-1 rounded-full inline-flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            Đã hoàn tiền
+          </span>
+        );
       case 'REJECTED':
-        return <span className="bg-gray-200 text-gray-700 text-xs font-bold px-2.5 py-1 rounded-full">Đã từ chối</span>;
+        return (
+          <span className="bg-slate-100 text-slate-600 border border-slate-200 text-xs font-bold px-2.5 py-1 rounded-full inline-flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+            Đã từ chối
+          </span>
+        );
       default:
-        return <span className="bg-gray-100 text-gray-800 text-xs font-bold px-2.5 py-1 rounded-full">{status}</span>;
+        return (
+          <span className="bg-gray-100 text-gray-800 text-xs font-bold px-2.5 py-1 rounded-full">
+            {status}
+          </span>
+        );
     }
   };
 
@@ -205,112 +249,151 @@ export const AdminReturnsPage: React.FC = () => {
           ))}
         </div>
 
-        {/* Table */}
+        {/* Card List View */}
         {loading ? (
-          <div className="bg-white rounded-3xl p-12 text-center border border-gray-100 shadow-sm">
-            <Loader2 className="w-8 h-8 text-sky-600 animate-spin mx-auto" />
+          <div className="bg-white rounded-3xl p-12 text-center border border-slate-100 shadow-xs">
+            <Loader2 className="w-8 h-8 text-indigo-600 animate-spin mx-auto" />
+            <p className="text-xs text-slate-400 font-medium mt-2">Đang tải danh sách đổi trả...</p>
           </div>
         ) : filteredReturns.length === 0 ? (
-          <div className="bg-white rounded-3xl p-12 text-center border border-gray-100 shadow-sm">
-            <RotateCcw className="w-10 h-10 text-gray-300 mx-auto mb-2" />
-            <p className="text-sm font-semibold text-gray-500">Không có yêu cầu đổi trả nào khớp với tìm kiếm.</p>
+          <div className="bg-white rounded-3xl p-12 text-center border border-slate-100 shadow-xs">
+            <RotateCcw className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+            <p className="text-sm font-bold text-slate-700">Không tìm thấy yêu cầu đổi trả nào.</p>
+            <p className="text-xs text-slate-400 mt-1">Thử thay đổi bộ lọc trạng thái hoặc từ khóa tìm kiếm.</p>
           </div>
         ) : (
-          <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-gray-50/80 text-gray-500 font-bold uppercase tracking-wider border-b border-gray-100">
-                  <tr>
-                    <th className="p-4">Mã Đơn hàng</th>
-                    <th className="p-4">Khách hàng</th>
-                    <th className="p-4">Lý do đổi trả</th>
-                    <th className="p-4">Giá trị đơn</th>
-                    <th className="p-4">Trạng thái</th>
-                    <th className="p-4">Thời gian</th>
-                    <th className="p-4 text-right">Thao tác</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {filteredReturns.map((item) => {
-                    const orderTotal = new Intl.NumberFormat('vi-VN', {
-                      style: 'currency',
-                      currency: 'VND',
-                    }).format(item.order?.total || 0);
+          <div className="space-y-4">
+            {filteredReturns.map((item) => {
+              const orderTotal = new Intl.NumberFormat('vi-VN', {
+                style: 'currency',
+                currency: 'VND',
+              }).format(item.order?.total || 0);
 
-                    return (
-                      <tr key={item.id} className="hover:bg-slate-50/50 transition">
-                        <td className="p-4 font-extrabold text-slate-900 font-mono">
-                          #{item.order_id.slice(0, 8).toUpperCase()}
-                        </td>
-                        <td className="p-4">
-                          <div className="font-bold text-slate-900">{item.user?.full_name || item.order?.shipping_snapshot?.receiver_name}</div>
-                          <div className="text-gray-400 text-[11px]">{item.user?.email || item.order?.shipping_snapshot?.phone}</div>
-                        </td>
-                        <td className="p-4 max-w-xs">
-                          <p className="font-medium text-slate-800 line-clamp-2">"{item.reason}"</p>
+              const customerName =
+                item.user?.full_name || item.order?.shipping_snapshot?.receiver_name || 'Khách hàng';
+              const customerContact =
+                item.user?.email || item.order?.shipping_snapshot?.phone || 'Chưa có thông tin liên hệ';
+              const avatarInitial = customerName.charAt(0).toUpperCase();
+
+              return (
+                <div
+                  key={item.id}
+                  className="bg-white rounded-2xl border border-slate-200 shadow-xs hover:shadow-md hover:border-slate-300 transition duration-200 p-5 sm:p-6 space-y-4"
+                >
+                  {/* Top Row: Order Code, Status Badge & Timestamp */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 pb-3.5 border-b border-slate-100">
+                    <div className="flex flex-wrap items-center gap-2.5">
+                      <span className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-800 font-mono font-extrabold text-xs tracking-wider border border-slate-200/60">
+                        #{item.order_id.slice(0, 8).toUpperCase()}
+                      </span>
+                      {getStatusBadge(item.status)}
+                    </div>
+
+                    <div className="flex items-center gap-1.5 text-slate-400 text-xs font-medium">
+                      <Calendar className="w-3.5 h-3.5" />
+                      <span>{new Date(item.created_at).toLocaleDateString('vi-VN')}</span>
+                      <span className="text-slate-300">•</span>
+                      <Clock className="w-3.5 h-3.5" />
+                      <span>
+                        {new Date(item.created_at).toLocaleTimeString('vi-VN', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Middle Row: Customer Info & Order Total */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    {/* Customer info */}
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-700 font-extrabold flex items-center justify-center text-sm shrink-0">
+                        {avatarInitial}
+                      </div>
+                      <div>
+                        <h4 className="font-extrabold text-slate-900 text-sm">{customerName}</h4>
+                        <p className="text-xs text-slate-500 font-medium mt-0.5">{customerContact}</p>
+                      </div>
+                    </div>
+
+                    {/* Order value */}
+                    <div className="sm:text-right bg-slate-50/80 sm:bg-transparent p-3 sm:p-0 rounded-xl border border-slate-100 sm:border-0">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                        Giá trị đơn hàng
+                      </p>
+                      <p className="text-base sm:text-lg font-black text-slate-900 tracking-tight mt-0.5">
+                        {orderTotal}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Bottom Row: Return Reason & Action Buttons */}
+                  <div className="bg-slate-50/90 rounded-xl p-3.5 sm:p-4 border border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start gap-2.5">
+                        <MessageSquareQuote className="w-4 h-4 text-indigo-500 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-xs text-slate-700 font-medium leading-relaxed">
+                            <span className="font-bold text-slate-900 mr-1">Lý do đổi trả:</span>
+                            <span className="italic text-slate-600">"{item.reason}"</span>
+                          </p>
                           {item.rejection_reason && (
-                            <p className="text-[11px] font-bold text-red-600 mt-1">Từ chối: {item.rejection_reason}</p>
+                            <p className="text-xs font-bold text-rose-600 mt-1.5 flex items-center gap-1 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-100 w-fit">
+                              <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                              Lý do từ chối: {item.rejection_reason}
+                            </p>
                           )}
-                        </td>
-                        <td className="p-4 font-extrabold text-slate-900">
-                          {orderTotal}
-                        </td>
-                        <td className="p-4">
-                          {getStatusBadge(item.status)}
-                        </td>
-                        <td className="p-4 text-gray-500 font-mono text-[11px]">
-                          {new Date(item.created_at).toLocaleDateString('vi-VN')}
-                        </td>
-                        <td className="p-4 text-right">
-                          <div className="flex items-center justify-end gap-2 flex-wrap">
-                            {item.status === 'REQUESTED' && (
-                              <>
-                                <button
-                                  disabled={actionLoadingId === item.id}
-                                  onClick={() => openApproveModal(item)}
-                                  className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] rounded-lg transition shadow-2xs"
-                                >
-                                  Duyệt
-                                </button>
-                                <button
-                                  disabled={actionLoadingId === item.id}
-                                  onClick={() => openRejectModal(item)}
-                                  className="px-2.5 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 font-bold text-[11px] rounded-lg transition"
-                                >
-                                  Từ chối
-                                </button>
-                              </>
-                            )}
+                        </div>
+                      </div>
+                    </div>
 
-                            {item.status === 'APPROVED' && (
-                              <button
-                                disabled={actionLoadingId === item.id}
-                                onClick={() => openReceiveModal(item)}
-                                className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-[11px] rounded-lg transition flex items-center gap-1 shadow-2xs"
-                                title="Nhận hàng về kho và cộng lại tồn kho"
-                              >
-                                <PackageCheck className="w-3.5 h-3.5" /> Nhận hàng kho
-                              </button>
-                            )}
+                    {/* Action buttons */}
+                    <div className="flex items-center gap-2 shrink-0 self-end md:self-center pt-2 md:pt-0 border-t md:border-t-0 border-slate-200/60 w-full md:w-auto justify-end">
+                      {item.status === 'REQUESTED' && (
+                        <>
+                          <button
+                            disabled={actionLoadingId === item.id}
+                            onClick={() => openApproveModal(item)}
+                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs shadow-blue-200 transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                          >
+                            <Check className="w-3.5 h-3.5" /> Duyệt
+                          </button>
+                          <button
+                            disabled={actionLoadingId === item.id}
+                            onClick={() => openRejectModal(item)}
+                            className="px-3.5 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs rounded-xl border border-rose-100 transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                          >
+                            <X className="w-3.5 h-3.5" /> Từ chối
+                          </button>
+                        </>
+                      )}
 
-                            {item.status === 'RECEIVED' && (
-                              <button
-                                disabled={actionLoadingId === item.id}
-                                onClick={() => openRefundModal(item)}
-                                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] rounded-lg transition flex items-center gap-1 shadow-2xs"
-                                title="Xác nhận hoàn tiền cho khách"
-                              >
-                                <DollarSign className="w-3.5 h-3.5" /> Hoàn tiền
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                      {item.status === 'APPROVED' && (
+                        <button
+                          disabled={actionLoadingId === item.id}
+                          onClick={() => openReceiveModal(item)}
+                          className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl shadow-xs shadow-purple-200 transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                          title="Nhận hàng về kho và cộng lại tồn kho"
+                        >
+                          <PackageCheck className="w-3.5 h-3.5" /> Nhận hàng kho
+                        </button>
+                      )}
+
+                      {item.status === 'RECEIVED' && (
+                        <button
+                          disabled={actionLoadingId === item.id}
+                          onClick={() => openRefundModal(item)}
+                          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs shadow-emerald-200 transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                          title="Xác nhận hoàn tiền cho khách"
+                        >
+                          <DollarSign className="w-3.5 h-3.5" /> Hoàn tiền
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
 

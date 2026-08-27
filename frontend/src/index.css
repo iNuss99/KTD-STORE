@@ -4,32 +4,21 @@
 
 @layer base {
   :root {
-    /* === KTD Logo Color System ===
-     * Logo palette: #F5A623 orange border, #E07B00 deep orange, #2D2D2D charcoal, #FFFFFF white
-     */
+    --canvas: #F5F2EE;
+    --bg-alt: #EFECE6;
+    --card: #FFFFFF;
+    --ink: #1A1A1A;
+    --ink-soft: #6E6E6E;
+    --accent: #C8A96E;
+    --accent-dark: #A38345;
+    --accent-light: #F7F2E8;
+    --coral: #D4432A;
+    --ok: #2A7D4F;
+    --line: rgba(26, 26, 26, 0.08);
+  }
 
-    /* Backgrounds */
-    --canvas: #ffffff;           /* Pure white — matches logo background */
-    --bg-alt: #fdf8f2;           /* Warm off-white for section contrast */
-    --card: #ffffff;
-
-    /* Typography */
-    --ink: #2D2D2D;              /* Charcoal — matches logo letterforms */
-    --ink-soft: #6B6560;
-
-    /* Brand Orange — primary accent from logo */
-    --accent: #d97706;           /* Warm Amber Gold matching logo */
-    --accent-dark: #b45309;      /* Darker Pressed state */
-    --accent-light: #fef3c7;     /* Light tint for hover fills */
-    --accent-border: #f59e0b;    /* Logo border accent */
-
-    /* Status & utility */
-    --coral: #E05A2B;            /* Errors / destructive — warm, not clashing */
-    --ok: #1f7a4d;               /* Success green */
-    --line: rgba(45, 45, 45, 0.10);
-
-    /* Legacy alias (stitch stays orange) */
-    --stitch: #E8920A;
+  html {
+    scroll-behavior: smooth;
   }
 
   body {
@@ -37,12 +26,34 @@
     min-height: 100vh;
     background-color: var(--canvas);
     color: var(--ink);
-    font-family: 'Open Sans', sans-serif;
+    font-family: 'Lexend', sans-serif;
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3, .font-editorial {
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-weight: 700;
+  }
+
+  /* Custom Editorial Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #F5F2EE;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #C8A96E;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #A38345;
   }
 
   /* WCAG Accessible Focus Indicator */
   *:focus-visible {
-    outline: 2px solid var(--stitch) !important;
+    outline: 2px solid var(--accent) !important;
     outline-offset: 2px !important;
   }
 }
@@ -85,4 +96,10 @@
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Marquee ticker animation */
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
 }

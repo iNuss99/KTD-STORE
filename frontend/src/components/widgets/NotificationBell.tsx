@@ -10,7 +10,7 @@ interface NotificationItem {
   created_at: string;
 }
 
-import { getAuthToken, getAuthHeader } from '../../lib/auth-storage';
+import { useAuth } from '../../hooks/useAuth';
 import { apiClient } from '../../lib/apiClient';
 
 export const NotificationBell: React.FC = () => {
@@ -19,7 +19,7 @@ export const NotificationBell: React.FC = () => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const token = getAuthToken();
+  const { token } = useAuth();
 
   const fetchNotifications = async () => {
     if (!token) return;
@@ -27,8 +27,13 @@ export const NotificationBell: React.FC = () => {
       const data = await apiClient('/api/notifications');
       setNotifications(data.notifications || []);
       setUnreadCount(data.unreadCount || 0);
-    } catch (err) {
-      console.error('Error fetching notifications:', err);
+    } catch (err: any) {
+      const msg = err?.message ?? '';
+      // Bỏ qua lỗi auth (401) và lỗi server chưa sẵn sàng (500/502/503)
+      const isSilent = msg === 'Unauthorized' || /HTTP Error (401|500|502|503)/.test(msg);
+      if (!isSilent) {
+        console.error('Error fetching notifications:', err);
+      }
     }
   };
 

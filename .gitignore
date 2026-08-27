@@ -32,7 +32,9 @@ credentials.json
 # ===========================
 docs/
 *.md
+**/*.md
 !README.md
+
 
 # ===========================
 # Test & QA Artifacts

@@ -268,20 +268,13 @@ export class ReportsService {
   }
 
   async getOverview() {
-    const count = await this.orderRepo.count();
-    if (count === 0) {
-      await this.seedMockData();
-    }
+    const overviewRaw = await this.orderRepo
+      .createQueryBuilder('order')
+      .select('COALESCE(SUM(order.total), 0)', 'totalRevenue')
+      .addSelect('COUNT(order.id)', 'totalCompletedOrders')
+      .where('order.status = :status', { status: OrderStatus.DELIVERED })
+      .getRawOne();
 
-    // Total revenue from delivered orders
-    const deliveredOrders = await this.orderRepo.find({
-      where: { status: OrderStatus.DELIVERED },
-    });
-
-    const totalRevenue = deliveredOrders.reduce((sum, o) => sum + Number(o.total || 0), 0);
-    const totalCompletedOrders = deliveredOrders.length;
-
-    // Pending/processing orders count
     const pendingOrdersCount = await this.orderRepo.count({
       where: [
         { status: OrderStatus.PENDING },
@@ -291,14 +284,13 @@ export class ReportsService {
       ],
     });
 
-    // Low stock variants count (<= 5)
     const lowStockCount = await this.variantRepo.count({
       where: { is_active: true, stock_quantity: LessThanOrEqual(5) },
     });
 
     return {
-      totalRevenue,
-      totalCompletedOrders,
+      totalRevenue: Number(overviewRaw?.totalRevenue || 0),
+      totalCompletedOrders: Number(overviewRaw?.totalCompletedOrders || 0),
       pendingOrdersCount,
       lowStockCount,
     };
@@ -309,6 +301,7 @@ export class ReportsService {
 
     const queryBuilder = this.orderRepo
       .createQueryBuilder('order')
+      .select(['order.created_at', 'order.total'])
       .where('order.status = :status', { status: OrderStatus.DELIVERED });
 
     if (startDate) {
@@ -320,13 +313,14 @@ export class ReportsService {
       queryBuilder.andWhere('order.created_at <= :endDate', { endDate: end });
     }
 
-    const orders = await queryBuilder.getMany();
+    const orders = await queryBuilder.getRawMany();
 
-    // Grouping in JS for DB independence (PostgreSQL / SQLite test DB)
     const groupedData = new Map<string, { period: string; revenue: number; orderCount: number }>();
 
     for (const order of orders) {
-      const date = new Date(order.created_at);
+      const dateVal = order.order_created_at || order.created_at;
+      if (!dateVal) continue;
+      const date = new Date(dateVal);
       let periodKey = '';
 
       if (period === ReportPeriod.YEAR) {
@@ -337,7 +331,6 @@ export class ReportsService {
       } else if (period === ReportPeriod.MONTH) {
         periodKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       } else if (period === ReportPeriod.WEEK) {
-        // Simple ISO week calculation
         const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
         const pastDaysOfYear = (date.getTime() - firstDayOfYear.getTime()) / 86400000;
         const weekNum = Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
@@ -347,7 +340,7 @@ export class ReportsService {
       }
 
       const existing = groupedData.get(periodKey) || { period: periodKey, revenue: 0, orderCount: 0 };
-      existing.revenue += Number(order.total || 0);
+      existing.revenue += Number(order.order_total || order.total || 0);
       existing.orderCount += 1;
       groupedData.set(periodKey, existing);
     }
@@ -356,33 +349,23 @@ export class ReportsService {
   }
 
   async getTopProducts(limit: number = 10) {
-    const items = await this.orderItemRepo
+    const rawResults = await this.orderItemRepo
       .createQueryBuilder('item')
       .innerJoin('item.order', 'order')
+      .select('COALESCE(item.product_name, item.sku)', 'productName')
+      .addSelect('SUM(item.quantity)::int', 'totalQuantity')
+      .addSelect('SUM(item.price * item.quantity)::numeric', 'totalRevenue')
       .where('order.status = :status', { status: OrderStatus.DELIVERED })
-      .getMany();
+      .groupBy('COALESCE(item.product_name, item.sku)')
+      .orderBy('"totalQuantity"', 'DESC')
+      .limit(limit)
+      .getRawMany();
 
-    const productMap = new Map<
-      string,
-      { productName: string; totalQuantity: number; totalRevenue: number }
-    >();
-
-    for (const item of items) {
-      const key = item.product_name || item.sku;
-      const existing = productMap.get(key) || {
-        productName: key,
-        totalQuantity: 0,
-        totalRevenue: 0,
-      };
-
-      existing.totalQuantity += item.quantity;
-      existing.totalRevenue += Number(item.price || 0) * item.quantity;
-      productMap.set(key, existing);
-    }
-
-    return Array.from(productMap.values())
-      .sort((a, b) => b.totalQuantity - a.totalQuantity)
-      .slice(0, limit);
+    return rawResults.map((r) => ({
+      productName: r.productName,
+      totalQuantity: Number(r.totalQuantity || 0),
+      totalRevenue: Number(r.totalRevenue || 0),
+    }));
   }
 
   async getLowStockVariants(threshold: number = 5) {
@@ -407,42 +390,28 @@ export class ReportsService {
   }
 
   async getStaffPerformance() {
-    const payments = await this.paymentRepo.find({
-      where: {},
-      relations: ['confirmed_user', 'order'],
-    });
+    const rawResults = await this.paymentRepo
+      .createQueryBuilder('payment')
+      .innerJoin('payment.confirmed_user', 'user')
+      .innerJoin('payment.order', 'order')
+      .select('user.id', 'staffId')
+      .addSelect('COALESCE(user.full_name, user.email)', 'staffName')
+      .addSelect('user.email', 'staffEmail')
+      .addSelect('COUNT(payment.id)::int', 'confirmedOrdersCount')
+      .addSelect('SUM(order.total)::numeric', 'totalAmount')
+      .where('payment.confirmed_by IS NOT NULL')
+      .groupBy('user.id')
+      .addGroupBy('user.full_name')
+      .addGroupBy('user.email')
+      .orderBy('"confirmedOrdersCount"', 'DESC')
+      .getRawMany();
 
-    const staffMap = new Map<
-      string,
-      {
-        staffId: string;
-        staffName: string;
-        staffEmail: string;
-        confirmedOrdersCount: number;
-        totalAmount: number;
-      }
-    >();
-
-    for (const payment of payments) {
-      if (!payment.confirmed_by || !payment.confirmed_user) continue;
-
-      const staffId = payment.confirmed_by;
-      const staffUser = payment.confirmed_user;
-      const existing = staffMap.get(staffId) || {
-        staffId,
-        staffName: staffUser?.full_name || staffUser?.email || 'N/A',
-        staffEmail: staffUser?.email || '',
-        confirmedOrdersCount: 0,
-        totalAmount: 0,
-      };
-
-      existing.confirmedOrdersCount += 1;
-      existing.totalAmount += Number(payment.order?.total || 0);
-      staffMap.set(staffId, existing);
-    }
-
-    return Array.from(staffMap.values()).sort(
-      (a, b) => b.confirmedOrdersCount - a.confirmedOrdersCount,
-    );
+    return rawResults.map((r) => ({
+      staffId: r.staffId,
+      staffName: r.staffName,
+      staffEmail: r.staffEmail,
+      confirmedOrdersCount: Number(r.confirmedOrdersCount || 0),
+      totalAmount: Number(r.totalAmount || 0),
+    }));
   }
 }

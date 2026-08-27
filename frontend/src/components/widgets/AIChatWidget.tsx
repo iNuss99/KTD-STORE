@@ -28,7 +28,7 @@ export const AIChatWidget: React.FC = () => {
     {
       id: 'welcome',
       sender: 'ai',
-      text: 'Xin chào anh! Em là Trợ lý AI Stylist của Knot To Detail. Anh đang cần tư vấn phối đồ hay tìm sản phẩm gì hôm nay ạ?',
+      text: 'Xin chào anh! Em là Trợ lý AI Stylist của Knot To Detail — Studio chuyên các dòng Áo Nam cao cấp. Anh đang tìm phom dáng áo (Sơ mi, Polo, T-Shirt, Blazer) hay cần tư vấn size áo ạ?',
     },
   ]);
 
@@ -201,16 +201,16 @@ export const AIChatWidget: React.FC = () => {
               👔 Sơ mi công sở
             </button>
             <button
-              onClick={() => handleSend('Gợi ý quần kaki / jeans')}
-              className="px-2.5 py-1 bg-slate-100 hover:bg-sky-50 hover:text-sky-600 text-slate-700 font-semibold rounded-full shrink-0 transition"
-            >
-              👖 Quần nam đẹp
-            </button>
-            <button
-              onClick={() => handleSend('Xem áo Polo năng động')}
+              onClick={() => handleSend('Xem mẫu áo Polo cao cấp')}
               className="px-2.5 py-1 bg-slate-100 hover:bg-sky-50 hover:text-sky-600 text-slate-700 font-semibold rounded-full shrink-0 transition"
             >
               👕 Áo Polo
+            </button>
+            <button
+              onClick={() => handleSend('Tư vấn áo khoác blazer')}
+              className="px-2.5 py-1 bg-slate-100 hover:bg-sky-50 hover:text-sky-600 text-slate-700 font-semibold rounded-full shrink-0 transition"
+            >
+              🧥 Áo Blazer
             </button>
           </div>
 

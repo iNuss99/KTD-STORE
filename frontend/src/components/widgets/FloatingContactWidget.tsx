@@ -35,7 +35,7 @@ export const FloatingContactWidget: React.FC = () => {
   const cleanPhone = hotline.replace(/[^0-9+]/g, '');
 
   return (
-    <aside aria-label="Kênh liên hệ nhanh" className="fixed bottom-6 left-6 z-40 flex flex-col gap-3 font-sans select-none">
+    <aside aria-label="Kênh liên hệ nhanh" className="fixed bottom-6 right-6 z-40 flex flex-col gap-3 font-sans select-none items-end">
       {/* 1. Hotline Floating Button */}
       <a
         href={`tel:${cleanPhone}`}
@@ -45,7 +45,7 @@ export const FloatingContactWidget: React.FC = () => {
         <Phone className="w-5 h-5 fill-white animate-bounce" />
         
         {/* Tooltip */}
-        <span className="absolute left-14 bg-slate-900 text-white text-xs font-bold py-1.5 px-3 rounded-xl shadow-xl whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none flex items-center gap-1.5">
+        <span className="absolute right-14 bg-slate-900 text-white text-xs font-bold py-1.5 px-3 rounded-xl shadow-xl whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none flex items-center gap-1.5">
           <span>Hotline: {hotline}</span>
         </span>
       </a>
@@ -61,7 +61,7 @@ export const FloatingContactWidget: React.FC = () => {
         <span className="font-extrabold text-sm tracking-tighter">Zalo</span>
         
         {/* Tooltip */}
-        <span className="absolute left-14 bg-slate-900 text-white text-xs font-bold py-1.5 px-3 rounded-xl shadow-xl whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none flex items-center gap-1">
+        <span className="absolute right-14 bg-slate-900 text-white text-xs font-bold py-1.5 px-3 rounded-xl shadow-xl whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none flex items-center gap-1">
           <span>Chat Zalo tư vấn</span>
           <ExternalLink className="w-3 h-3 text-slate-400" />
         </span>
@@ -78,7 +78,7 @@ export const FloatingContactWidget: React.FC = () => {
         <Facebook className="w-5 h-5 fill-white" />
         
         {/* Tooltip */}
-        <span className="absolute left-14 bg-slate-900 text-white text-xs font-bold py-1.5 px-3 rounded-xl shadow-xl whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none flex items-center gap-1">
+        <span className="absolute right-14 bg-slate-900 text-white text-xs font-bold py-1.5 px-3 rounded-xl shadow-xl whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none flex items-center gap-1">
           <span>Fanpage Facebook</span>
           <ExternalLink className="w-3 h-3 text-slate-400" />
         </span>

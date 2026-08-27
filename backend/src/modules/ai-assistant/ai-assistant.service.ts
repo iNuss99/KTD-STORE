@@ -25,18 +25,22 @@ export class AiAssistantService {
 
     if (text.includes('sơ mi') || text.includes('dài tay') || text.includes('công sở')) {
       queryBuilder = queryBuilder.andWhere('(LOWER(product.name) LIKE :kw OR LOWER(category.name) LIKE :kw)', { kw: '%sơ mi%' });
-      reply = 'Dạ chào anh! Với phong cách lịch lãm công sở hoặc đi sự kiện, em gợi ý các mẫu **Áo Sơ Mi Nam** cao cấp chuẩn phom dưới đây ạ:';
+      reply = 'Dạ chào anh! Với phong cách lịch lãm công sở hoặc dự sự kiện, em gợi ý các mẫu **Áo Sơ Mi Nam** cao cấp chuẩn phom dưới đây ạ:';
       keywordFound = true;
     } else if (text.includes('quần') || text.includes('tây') || text.includes('jeans') || text.includes('kaki')) {
-      queryBuilder = queryBuilder.andWhere('(LOWER(product.name) LIKE :kw OR LOWER(category.name) LIKE :kw)', { kw: '%quần%' });
-      reply = 'Dạ! Dưới đây là các mẫu **Quần Nam** chuẩn dáng (Quần tây, Kaki, Jeans) đang bán chạy nhất tại MenWear Hub:';
+      // Specialized studio for shirts: politely inform customer and offer top shirt items
+      reply = 'Dạ! Knot To Detail hiện tập trung chuyên biệt thiết kế và sản xuất các dòng **Áo Nam Cao Cấp** (Sơ mi, Polo, T-Shirt, Áo khoác). Em gửi anh tham khảo các mẫu áo nam bán chạy nhất ạ:';
       keywordFound = true;
-    } else if (text.includes('polo') || text.includes('thun') || text.includes('ngắn tay') || text.includes('năng động')) {
+    } else if (text.includes('khoác') || text.includes('blazer') || text.includes('jacket')) {
+      queryBuilder = queryBuilder.andWhere('(LOWER(product.name) LIKE :kw OR LOWER(category.name) LIKE :kw)', { kw: '%khoác%' });
+      reply = 'Dạ! Dưới đây là các mẫu **Áo Khoác & Blazer Nam** chuẩn dáng và sang trọng tại Knot To Detail:';
+      keywordFound = true;
+    } else if (text.includes('polo') || text.includes('thun') || text.includes('tshirt') || text.includes('ngắn tay')) {
       queryBuilder = queryBuilder.andWhere('(LOWER(product.name) LIKE :kw OR LOWER(category.name) LIKE :kw)', { kw: '%polo%' });
-      reply = 'Dạ! Tùy chọn áo Polo / Áo thun năng động và trẻ trung cho anh vừa đi làm vừa đi chơi nè:';
+      reply = 'Dạ! Tùy chọn các mẫu **Áo Polo & Áo T-Shirt Nam** năng động, trẻ trung cho anh vừa đi làm vừa đi chơi nè:';
       keywordFound = true;
     } else {
-      reply = 'Chào mừng anh đến với MenWear Hub! Em là Trợ lý AI Stylist. Dưới đây là những sản phẩm nổi bật nhất sẵn có tại shop ạ:';
+      reply = 'Chào mừng anh đến với Knot To Detail — Studio Chuyên Áo Nam Cao Cấp! Em là Trợ lý AI Stylist. Dưới đây là những mẫu áo nổi bật nhất sẵn có tại shop ạ:';
     }
 
     const products = await queryBuilder.take(4).getMany();

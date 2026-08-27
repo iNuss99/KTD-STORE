@@ -7,6 +7,10 @@ import { EmptyState } from '../../components/common/EmptyState';
 import { PromoBadge } from '../../components/common/PromoBadge';
 import { getAuthToken } from '../../lib/auth-storage';
 
+// Module-level formatter — tạo 1 lần, dùng lại mỗi render
+const vndFormatter = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' });
+const formatVND = (amount: number) => vndFormatter.format(amount);
+
 export const CartPage: React.FC = () => {
   const navigate = useNavigate();
   const { data: cart, isLoading: loading } = useCart();
@@ -112,20 +116,9 @@ export const CartPage: React.FC = () => {
 
   const finalTotal = Math.max(0, subtotal - discountAmount);
 
-  const formattedSubtotal = new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency: 'VND',
-  }).format(subtotal);
-
-  const formattedDiscount = new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency: 'VND',
-  }).format(discountAmount);
-
-  const formattedTotal = new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency: 'VND',
-  }).format(finalTotal);
+  const formattedSubtotal = formatVND(subtotal);
+  const formattedDiscount = formatVND(discountAmount);
+  const formattedTotal = formatVND(finalTotal);
 
   return (
     <div className="min-h-screen bg-bg flex flex-col font-sans">
@@ -183,10 +176,7 @@ export const CartPage: React.FC = () => {
                     : 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&q=80';
 
                 const price = item.effective_price || variant?.effective_price || product?.base_price || 0;
-                const formattedItemPrice = new Intl.NumberFormat('vi-VN', {
-                  style: 'currency',
-                  currency: 'VND',
-                }).format(price);
+                const formattedItemPrice = formatVND(price);
 
                 return (
                   <div

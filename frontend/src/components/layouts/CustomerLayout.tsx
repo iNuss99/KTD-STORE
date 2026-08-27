@@ -2,7 +2,6 @@ import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { SiteHeader } from './SiteHeader';
 import { SiteFooter } from './SiteFooter';
-import { AIChatWidget } from '../widgets/AIChatWidget';
 import { FloatingContactWidget } from '../widgets/FloatingContactWidget';
 
 export const CustomerLayout: React.FC = () => {
@@ -14,7 +13,6 @@ export const CustomerLayout: React.FC = () => {
       </div>
       <SiteFooter />
       <FloatingContactWidget />
-      <AIChatWidget />
     </div>
   );
 };

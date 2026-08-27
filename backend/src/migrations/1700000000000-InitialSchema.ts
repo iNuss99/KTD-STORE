@@ -4,6 +4,9 @@ export class InitialSchema1700000000000 implements MigrationInterface {
   name = 'InitialSchema1700000000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
+    // 0. PostgreSQL Extensions
+    await queryRunner.query(`CREATE EXTENSION IF NOT EXISTS unaccent;`);
+
     // 1. Users & RBAC
     await queryRunner.query(`
       CREATE TABLE IF NOT EXISTS "users" (

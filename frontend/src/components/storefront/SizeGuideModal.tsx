@@ -27,14 +27,14 @@ export const SizeGuideModal: React.FC<SizeGuideModalProps> = ({ isOpen, onClose 
             <Ruler className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="font-display text-lg sm:text-xl font-bold text-ink">Bảng Hướng Dẫn Chọn Size Chuẩn</h3>
-            <p className="text-xs text-ink-soft mt-0.5">Dành cho các dòng sản phẩm Áo & Quần tại Knot To Detail</p>
+            <h3 className="font-display text-lg sm:text-xl font-bold text-ink">Bảng Hướng Dẫn Chọn Size Áo Nam Chuẩn</h3>
+            <p className="text-xs text-ink-soft mt-0.5">Quy chuẩn thông số cho dòng Áo Sơ Mi, Polo, T-Shirt & Áo Khoác tại Knot To Detail</p>
           </div>
         </div>
 
-        {/* Tops Size Table (Áo polo, sơ mi, thun) */}
+        {/* Tops Size Table */}
         <div className="space-y-3">
-          <h4 className="font-sans text-xs font-bold uppercase tracking-wider text-accent">1. Bảng Size Áo (Polo, Sơ Mi, Áo Thun)</h4>
+          <h4 className="font-sans text-xs font-bold uppercase tracking-wider text-accent">Thông Số Size Áo Nam (Sơ Mi, Polo, T-Shirt, Jacket)</h4>
           <div className="border border-line rounded-2xl overflow-hidden font-sans text-xs">
             <table className="w-full text-left">
               <thead className="bg-bg-alt border-b border-line text-ink-soft uppercase text-[10px] tracking-wider">
@@ -43,6 +43,8 @@ export const SizeGuideModal: React.FC<SizeGuideModalProps> = ({ isOpen, onClose 
                   <th className="p-3">Chiều cao (cm)</th>
                   <th className="p-3">Cân nặng (kg)</th>
                   <th className="p-3">Vòng ngực (cm)</th>
+                  <th className="p-3">Rộng vai (cm)</th>
+                  <th className="p-3">Dài áo (cm)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line text-ink">
@@ -51,73 +53,40 @@ export const SizeGuideModal: React.FC<SizeGuideModalProps> = ({ isOpen, onClose 
                   <td className="p-3">158 - 165</td>
                   <td className="p-3">50 - 58</td>
                   <td className="p-3">86 - 90</td>
+                  <td className="p-3">42</td>
+                  <td className="p-3">68</td>
                 </tr>
                 <tr className="hover:bg-bg-alt/50 transition bg-bg-alt/20">
                   <td className="p-3 font-bold text-accent">M</td>
                   <td className="p-3">165 - 172</td>
                   <td className="p-3">58 - 66</td>
                   <td className="p-3">91 - 95</td>
+                  <td className="p-3">44</td>
+                  <td className="p-3">70</td>
                 </tr>
                 <tr className="hover:bg-bg-alt/50 transition">
                   <td className="p-3 font-bold text-accent">L</td>
                   <td className="p-3">170 - 177</td>
                   <td className="p-3">66 - 74</td>
                   <td className="p-3">96 - 100</td>
+                  <td className="p-3">46</td>
+                  <td className="p-3">72</td>
                 </tr>
                 <tr className="hover:bg-bg-alt/50 transition bg-bg-alt/20">
                   <td className="p-3 font-bold text-accent">XL</td>
                   <td className="p-3">175 - 182</td>
                   <td className="p-3">74 - 82</td>
                   <td className="p-3">101 - 106</td>
+                  <td className="p-3">48</td>
+                  <td className="p-3">74</td>
                 </tr>
                 <tr className="hover:bg-bg-alt/50 transition">
                   <td className="p-3 font-bold text-accent">XXL</td>
                   <td className="p-3">180 - 188</td>
                   <td className="p-3">82 - 92</td>
                   <td className="p-3">107 - 114</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Pants Size Table */}
-        <div className="space-y-3">
-          <h4 className="font-sans text-xs font-bold uppercase tracking-wider text-accent">2. Bảng Size Quần (Jeans, Kaki, Quần Tây)</h4>
-          <div className="border border-line rounded-2xl overflow-hidden font-sans text-xs">
-            <table className="w-full text-left">
-              <thead className="bg-bg-alt border-b border-line text-ink-soft uppercase text-[10px] tracking-wider">
-                <tr>
-                  <th className="p-3">Size</th>
-                  <th className="p-3">Vòng eo (cm)</th>
-                  <th className="p-3">Vòng mông (cm)</th>
-                  <th className="p-3">Dài quần (cm)</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line text-ink">
-                <tr className="hover:bg-bg-alt/50 transition">
-                  <td className="p-3 font-bold text-accent">29 (S)</td>
-                  <td className="p-3">74 - 76</td>
-                  <td className="p-3">90 - 92</td>
-                  <td className="p-3">96</td>
-                </tr>
-                <tr className="hover:bg-bg-alt/50 transition bg-bg-alt/20">
-                  <td className="p-3 font-bold text-accent">30 (M)</td>
-                  <td className="p-3">77 - 79</td>
-                  <td className="p-3">93 - 95</td>
-                  <td className="p-3">98</td>
-                </tr>
-                <tr className="hover:bg-bg-alt/50 transition">
-                  <td className="p-3 font-bold text-accent">31 - 32 (L)</td>
-                  <td className="p-3">80 - 84</td>
-                  <td className="p-3">96 - 100</td>
-                  <td className="p-3">100</td>
-                </tr>
-                <tr className="hover:bg-bg-alt/50 transition bg-bg-alt/20">
-                  <td className="p-3 font-bold text-accent">33 - 34 (XL)</td>
-                  <td className="p-3">85 - 89</td>
-                  <td className="p-3">101 - 105</td>
-                  <td className="p-3">102</td>
+                  <td className="p-3">50</td>
+                  <td className="p-3">76</td>
                 </tr>
               </tbody>
             </table>
@@ -127,11 +96,12 @@ export const SizeGuideModal: React.FC<SizeGuideModalProps> = ({ isOpen, onClose 
         {/* Tips */}
         <div className="bg-bg-alt p-4 rounded-2xl border border-line space-y-2 text-xs text-ink-soft">
           <p className="font-bold text-ink flex items-center gap-1.5">
-            <CheckCircle className="w-4 h-4 text-ok" /> Mẹo chọn size chính xác:
+            <CheckCircle className="w-4 h-4 text-ok" /> Mẹo chọn dáng áo chuẩn phom:
           </p>
           <ul className="list-disc list-inside space-y-1 pl-1">
-            <li>Nếu số đo của bạn nằm giữa 2 size, hãy ưu tiên chọn size lớn hơn để thoải mái cử động.</li>
-            <li>Knot To Detail hỗ trợ đổi size miễn phí trong vòng 7 ngày nếu không vừa vặn.</li>
+            <li><strong>Áo Sơ Mi Slimfit:</strong> Nếu chọn phom ôm vừa vặn, hãy chọn chuẩn size theo vòng ngực.</li>
+            <li><strong>Áo T-Shirt & Polo Oversize:</strong> Nếu thích mặc rộng rãi giấu bụng hoặc phong cách Streetwear, có thể tăng 1 size.</li>
+            <li>Knot To Detail hỗ trợ đổi size áo tận nhà hoàn toàn miễn phí trong vòng 30 ngày.</li>
           </ul>
         </div>
 

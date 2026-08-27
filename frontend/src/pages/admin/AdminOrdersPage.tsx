@@ -263,163 +263,159 @@ export const AdminOrdersPage: React.FC = () => {
             <p className="text-sm font-semibold text-gray-500">Không có đơn hàng nào khớp với điều kiện tìm kiếm.</p>
           </div>
         ) : (
-          <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-gray-50/80 text-gray-500 font-bold uppercase tracking-wider border-b border-gray-100">
-                  <tr>
-                    <th className="p-4">Mã đơn</th>
-                    <th className="p-4">Khách hàng / Địa chỉ</th>
-                    <th className="p-4">Tổng tiền</th>
-                    <th className="p-4">Thanh toán</th>
-                    <th className="p-4">Trạng thái</th>
-                    <th className="p-4 text-right">Thao tác vận hành</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {filteredOrders.map((order) => {
-                    const payment = order.payments?.[0];
-                    const formattedTotal = new Intl.NumberFormat('vi-VN', {
-                      style: 'currency',
-                      currency: 'VND',
-                    }).format(order.total || 0);
+          <div className="space-y-3">
+            {filteredOrders.map((order) => {
+              const payment = order.payments?.[0];
+              const formattedTotal = new Intl.NumberFormat('vi-VN', {
+                style: 'currency',
+                currency: 'VND',
+              }).format(order.total || 0);
 
-                    return (
-                      <tr key={order.id} className="hover:bg-slate-50/50 transition">
-                        <td className="p-4 font-extrabold text-slate-900 font-mono">
-                          #{order.id.slice(0, 8).toUpperCase()}
-                        </td>
-                        <td className="p-4">
-                          <div className="font-bold text-slate-800">
-                            {order.shipping_snapshot?.receiver_name || 'Khách vãng lai'}
-                          </div>
-                          <div className="text-[11px] text-gray-500">{order.shipping_snapshot?.phone}</div>
-                          <div className="text-[11px] text-gray-400 truncate max-w-xs">
-                            {order.shipping_snapshot?.address_line}, {order.shipping_snapshot?.district},{' '}
-                            {order.shipping_snapshot?.province}
-                          </div>
-                        </td>
-                        <td className="p-4 font-bold text-slate-900">{formattedTotal}</td>
-                        <td className="p-4">
-                          <div className="font-semibold text-slate-700">
-                            {payment?.method === 'COD' ? 'Thanh toán COD' : 'Chuyển khoản'}
-                          </div>
-                          {payment?.status === 'COMPLETED' ? (
-                            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md inline-flex items-center gap-1">
-                              <CheckCircle2 className="w-3 h-3" /> Đã thu tiền
-                            </span>
-                          ) : (
-                            <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-md inline-flex items-center gap-1">
-                              <Clock className="w-3 h-3" /> Chưa thu tiền
-                            </span>
-                          )}
-                        </td>
-                        <td className="p-4">
-                          <OrderStatusBadge status={order.status} />
-                        </td>
-                        <td className="p-4 text-right">
-                          <div className="flex items-center justify-end gap-2 flex-wrap">
-                            {/* Confirmation button for any unpaid order (COD or Bank Transfer) */}
-                            {payment?.status !== 'COMPLETED' && order.status !== 'CANCELLED' && (
-                              <button
-                                disabled={actionLoadingId === order.id}
-                                onClick={() => openConfirmCodModal(order)}
-                                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] rounded-lg transition shadow-sm flex items-center gap-1"
-                                title={`Xác nhận đã thu tiền (${payment?.method === 'COD' ? 'Thanh toán COD' : 'Chuyển khoản'})`}
-                              >
-                                <DollarSign className="w-3.5 h-3.5" /> Xác nhận {payment?.method === 'COD' ? 'COD' : 'chuyển khoản'}
-                              </button>
-                            )}
+              return (
+                <div
+                  key={order.id}
+                  className="bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4 flex items-center gap-4 hover:shadow-md hover:border-gray-200 transition"
+                >
+                  {/* Mã đơn */}
+                  <div className="w-28 shrink-0">
+                    <span className="font-extrabold text-slate-900 text-xs font-label tracking-wide">
+                      #{order.id.slice(0, 8).toUpperCase()}
+                    </span>
+                  </div>
 
-                            {/* Sequential Status Transition Actions */}
-                            {order.status === 'PENDING' && (
-                              <>
-                                <button
-                                  disabled={actionLoadingId === order.id}
-                                  onClick={() => openUpdateStatusModal(order, 'CONFIRMED')}
-                                  className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] rounded-lg transition"
-                                >
-                                  Xác nhận đơn
-                                </button>
-                                <button
-                                  disabled={actionLoadingId === order.id}
-                                  onClick={() => openUpdateStatusModal(order, 'CANCELLED')}
-                                  className="px-2.5 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 font-bold text-[11px] rounded-lg transition"
-                                >
-                                  Hủy
-                                </button>
-                              </>
-                            )}
+                  {/* Khách hàng */}
+                  <div className="flex-1 min-w-0">
+                    <div className="font-bold text-slate-800 text-sm truncate">
+                      {order.shipping_snapshot?.receiver_name || 'Khách vãng lai'}
+                    </div>
+                    <div className="text-[11px] text-gray-500">{order.shipping_snapshot?.phone}</div>
+                    <div className="text-[11px] text-gray-400 truncate">
+                      {order.shipping_snapshot?.address_line}, {order.shipping_snapshot?.district},{' '}
+                      {order.shipping_snapshot?.province}
+                    </div>
+                  </div>
 
-                            {order.status === 'CONFIRMED' && (
-                              <>
-                                <button
-                                  disabled={actionLoadingId === order.id}
-                                  onClick={() => openUpdateStatusModal(order, 'PROCESSING')}
-                                  className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-[11px] rounded-lg transition"
-                                >
-                                  Đóng gói
-                                </button>
-                                <button
-                                  disabled={actionLoadingId === order.id}
-                                  onClick={() => openUpdateStatusModal(order, 'CANCELLED')}
-                                  className="px-2.5 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 font-bold text-[11px] rounded-lg transition"
-                                >
-                                  Hủy
-                                </button>
-                              </>
-                            )}
+                  {/* Tổng tiền */}
+                  <div className="w-28 shrink-0 text-right">
+                    <span className="font-bold text-slate-900 text-sm">{formattedTotal}</span>
+                  </div>
 
-                            {order.status === 'PROCESSING' && (
-                              <button
-                                disabled={actionLoadingId === order.id}
-                                onClick={() => openUpdateStatusModal(order, 'SHIPPING')}
-                                className="px-3 py-1.5 bg-sky-600 hover:bg-sky-700 text-white font-bold text-[11px] rounded-lg transition flex items-center gap-1"
-                              >
-                                <Truck className="w-3.5 h-3.5" /> Giao vận chuyển
-                              </button>
-                            )}
+                  {/* Thanh toán */}
+                  <div className="w-36 shrink-0">
+                    <div className="font-semibold text-slate-700 text-xs">
+                      {payment?.method === 'COD' ? 'Thanh toán COD' : 'Chuyển khoản'}
+                    </div>
+                    {payment?.status === 'COMPLETED' ? (
+                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md inline-flex items-center gap-1 mt-0.5">
+                        <CheckCircle2 className="w-3 h-3" /> Đã thu tiền
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-md inline-flex items-center gap-1 mt-0.5">
+                        <Clock className="w-3 h-3" /> Chưa thu tiền
+                      </span>
+                    )}
+                  </div>
 
-                            {order.status === 'SHIPPING' && (
-                              <button
-                                disabled={actionLoadingId === order.id}
-                                onClick={() => openUpdateStatusModal(order, 'DELIVERED')}
-                                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] rounded-lg transition flex items-center gap-1"
-                              >
-                                <CheckCircle2 className="w-3.5 h-3.5" /> Hoàn tất giao
-                              </button>
-                            )}
+                  {/* Trạng thái */}
+                  <div className="w-36 shrink-0">
+                    <OrderStatusBadge status={order.status} />
+                  </div>
 
-                            {/* Trash Delete Icon for Completed Orders */}
-                            {order.status === 'DELIVERED' && (
-                              <button
-                                disabled={actionLoadingId === order.id}
-                                onClick={() => openDeleteOrderModal(order)}
-                                className="p-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition shadow-2xs flex items-center justify-center"
-                                title="Xóa đơn hàng đã hoàn tất"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            )}
+                  {/* Thao tác */}
+                  <div className="shrink-0 flex items-center gap-2">
+                    {payment?.status !== 'COMPLETED' && order.status !== 'CANCELLED' && (
+                      <button
+                        disabled={actionLoadingId === order.id}
+                        onClick={() => openConfirmCodModal(order)}
+                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] rounded-lg transition shadow-sm flex items-center gap-1 whitespace-nowrap"
+                        title={`Xác nhận đã thu tiền (${payment?.method === 'COD' ? 'Thanh toán COD' : 'Chuyển khoản'})`}
+                      >
+                        <DollarSign className="w-3.5 h-3.5" /> {payment?.method === 'COD' ? 'XN COD' : 'XN CK'}
+                      </button>
+                    )}
 
-                            {/* Super Admin manual override button */}
-                            <PermissionGuard requireSuperAdmin>
-                              <button
-                                onClick={() => setOverrideOrder(order)}
-                                className="px-2 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-[11px] rounded-lg transition"
-                                title="Can thiệp thủ công (Super Admin)"
-                              >
-                                Sửa
-                              </button>
-                            </PermissionGuard>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                    {order.status === 'PENDING' && (
+                      <>
+                        <button
+                          disabled={actionLoadingId === order.id}
+                          onClick={() => openUpdateStatusModal(order, 'CONFIRMED')}
+                          className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] rounded-lg transition whitespace-nowrap"
+                        >
+                          Xác nhận đơn
+                        </button>
+                        <button
+                          disabled={actionLoadingId === order.id}
+                          onClick={() => openUpdateStatusModal(order, 'CANCELLED')}
+                          className="px-2.5 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 font-bold text-[11px] rounded-lg transition"
+                        >
+                          Hủy
+                        </button>
+                      </>
+                    )}
+
+                    {order.status === 'CONFIRMED' && (
+                      <>
+                        <button
+                          disabled={actionLoadingId === order.id}
+                          onClick={() => openUpdateStatusModal(order, 'PROCESSING')}
+                          className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-[11px] rounded-lg transition whitespace-nowrap"
+                        >
+                          Đóng gói
+                        </button>
+                        <button
+                          disabled={actionLoadingId === order.id}
+                          onClick={() => openUpdateStatusModal(order, 'CANCELLED')}
+                          className="px-2.5 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 font-bold text-[11px] rounded-lg transition"
+                        >
+                          Hủy
+                        </button>
+                      </>
+                    )}
+
+                    {order.status === 'PROCESSING' && (
+                      <button
+                        disabled={actionLoadingId === order.id}
+                        onClick={() => openUpdateStatusModal(order, 'SHIPPING')}
+                        className="px-3 py-1.5 bg-sky-600 hover:bg-sky-700 text-white font-bold text-[11px] rounded-lg transition flex items-center gap-1 whitespace-nowrap"
+                      >
+                        <Truck className="w-3.5 h-3.5" /> Giao vận chuyển
+                      </button>
+                    )}
+
+                    {order.status === 'SHIPPING' && (
+                      <button
+                        disabled={actionLoadingId === order.id}
+                        onClick={() => openUpdateStatusModal(order, 'DELIVERED')}
+                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] rounded-lg transition flex items-center gap-1 whitespace-nowrap"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Hoàn tất giao
+                      </button>
+                    )}
+
+                    {order.status === 'DELIVERED' && (
+                      <button
+                        disabled={actionLoadingId === order.id}
+                        onClick={() => openDeleteOrderModal(order)}
+                        className="p-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition flex items-center justify-center"
+                        title="Xóa đơn hàng đã hoàn tất"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+
+                    <PermissionGuard requireSuperAdmin>
+                      <button
+                        onClick={() => setOverrideOrder(order)}
+                        className="px-2 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-[11px] rounded-lg transition"
+                        title="Can thiệp thủ công (Super Admin)"
+                      >
+                        Sửa
+                      </button>
+                    </PermissionGuard>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
 

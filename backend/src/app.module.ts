@@ -121,6 +121,12 @@ import { LoyaltyModule } from './modules/loyalty/loyalty.module';
           synchronize: false,
           migrations: [InitialSchema1700000000000],
           ssl: isSsl ? { rejectUnauthorized: false } : false,
+          extra: {
+            max: 20,
+            idleTimeoutMillis: 30000,
+            connectionTimeoutMillis: 10000,
+            keepAlive: true,
+          },
         };
       },
     }),

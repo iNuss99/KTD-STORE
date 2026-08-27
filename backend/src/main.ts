@@ -8,6 +8,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.enableCors();
+  app.setGlobalPrefix('api');
 
   // Task T1.5: Register global exception filter for structured errors & logging
   app.useGlobalFilters(new HttpExceptionFilter());

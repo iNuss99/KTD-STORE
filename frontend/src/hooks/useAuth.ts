@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { getAuthToken } from '../lib/auth-storage';
 
 export type Role = 'SUPER_ADMIN' | 'CEO' | 'MANAGER' | 'STAFF' | 'CUSTOMER';
 
@@ -45,8 +46,6 @@ const setStorageItem = (key: string, value: string | null) => {
   }
 };
 
-import { getAuthToken } from '../lib/auth-storage';
-
 export function useAuth(): UserAuth {
   const [authTick, setAuthTick] = useState(0);
 
@@ -58,11 +57,9 @@ export function useAuth(): UserAuth {
     }
   }, []);
 
-  const token = getAuthToken();
-  const actualRole = (getStorageItem('user_role') as Role) || null;
-  const simulatedRole = (getStorageItem('view_as_role') as Role) || null;
-
-  const setSimulatedRole = (newRole: Role | null) => {
+  // setSimulatedRole: stable reference — tidak perlu authTick di deps
+  const setSimulatedRole = useCallback((newRole: Role | null) => {
+    const actualRole = (getStorageItem('user_role') as Role) || null;
     if (newRole === null || newRole === actualRole) {
       setStorageItem('view_as_role', null);
     } else {
@@ -71,9 +68,14 @@ export function useAuth(): UserAuth {
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new Event('auth-change'));
     }
-  };
+  }, []);
 
   return useMemo(() => {
+    // Đọc storage bên trong useMemo để đảm bảo luôn lấy giá trị mới khi authTick thay đổi
+    const token = getAuthToken();
+    const actualRole = (getStorageItem('user_role') as Role) || null;
+    const simulatedRole = (getStorageItem('view_as_role') as Role) || null;
+
     const isAuthenticated = !!token;
     const isSuperAdminActual = actualRole === 'SUPER_ADMIN';
     const isSimulating = isSuperAdminActual && !!simulatedRole && simulatedRole !== 'SUPER_ADMIN';
@@ -104,5 +106,6 @@ export function useAuth(): UserAuth {
       canManualOverrideOrder: isSuperAdmin,
       setSimulatedRole,
     };
-  }, [token, actualRole, simulatedRole, authTick]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authTick, setSimulatedRole]);
 }

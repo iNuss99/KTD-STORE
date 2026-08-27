@@ -3,6 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { Search, X, Loader2, ArrowRight } from 'lucide-react';
 import { apiClient } from '../../lib/apiClient';
 
+// Module-level formatter — tạo 1 lần, dùng lại mỗi lần gọi
+const vndFormatter = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' });
+const formatVND = (price: number) => vndFormatter.format(price);
+
 interface SuggestionItem {
   id: string;
   name: string;
@@ -103,9 +107,7 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
     }
   };
 
-  const formatVND = (price: number) => {
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
-  };
+
 
   return (
     <div className={`relative ${className}`} ref={containerRef}>

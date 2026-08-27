@@ -1,22 +1,16 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Order } from '../types';
-
-const getToken = () => localStorage.getItem('access_token') || localStorage.getItem('token');
-
-const getAuthHeaders = () => {
-  const token = getToken();
-  return token ? { Authorization: `Bearer ${token}` } : {};
-};
+import { getAuthToken, getAuthHeader } from '../lib/auth-storage';
 
 export function useMyOrders() {
-  const token = getToken();
+  const token = getAuthToken();
 
   return useQuery<Order[]>({
     queryKey: ['orders', 'my'],
     queryFn: async () => {
       if (!token) return [];
       const res = await fetch('/api/orders/my', {
-        headers: getAuthHeaders(),
+        headers: getAuthHeader(),
       });
       if (!res.ok) {
         throw new Error('Không thể tải danh sách đơn hàng');
@@ -29,14 +23,14 @@ export function useMyOrders() {
 }
 
 export function useOrderDetail(id?: string) {
-  const token = getToken();
+  const token = getAuthToken();
 
   return useQuery<Order>({
     queryKey: ['orders', 'detail', id],
     queryFn: async () => {
       if (!id) throw new Error('ID đơn hàng không hợp lệ');
       const res = await fetch(`/api/orders/${id}`, {
-        headers: getAuthHeaders(),
+        headers: getAuthHeader(),
       });
       if (!res.ok) {
         throw new Error('Không tìm thấy thông tin đơn hàng');
@@ -64,7 +58,7 @@ export function useCreateOrderMutation() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...getAuthHeaders(),
+          ...getAuthHeader(),
         },
         body: JSON.stringify(payload),
       });
@@ -90,7 +84,7 @@ export function useSandboxPaymentMutation() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...getAuthHeaders(),
+          ...getAuthHeader(),
         },
         body: JSON.stringify({ payment_method }),
       });

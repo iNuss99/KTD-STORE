@@ -24,6 +24,9 @@ export function setAuthToken(token: string): void {
       localStorage.setItem(TOKEN_KEY, token);
       localStorage.removeItem(OLD_TOKEN_KEY);
     }
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('auth-change'));
+    }
   } catch (e) {
     console.error('Error saving auth token:', e);
   }
@@ -75,6 +78,9 @@ export function clearAuthToken(): void {
       localStorage.removeItem('user');
       localStorage.removeItem('user_role');
       localStorage.removeItem('user_name');
+    }
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('auth-change'));
     }
   } catch (e) {
     console.error('Error clearing auth token:', e);

@@ -60,11 +60,13 @@ describe('ReportsService', () => {
   });
 
   it('should compute overview KPI metrics accurately', async () => {
-    orderRepo.find.mockResolvedValue([
-      { id: 'o1', total: 500000, status: OrderStatus.DELIVERED },
-      { id: 'o2', total: 300000, status: OrderStatus.DELIVERED },
-    ]);
     orderRepo.count.mockResolvedValue(3);
+    orderRepo.createQueryBuilder.mockReturnValue({
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      getRawOne: jest.fn().mockResolvedValue({ totalRevenue: 800000, totalCompletedOrders: 2 }),
+    });
     variantRepo.count.mockResolvedValue(2);
 
     const overview = await service.getOverview();
@@ -77,12 +79,13 @@ describe('ReportsService', () => {
 
   it('should return revenue grouped by period', async () => {
     const qb = {
+      select: jest.fn().mockReturnThis(),
       where: jest.fn().mockReturnThis(),
       andWhere: jest.fn().mockReturnThis(),
-      getMany: jest.fn().mockResolvedValue([
-        { id: 'o1', total: 200000, created_at: new Date('2026-07-28T10:00:00Z') },
-        { id: 'o2', total: 150000, created_at: new Date('2026-07-28T14:00:00Z') },
-        { id: 'o3', total: 300000, created_at: new Date('2026-07-29T09:00:00Z') },
+      getRawMany: jest.fn().mockResolvedValue([
+        { created_at: new Date('2026-07-28T10:00:00Z'), total: 200000 },
+        { created_at: new Date('2026-07-28T14:00:00Z'), total: 150000 },
+        { created_at: new Date('2026-07-29T09:00:00Z'), total: 300000 },
       ]),
     };
     orderRepo.createQueryBuilder.mockReturnValue(qb);
@@ -100,11 +103,15 @@ describe('ReportsService', () => {
   it('should return top selling products', async () => {
     const qb = {
       innerJoin: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
       where: jest.fn().mockReturnThis(),
-      getMany: jest.fn().mockResolvedValue([
-        { product_name: 'Áo Sơ Mi Nam', sku: 'SM-01', quantity: 2, price: 250000 },
-        { product_name: 'Áo Sơ Mi Nam', sku: 'SM-01', quantity: 3, price: 250000 },
-        { product_name: 'Quần Tay Nam', sku: 'QT-01', quantity: 1, price: 400000 },
+      groupBy: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
+      getRawMany: jest.fn().mockResolvedValue([
+        { productName: 'Áo Sơ Mi Nam', totalQuantity: 5, totalRevenue: 1250000 },
+        { productName: 'Quần Tây Nam', totalQuantity: 1, totalRevenue: 400000 },
       ]),
     };
     orderItemRepo.createQueryBuilder.mockReturnValue(qb);
@@ -138,18 +145,19 @@ describe('ReportsService', () => {
   });
 
   it('should compute staff order processing performance', async () => {
-    paymentRepo.find.mockResolvedValue([
-      {
-        confirmed_by: 'staff-1',
-        confirmed_user: { full_name: 'Staff One', email: 'staff1@menwear.com' },
-        order: { total: 500000 },
-      },
-      {
-        confirmed_by: 'staff-1',
-        confirmed_user: { full_name: 'Staff One', email: 'staff1@menwear.com' },
-        order: { total: 300000 },
-      },
-    ]);
+    const qb = {
+      innerJoin: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      groupBy: jest.fn().mockReturnThis(),
+      addGroupBy: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      getRawMany: jest.fn().mockResolvedValue([
+        { staffId: 'staff-1', staffName: 'Staff One', staffEmail: 'staff1@menwear.com', confirmedOrdersCount: 2, totalAmount: 800000 },
+      ]),
+    };
+    paymentRepo.createQueryBuilder = jest.fn().mockReturnValue(qb);
 
     const perf = await service.getStaffPerformance();
 

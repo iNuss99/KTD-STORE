@@ -1,8 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { useProducts } from '../../hooks/useProducts';
 import { ProductCard } from '../../components/storefront/ProductCard';
-import { ArrowRight, Sparkles, ShieldCheck, Flame, Tag } from 'lucide-react';
+import { ProductImage } from '../../components/common/ProductImage';
+import { ArrowRight, Sparkles, ShieldCheck, Flame, Compass, RefreshCw } from 'lucide-react';
 
 export const HomePage: React.FC = () => {
   const { data: productsData, isLoading, isError } = useProducts({ limit: 8 });
@@ -11,148 +13,158 @@ export const HomePage: React.FC = () => {
   const categories = [
     {
       id: 'ao-so-mi',
-      name: 'Áo Sơ Mi',
-      desc: 'Phom dáng hiện đại, tối giản',
-      img: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=600&q=80',
+      name: 'Áo Sơ Mi Atelier',
+      desc: 'Phom dáng tailoring, chất liệu oxford/linen',
     },
     {
       id: 'ao-polo',
-      name: 'Áo Polo',
-      desc: 'Năng động, thoáng khí',
-      img: 'https://images.unsplash.com/photo-1581655353564-df123a1eb820?w=600&q=80',
+      name: 'Áo Polo Cotton',
+      desc: 'Sợi bông chải kỹ, cổ dệt 3D tối giản',
     },
     {
-      id: 'quan-tay',
-      name: 'Quần Tây & Kaki',
-      desc: 'Lịch lãm, co giãn thoải mái',
-      img: 'https://images.unsplash.com/photo-1479064555552-3ef4979f8908?w=600&q=80',
+      id: 'ao-tshirt',
+      name: 'Áo T-Shirt Premium',
+      desc: 'Cotton định lượng cao, thoáng mát chuẩn phom',
     },
     {
       id: 'ao-khoac',
-      name: 'Áo Khoác',
-      desc: 'Phong cách & ấm áp',
-      img: 'https://images.unsplash.com/photo-1548883354-7622d03aca27?w=600&q=80',
+      name: 'Áo Khoác Heritage',
+      desc: 'Chất liệu trượt nước, lót lụa cao cấp',
     },
   ];
 
   return (
-    <div className="space-y-12 sm:space-y-20 pb-16 font-sans overflow-hidden">
-      {/* Hero Section with Blurred Blobs & Floating Card */}
-      <section className="relative min-h-0 lg:min-h-[620px] pt-6 sm:pt-12 lg:pt-20 pb-8 sm:pb-16 flex items-center bg-bg">
-        {/* Color Blobs */}
-        <div className="absolute top-10 left-1/4 w-72 sm:w-96 h-72 sm:h-96 bg-accent/15 rounded-full blur-3xl pointer-events-none -z-0" />
-        <div className="absolute bottom-10 right-1/4 w-72 sm:w-96 h-72 sm:h-96 bg-coral/15 rounded-full blur-3xl pointer-events-none -z-0" />
+    <div className="space-y-16 sm:space-y-28 pb-20 font-sans overflow-hidden bg-[#F5F2EE]">
+      {/* Editorial Marquee Ticker */}
+      <div className="bg-[#1A1A1A] text-[#F5F2EE] py-2.5 overflow-hidden whitespace-nowrap border-b border-[#C8A96E]/30">
+        <div
+          className="inline-flex items-center space-x-12 font-mono text-[10px] uppercase tracking-[0.25em]"
+          style={{ animation: 'marquee 30s linear infinite' }}
+        >
+          <span>✦ SHIRTS &amp; TOPS 2026 COLLECTION</span>
+          <span>✦ FREE EXPRESS SHIPPING ORDERS OVER 1.500.000₫</span>
+          <span>✦ CRAFTED WITH PRECISION &amp; SUSTAINABLE LINEN</span>
+          <span>✦ 30-DAY HASSLE-FREE RETURNS</span>
+          {/* Duplicate for seamless loop */}
+          <span>✦ SHIRTS &amp; TOPS 2026 COLLECTION</span>
+          <span>✦ FREE EXPRESS SHIPPING ORDERS OVER 1.500.000₫</span>
+          <span>✦ CRAFTED WITH PRECISION &amp; SUSTAINABLE LINEN</span>
+          <span>✦ 30-DAY HASSLE-FREE RETURNS</span>
+        </div>
+      </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
-            {/* Left Content */}
-            <div className="lg:col-span-7 space-y-4 sm:space-y-6 text-left">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-card border border-line shadow-2xs">
-                <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#d97706]" />
-                <span className="font-mono text-[11px] sm:text-xs font-medium uppercase tracking-wider text-ink">
-                  Bộ Sưu Tập Thu Đông 2026
-                </span>
-              </div>
-
-              <h1 className="font-display font-bold text-3xl sm:text-5xl lg:text-6xl text-ink leading-[1.15] sm:leading-[1.1] tracking-tight">
-                Phong Cách Tối Giản, <br />
-                <span className="text-[#d97706] underline decoration-[#d97706]/30 underline-offset-4 sm:underline-offset-8">
-                  Tinh Tế Từng Chi Tiết
-                </span>
-              </h1>
-
-              <p className="text-ink-soft text-sm sm:text-lg max-w-xl font-sans leading-relaxed">
-                Định hình gu thời trang nam hiện đại với chất liệu vải tuyển chọn, đường may sắc nét và phom dáng vừa vặn hoàn hảo.
-              </p>
-
-              <div className="pt-2 sm:pt-4 flex flex-wrap items-center gap-3 sm:gap-4">
-                <Link
-                  to="/products"
-                  className="px-6 sm:px-8 py-3 sm:py-3.5 rounded-full bg-gradient-to-r from-[#d97706] to-[#b45309] hover:from-[#b45309] hover:to-[#92400e] text-white font-sans text-xs sm:text-sm font-bold uppercase tracking-wider transition-all shadow-md hover:shadow-lg flex items-center gap-2"
-                >
-                  Khám phá ngay <ArrowRight className="w-4 h-4" />
-                </Link>
-                <Link
-                  to="/products?category=ao-so-mi"
-                  className="px-6 sm:px-8 py-3 sm:py-3.5 rounded-full bg-card hover:bg-bg-alt border border-line text-ink font-sans text-xs sm:text-sm font-semibold transition-all shadow-2xs"
-                >
-                  Xem Áo Sơ Mi
-                </Link>
-              </div>
+      {/* Hero Section */}
+      <section className="relative min-h-[70vh] flex items-center max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center w-full">
+          {/* Left Content */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="lg:col-span-7 space-y-6 text-left"
+          >
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white border border-[#C8A96E]/40 shadow-xs">
+              <Sparkles className="w-3.5 h-3.5 text-[#C8A96E]" />
+              <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.25em] text-[#C8A96E]">
+                ESSENTIAL SHIRTS & TOPS — ISSUE N°24
+              </span>
             </div>
 
-            {/* Right Floating Product Card */}
-            <div className="lg:col-span-5 relative flex justify-center mt-4 lg:mt-0">
-              <div className="relative w-full max-w-xs sm:max-w-md transform lg:rotate-2 hover:rotate-0 transition-transform duration-500">
-                {/* Floating Badge */}
-                <div className="absolute -top-3 -left-3 sm:-top-4 sm:-left-4 z-20 bg-gradient-to-r from-[#d97706] to-[#b45309] text-white font-mono text-[10px] sm:text-xs font-semibold px-3 sm:px-4 py-1.5 sm:py-2 rounded-full shadow-md flex items-center gap-1.5 animate-bounce">
-                  <Flame className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Best Seller 2026
-                </div>
+            <h1 className="font-editorial font-normal text-4xl sm:text-6xl lg:text-7xl text-[#1A1A1A] leading-[1.05] tracking-tight">
+              Tối Giản Thượng Thượng, <br />
+              <span className="italic font-serif text-[#C8A96E]">
+                Tinh Tế Trong Từng Dáng Áo
+              </span>
+            </h1>
 
-                <div className="bg-card border border-line rounded-3xl p-3 sm:p-4 shadow-2xl relative">
-                  <div className="aspect-[4/5] rounded-2xl overflow-hidden bg-bg-alt relative">
-                    <img
-                      src="https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=800&q=80"
-                      alt="Áo Sơ Mi Oxford Premium"
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute top-3 right-3 sm:top-4 sm:right-4 bg-ink text-white font-mono text-[10px] sm:text-xs font-semibold px-2.5 sm:px-3 py-1 rounded-full shadow-2xs">
-                      NEW ARRIVAL
-                    </div>
-                  </div>
+            <p className="text-[#6E6E6E] text-base sm:text-lg max-w-xl font-sans leading-relaxed">
+              KTD Atelier — Studio chuyên các dòng áo nam cao cấp. Cắt may tỉ mỉ, chất liệu tự nhiên chuẩn phom, nâng tầm phong cách lịch lãm hàng ngày.
+            </p>
 
-                  <div className="mt-3 sm:mt-4 p-1 sm:p-2 flex items-center justify-between">
-                    <div>
-                      <span className="font-mono text-[10px] sm:text-xs text-ink-soft uppercase">Áo Sơ Mi Nam</span>
-                      <h3 className="font-display font-bold text-sm sm:text-lg text-ink">Áo Sơ Mi Oxford Cotton Premium</h3>
-                    </div>
-                    <div className="text-right shrink-0 ml-2">
-                      <span className="font-mono text-[10px] sm:text-xs text-ink-soft line-through block">650.000đ</span>
-                      <span className="font-mono text-sm sm:text-lg font-bold text-[#d97706]">490.000đ</span>
-                    </div>
-                  </div>
+            <div className="pt-4 flex flex-wrap items-center gap-4">
+              <Link
+                to="/products"
+                className="px-8 py-4 bg-[#1A1A1A] hover:bg-[#C8A96E] text-white font-mono text-xs uppercase tracking-[0.2em] transition-all duration-300 shadow-md flex items-center gap-3 group"
+              >
+                KHÁM PHÁ BỘ SƯU TẬP
+                <ArrowRight className="w-4 h-4 text-[#C8A96E] group-hover:text-white transition-colors" />
+              </Link>
+              <Link
+                to="/products?category=ao-so-mi"
+                className="px-8 py-4 bg-white hover:bg-[#EFECE6] border border-[#1A1A1A]/20 text-[#1A1A1A] font-mono text-xs uppercase tracking-[0.2em] transition-all duration-300"
+              >
+                ÁO SƠ MI ATELIER
+              </Link>
+            </div>
+          </motion.div>
+
+          {/* Right Editorial Presentation Card */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="lg:col-span-5 relative"
+          >
+            <div className="relative w-full aspect-[3/4] bg-[#EFECE6] border border-[#1A1A1A]/10 p-3 shadow-2xl">
+              <ProductImage
+                src={null}
+                alt="Áo Sơ Mi Oxford Silk Cotton"
+                category="HERITAGE EDITION"
+                aspectRatio="portrait"
+              />
+              <div className="absolute bottom-6 left-6 right-6 bg-white/90 backdrop-blur-md p-4 border border-[#1A1A1A]/10 flex items-center justify-between">
+                <div>
+                  <span className="font-mono text-[9px] uppercase tracking-widest text-[#C8A96E]">
+                    FEATURED ITEM
+                  </span>
+                  <h3 className="font-editorial text-xl font-bold text-[#1A1A1A]">
+                    Áo Sơ Mi Oxford Tailored
+                  </h3>
                 </div>
+                <span className="font-mono text-sm font-bold text-[#1A1A1A]">
+                  890.000₫
+                </span>
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
       </section>
 
-      {/* Category Grid Section - 2 Columns on Mobile for Modern Clean E-Commerce Grid */}
+      {/* Category Grid Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-12 space-y-1.5 sm:space-y-2">
-          <span className="font-mono text-[11px] sm:text-xs text-[#d97706] font-semibold uppercase tracking-widest">
-            DANH MỤC SẢN PHẨM
+        <div className="text-center max-w-2xl mx-auto mb-12 space-y-2">
+          <span className="font-mono text-xs text-[#C8A96E] font-semibold uppercase tracking-[0.25em]">
+            DANH MỤC TUYỂN CHỌN
           </span>
-          <h2 className="font-display font-bold text-2xl sm:text-4xl text-ink">
-            Lựa Chọn Theo Phong Cách
+          <h2 className="font-editorial font-normal text-3xl sm:text-5xl text-[#1A1A1A]">
+            Lựa Chọn Theo Dáng Áo
           </h2>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {categories.map((cat) => (
             <Link
               key={cat.id}
               to={`/products?category=${cat.id}`}
-              className="group relative bg-card border border-line rounded-2xl overflow-hidden p-2.5 sm:p-3 hover:border-[#d97706] hover:shadow-md transition-all duration-300 flex flex-col"
+              className="group relative bg-white border border-[#1A1A1A]/10 p-4 hover:border-[#C8A96E] transition-all duration-500 flex flex-col justify-between"
             >
-              <div className="aspect-[4/3] rounded-xl overflow-hidden bg-bg-alt relative mb-2.5 sm:mb-4">
-                <img
-                  src={cat.img}
+              <div className="aspect-[4/5] overflow-hidden bg-[#EFECE6] mb-4 relative">
+                <ProductImage
+                  src={null}
                   alt={cat.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  category={cat.name}
+                  aspectRatio="portrait"
                 />
-                <div className="absolute inset-0 bg-ink/10 group-hover:bg-transparent transition-colors" />
               </div>
-              <div className="flex items-center justify-between px-0.5 pb-0.5">
-                <div className="min-w-0 flex-1 pr-1">
-                  <h3 className="font-display font-semibold text-sm sm:text-lg text-ink group-hover:text-[#d97706] transition-colors truncate">
+              <div className="flex items-center justify-between pt-2">
+                <div>
+                  <h3 className="font-editorial font-medium text-xl text-[#1A1A1A] group-hover:text-[#C8A96E] transition-colors">
                     {cat.name}
                   </h3>
-                  <p className="text-[11px] sm:text-xs text-ink-soft font-sans truncate">{cat.desc}</p>
+                  <p className="text-xs text-[#6E6E6E] font-sans mt-0.5">{cat.desc}</p>
                 </div>
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-bg-alt group-hover:bg-[#d97706] group-hover:text-white text-ink flex items-center justify-center transition-colors shrink-0">
-                  <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <div className="w-8 h-8 rounded-full border border-[#1A1A1A]/20 group-hover:border-[#C8A96E] group-hover:bg-[#C8A96E] group-hover:text-white flex items-center justify-center transition-all">
+                  <ArrowRight className="w-4 h-4" />
                 </div>
               </div>
             </Link>
@@ -162,66 +174,65 @@ export const HomePage: React.FC = () => {
 
       {/* Featured Products Grid */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between mb-6 sm:mb-10 gap-3">
+        <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between mb-10 gap-4 border-b border-[#1A1A1A]/10 pb-6">
           <div>
-            <span className="font-mono text-[11px] sm:text-xs text-[#d97706] font-semibold uppercase tracking-widest block mb-1">
-              SẢN PHẨM NỔI BẬT
+            <span className="font-mono text-xs text-[#C8A96E] font-semibold uppercase tracking-[0.25em] block mb-1">
+              SẢN PHẨM MỚI NHẤT
             </span>
-            <h2 className="font-display font-bold text-2xl sm:text-3xl text-ink">
-              Xu Hướng Được Yêu Thích
+            <h2 className="font-editorial font-normal text-3xl sm:text-4xl text-[#1A1A1A]">
+              Bản Phối Mới Cho Mùa Này
             </h2>
           </div>
           <Link
             to="/products"
-            className="font-sans text-xs sm:text-sm font-semibold text-[#d97706] hover:text-[#b45309] flex items-center gap-1.5"
+            className="font-mono text-xs uppercase tracking-[0.2em] text-[#1A1A1A] hover:text-[#C8A96E] flex items-center gap-2 pb-1 border-b border-[#1A1A1A]"
           >
-            Xem tất cả <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            XEM TẤT CẢ SẢN PHẨM <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
 
         {isLoading ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="animate-pulse bg-card border border-line rounded-2xl p-3 sm:p-4 space-y-3 sm:space-y-4">
-                <div className="aspect-[4/5] bg-bg-alt rounded-xl" />
-                <div className="h-4 bg-bg-alt rounded w-3/4" />
-                <div className="h-4 bg-bg-alt rounded w-1/2" />
+              <div key={i} className="animate-pulse bg-white border border-[#1A1A1A]/10 p-4 space-y-4">
+                <div className="aspect-[3/4] bg-[#EFECE6]" />
+                <div className="h-4 bg-[#EFECE6] w-3/4" />
+                <div className="h-4 bg-[#EFECE6] w-1/2" />
               </div>
             ))}
           </div>
         ) : isError || products.length === 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
-            {/* Fallback demo cards when API has no products */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             <ProductCard
-              name="Áo Polo Nam Modern Fit"
-              price={350000}
-              oldPrice={450000}
+              name="Áo Polo Cotton Supima"
+              price={450000}
+              oldPrice={590000}
               category="Áo Polo"
-              slug="ao-polo-modern-fit"
+              slug="ao-polo-supima"
             />
             <ProductCard
-              name="Quần Tây Slimfit Co Giãn"
-              price={520000}
-              category="Quần Tây"
-              slug="quan-tay-slimfit"
+              name="Áo T-Shirt Heavyweight Oversize"
+              price={380000}
+              category="Áo T-Shirt"
+              slug="ao-tshirt-heavyweight"
             />
             <ProductCard
-              name="Áo Sơ Mi Trắng Form Rộng"
-              price={420000}
+              name="Áo Sơ Mi Linen Tự Nhiên"
+              price={550000}
               badge="sale"
               category="Áo Sơ Mi"
-              slug="ao-so-mi-trang"
+              slug="ao-so-mi-linen"
             />
             <ProductCard
-              name="Áo Khoác Bomber Kaki"
-              price={680000}
+              name="Áo Khoác Blazer Tailored Classic"
+              price={1250000}
               badge="out"
               category="Áo Khoác"
-              slug="ao-khoac-bomber-kaki"
+              slug="ao-khoac-blazer-classic"
             />
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {products.slice(0, 8).map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
@@ -229,33 +240,42 @@ export const HomePage: React.FC = () => {
         )}
       </section>
 
-      {/* Promotional Banner */}
+      {/* Brand Pillars Grid */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="relative rounded-3xl bg-ink text-white overflow-hidden p-6 sm:p-12 lg:p-16 border border-line">
-          <div className="absolute -right-20 -bottom-20 w-72 sm:w-96 h-72 sm:h-96 bg-[#d97706]/20 rounded-full blur-3xl pointer-events-none" />
-          <div className="relative z-10 max-w-2xl space-y-4 sm:space-y-6">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#d97706]/20 border border-[#d97706]/30 text-[#f59e0b]">
-              <Tag className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span className="font-mono text-[10px] sm:text-xs font-semibold uppercase">ƯU ĐÃI ĐẶC BIỆT</span>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 bg-white border border-[#1A1A1A]/10 p-8 sm:p-12">
+          <div className="space-y-3 text-center md:text-left">
+            <div className="w-10 h-10 rounded-full bg-[#F5F2EE] border border-[#C8A96E]/40 flex items-center justify-center text-[#C8A96E] mx-auto md:mx-0">
+              <Sparkles className="w-5 h-5" />
             </div>
-            <h2 className="font-display font-bold text-2xl sm:text-4xl lg:text-5xl leading-tight">
-              Giảm ngay 20% Cho Đơn Hàng Đầu Tiên
-            </h2>
-            <p className="text-white/70 text-xs sm:text-base font-sans leading-relaxed">
-              Nhập mã <span className="font-mono font-bold text-white bg-white/10 px-2 py-0.5 rounded">MENWEAR20</span> tại bước thanh toán để nhận ngay quà tặng ưu đãi.
+            <h3 className="font-editorial text-2xl font-bold text-[#1A1A1A]">Chất Liệu Tuyển Chọn</h3>
+            <p className="text-xs text-[#6E6E6E] font-sans leading-relaxed">
+              100% sợi tự nhiên Cotton Supima, Wool Blend & Linen Pháp thoáng khí, bền đẹp theo thời gian.
             </p>
-            <div className="pt-2">
-              <Link
-                to="/products"
-                className="inline-flex items-center gap-2 px-6 sm:px-8 py-3 sm:py-3.5 rounded-full bg-gradient-to-r from-[#d97706] to-[#b45309] hover:from-[#b45309] hover:to-[#92400e] text-white font-sans text-xs sm:text-sm font-bold uppercase tracking-wider transition-all shadow-md"
-              >
-                Sắm ngay bây giờ <ArrowRight className="w-4 h-4" />
-              </Link>
+          </div>
+
+          <div className="space-y-3 text-center md:text-left">
+            <div className="w-10 h-10 rounded-full bg-[#F5F2EE] border border-[#C8A96E]/40 flex items-center justify-center text-[#C8A96E] mx-auto md:mx-0">
+              <ShieldCheck className="w-5 h-5" />
             </div>
+            <h3 className="font-editorial text-2xl font-bold text-[#1A1A1A]">Bảo Hành & Đổi Trả</h3>
+            <p className="text-xs text-[#6E6E6E] font-sans leading-relaxed">
+              Hỗ trợ 30 ngày đổi hàng miễn phí tận nhà. Cam kết 100% đúng hình ảnh & chất lượng công bố.
+            </p>
+          </div>
+
+          <div className="space-y-3 text-center md:text-left">
+            <div className="w-10 h-10 rounded-full bg-[#F5F2EE] border border-[#C8A96E]/40 flex items-center justify-center text-[#C8A96E] mx-auto md:mx-0">
+              <RefreshCw className="w-5 h-5" />
+            </div>
+            <h3 className="font-editorial text-2xl font-bold text-[#1A1A1A]">Giao Hàng Hỏa Tốc</h3>
+            <p className="text-xs text-[#6E6E6E] font-sans leading-relaxed">
+              Đóng gói hộp quà atelier sang trọng. Giao hàng toàn quốc từ 1-3 ngày làm việc.
+            </p>
           </div>
         </div>
       </section>
     </div>
   );
 };
+
 

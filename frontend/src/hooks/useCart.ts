@@ -1,9 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Cart } from '../types';
-import { getAuthToken, getAuthHeader, clearAuthToken } from '../lib/auth-storage';
+import { getAuthHeader, clearAuthToken } from '../lib/auth-storage';
+import { useAuth } from './useAuth';
 
 export function useCart() {
-  const token = getAuthToken();
+  const { token } = useAuth();
 
   return useQuery<Cart | null>({
     queryKey: ['cart'],
@@ -71,8 +72,8 @@ export function useUpdateCartItemMutation() {
       return res.json();
     },
     onSuccess: (updatedCart) => {
+      // setQueryData trực tiếp — không cần invalidateQueries thêm để tránh double fetch
       queryClient.setQueryData(['cart'], updatedCart);
-      queryClient.invalidateQueries({ queryKey: ['cart'] });
     },
   });
 }
@@ -92,8 +93,8 @@ export function useRemoveCartItemMutation() {
       return res.json();
     },
     onSuccess: (updatedCart) => {
+      // setQueryData trực tiếp — không cần invalidateQueries thêm để tránh double fetch
       queryClient.setQueryData(['cart'], updatedCart);
-      queryClient.invalidateQueries({ queryKey: ['cart'] });
     },
   });
 }

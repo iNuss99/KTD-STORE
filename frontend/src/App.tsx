@@ -62,7 +62,7 @@ export const App: React.FC = () => {
 
               {/* Standalone Customer Routes */}
               <Route path="/login" element={<CustomerLoginPage />} />
-              <Route path="/customer/login" element={<CustomerLoginPage />} />
+              <Route path="/customer/login" element={<Navigate to="/login" replace />} />
 
               {/* Admin Auth & Routes */}
               <Route path="/crm" element={<AdminLoginPage />} />
