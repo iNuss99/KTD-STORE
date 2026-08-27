@@ -149,17 +149,7 @@ export const SiteHeader: React.FC = () => {
               )}
             </Link>
 
-            {/* Admin Quick Entry Button for Admin/Staff Roles */}
-            {isAdminUser && (
-              <Link
-                to="/admin/dashboard"
-                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-sans text-xs font-bold rounded-lg transition-all shadow-xs border border-slate-800"
-                title="Quay lại Bảng điều khiển Quản trị Admin"
-              >
-                <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
-                <span>Quản trị Admin</span>
-              </Link>
-            )}
+
 
             {/* Account Status / Login Button */}
             {userName ? (
