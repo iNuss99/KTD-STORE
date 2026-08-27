@@ -40,7 +40,7 @@ export const MyOrdersPage: React.FC = () => {
             </p>
             <Link
               to="/products"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-ink hover:bg-stitch text-warm-white font-mono text-xs uppercase tracking-widest transition-colors shadow-xs"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-ink hover:bg-accent text-white font-mono text-xs uppercase tracking-widest transition-colors shadow-xs"
             >
               Khám phá bộ sưu tập sản phẩm
             </Link>

@@ -45,7 +45,7 @@ export const WishlistPage: React.FC = () => {
             </p>
             <Link
               to="/login"
-              className="inline-flex items-center gap-2 bg-ink hover:bg-stitch text-warm-white px-6 py-3 font-mono text-xs uppercase tracking-widest transition-colors shadow-xs"
+              className="inline-flex items-center gap-2 bg-ink hover:bg-accent text-white px-6 py-3 font-mono text-xs uppercase tracking-widest transition-colors shadow-xs"
             >
               Đăng nhập ngay <ArrowRight className="w-4 h-4" />
             </Link>
@@ -61,7 +61,7 @@ export const WishlistPage: React.FC = () => {
             </p>
             <Link
               to="/products"
-              className="inline-flex items-center gap-2 bg-ink hover:bg-stitch text-warm-white px-6 py-3 font-mono text-xs uppercase tracking-widest transition-colors shadow-xs"
+              className="inline-flex items-center gap-2 bg-ink hover:bg-accent text-white px-6 py-3 font-mono text-xs uppercase tracking-widest transition-colors shadow-xs"
             >
               Khám phá sản phẩm <ArrowRight className="w-4 h-4" />
             </Link>
@@ -85,7 +85,7 @@ export const WishlistPage: React.FC = () => {
                   />
                   {!item.product.is_active && (
                     <div className="absolute inset-0 bg-ink/60 flex items-center justify-center backdrop-blur-xs z-10">
-                      <span className="font-mono text-[10px] uppercase text-warm-white bg-stitch px-3 py-1 tracking-widest">
+                      <span className="font-mono text-[10px] uppercase text-white bg-stitch px-3 py-1 tracking-widest">
                         Ngừng kinh doanh
                       </span>
                     </div>

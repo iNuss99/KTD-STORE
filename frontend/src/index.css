@@ -15,6 +15,13 @@
     --coral: #D4432A;
     --ok: #2A7D4F;
     --line: rgba(26, 26, 26, 0.08);
+
+    /* Semantic and compatibility variables */
+    --stitch: #C8A96E;
+    --smoke: #6E6E6E;
+    --steel: #2D2D2D;
+    --chalk: #E2E8F0;
+    --warm-white: #FFFFFF;
   }
 
   html {

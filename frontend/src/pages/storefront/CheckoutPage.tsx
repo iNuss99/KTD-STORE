@@ -249,8 +249,8 @@ export const CheckoutPage: React.FC = () => {
                       }`}
                     >
                       {selectedAddressId === addr.id && (
-                        <div className="absolute top-3 right-3 w-4 h-4 bg-stitch text-warm-white rounded-full flex items-center justify-center">
-                          <Check className="w-3 h-3" />
+                        <div className="absolute top-3 right-3 w-5 h-5 bg-accent text-white rounded-full flex items-center justify-center shadow-xs">
+                          <Check className="w-3.5 h-3.5 stroke-[2.5]" />
                         </div>
                       )}
                       <div className="font-serif text-sm text-ink font-medium">{addr.receiver_name}</div>
@@ -274,11 +274,11 @@ export const CheckoutPage: React.FC = () => {
                 <div
                   onClick={() => setPaymentMethod('COD')}
                   className={`p-4 border cursor-pointer transition-all flex items-center gap-3 ${
-                    paymentMethod === 'COD' ? 'border-stitch bg-warm-white' : 'border-chalk bg-warm-white/50'
+                    paymentMethod === 'COD' ? 'border-stitch bg-warm-white ring-1 ring-stitch' : 'border-chalk bg-warm-white/50 hover:border-steel'
                   }`}
                 >
-                  <div className="w-9 h-9 bg-ink text-warm-white flex items-center justify-center shrink-0">
-                    <Truck className="w-4 h-4" />
+                  <div className="w-9 h-9 bg-ink text-white flex items-center justify-center shrink-0">
+                    <Truck className="w-4 h-4 text-accent" />
                   </div>
                   <div>
                     <div className="font-serif text-sm text-ink">{t('payment.cod')}</div>
@@ -289,11 +289,11 @@ export const CheckoutPage: React.FC = () => {
                 <div
                   onClick={() => setPaymentMethod('VNPAY')}
                   className={`p-4 border cursor-pointer transition-all flex items-center gap-3 ${
-                    paymentMethod === 'VNPAY' ? 'border-stitch bg-warm-white' : 'border-chalk bg-warm-white/50'
+                    paymentMethod === 'VNPAY' ? 'border-stitch bg-warm-white ring-1 ring-stitch' : 'border-chalk bg-warm-white/50 hover:border-steel'
                   }`}
                 >
-                  <div className="w-9 h-9 bg-ink text-warm-white flex items-center justify-center shrink-0">
-                    <QrCode className="w-4 h-4 text-stitch" />
+                  <div className="w-9 h-9 bg-ink text-white flex items-center justify-center shrink-0">
+                    <QrCode className="w-4 h-4 text-accent" />
                   </div>
                   <div>
                     <div className="font-serif text-sm text-ink">{t('payment.vnpay')}</div>
@@ -376,9 +376,9 @@ export const CheckoutPage: React.FC = () => {
                   <button
                     disabled={discountLoading || !discountCode.trim()}
                     onClick={handleApplyDiscount}
-                    className="px-4 py-2 bg-ink hover:bg-stitch text-warm-white font-mono text-xs uppercase tracking-wider transition-colors disabled:opacity-40"
+                    className="px-4 py-2 bg-ink hover:bg-accent text-white font-mono text-xs uppercase tracking-wider transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                   >
-                    {discountLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Áp dụng'}
+                    {discountLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin text-white" /> : 'Áp dụng'}
                   </button>
                 </div>
                 {discountError && <p className="font-mono text-[11px] text-rose-600">{discountError}</p>}
@@ -401,12 +401,12 @@ export const CheckoutPage: React.FC = () => {
                 onClick={handlePlaceOrder}
                 className={`w-full py-4 font-mono text-xs uppercase tracking-widest font-semibold flex items-center justify-center gap-2 transition-colors ${
                   cart?.items && cart.items.length > 0 && selectedAddressId
-                    ? 'bg-ink hover:bg-stitch text-warm-white shadow-xs'
+                    ? 'bg-ink hover:bg-accent text-white shadow-xs cursor-pointer'
                     : 'bg-chalk text-smoke/50 cursor-not-allowed'
                 }`}
               >
                 {createOrderMutation.isPending ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin text-white" />
                 ) : (
                   <>
                     Xác nhận Đặt hàng ({formatPrice(Math.max(0, subtotal - (appliedDiscount?.discount_amount || 0)))})

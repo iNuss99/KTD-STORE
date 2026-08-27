@@ -54,7 +54,7 @@ export const OrderSuccessPage: React.FC = () => {
             <div className="pt-4 flex justify-center gap-3">
               <Link
                 to="/my-orders"
-                className="px-6 py-3 bg-ink hover:bg-stitch text-warm-white font-mono text-xs uppercase tracking-wider transition-colors"
+                className="px-6 py-3 bg-ink hover:bg-accent text-white font-mono text-xs uppercase tracking-wider transition-colors"
               >
                 Xem đơn hàng của tôi
               </Link>
@@ -163,7 +163,7 @@ export const OrderSuccessPage: React.FC = () => {
           <div className="pt-4 flex flex-col sm:flex-row items-center gap-3 justify-center">
             <Link
               to={`/orders/${order.id}`}
-              className="w-full sm:w-auto px-6 py-3.5 bg-ink hover:bg-stitch text-warm-white font-mono text-xs uppercase tracking-widest transition-colors flex items-center justify-center gap-2 shadow-xs"
+              className="w-full sm:w-auto px-6 py-3.5 bg-ink hover:bg-accent text-white font-mono text-xs uppercase tracking-widest transition-colors flex items-center justify-center gap-2 shadow-xs"
             >
               Xem Chi Tiết Đơn Hàng <ArrowRight className="w-4 h-4" />
             </Link>
