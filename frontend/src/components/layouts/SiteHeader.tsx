@@ -74,7 +74,7 @@ export const SiteHeader: React.FC = () => {
   return (
     <header className="sticky top-0 z-50 bg-[#F5F2EE]/90 backdrop-blur-md border-b border-[#1A1A1A]/10 transition-all duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 sm:h-20 gap-4">
+        <div className="flex items-center h-16 sm:h-20 gap-4">
           {/* Brand Logo */}
           <Link to="/" className="flex items-center gap-3 group shrink-0" title="KTD Store">
             <div className="w-8 h-8 rounded-full border border-[#C8A96E] bg-white flex items-center justify-center text-[#C8A96E] font-editorial font-bold text-lg group-hover:scale-105 transition-transform">
@@ -91,7 +91,7 @@ export const SiteHeader: React.FC = () => {
           </Link>
 
           {/* Navigation Links (Desktop) */}
-          <nav className="hidden lg:flex items-center space-x-8 shrink-0">
+          <nav className="hidden lg:flex flex-1 justify-center items-center space-x-8">
             <Link
               to="/"
               className={`font-mono text-xs uppercase tracking-[0.2em] transition-colors ${
@@ -120,7 +120,7 @@ export const SiteHeader: React.FC = () => {
           </nav>
 
           {/* Search Bar Autocomplete (Desktop & Tablet) */}
-          <div className="hidden sm:block flex-1 max-w-xs md:max-w-sm lg:max-w-md mx-2">
+          <div className="hidden sm:block w-[200px] shrink-0">
             <SearchAutocomplete />
           </div>
 
