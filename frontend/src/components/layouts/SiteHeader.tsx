@@ -91,10 +91,10 @@ export const SiteHeader: React.FC = () => {
           </Link>
 
           {/* Navigation Links (Desktop) */}
-          <nav className="hidden lg:flex flex-1 justify-center items-center space-x-8">
+          <nav className="hidden lg:flex flex-1 justify-center items-center space-x-6">
             <Link
               to="/"
-              className={`font-mono text-xs uppercase tracking-[0.2em] transition-colors ${
+              className={`font-mono text-xs uppercase tracking-[0.2em] transition-colors whitespace-nowrap ${
                 isActive('/') ? 'text-[#C8A96E] font-bold border-b border-[#C8A96E] pb-0.5' : 'text-[#1A1A1A] hover:text-[#C8A96E]'
               }`}
             >
@@ -102,7 +102,7 @@ export const SiteHeader: React.FC = () => {
             </Link>
             <Link
               to="/products"
-              className={`font-mono text-xs uppercase tracking-[0.2em] transition-colors ${
+              className={`font-mono text-xs uppercase tracking-[0.2em] transition-colors whitespace-nowrap ${
                 isActive('/products') ? 'text-[#C8A96E] font-bold border-b border-[#C8A96E] pb-0.5' : 'text-[#1A1A1A] hover:text-[#C8A96E]'
               }`}
             >
@@ -110,7 +110,7 @@ export const SiteHeader: React.FC = () => {
             </Link>
             <Link
               to="/my-orders"
-              className={`font-mono text-xs uppercase tracking-[0.2em] transition-colors flex items-center gap-1.5 ${
+              className={`font-mono text-xs uppercase tracking-[0.2em] transition-colors whitespace-nowrap flex items-center gap-1.5 ${
                 isActive('/my-orders') ? 'text-[#C8A96E] font-bold border-b border-[#C8A96E] pb-0.5' : 'text-[#1A1A1A] hover:text-[#C8A96E]'
               }`}
             >
@@ -120,12 +120,12 @@ export const SiteHeader: React.FC = () => {
           </nav>
 
           {/* Search Bar Autocomplete (Desktop & Tablet) */}
-          <div className="hidden sm:block w-[200px] shrink-0">
+          <div className="hidden sm:block w-[180px] shrink-0">
             <SearchAutocomplete />
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <NotificationBell />
 
             <Link
