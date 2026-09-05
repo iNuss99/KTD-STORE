@@ -51,6 +51,16 @@ export const ProductDetailPage: React.FC = () => {
   const toggleWishlistMutation = useToggleWishlistMutation();
   const { data: wishlist = [] } = useWishlist();
 
+  const { data: publicDiscounts = [] } = useQuery<{ code: string; label: string }[]>({
+    queryKey: ['discounts', 'public'],
+    queryFn: async () => {
+      const res = await fetch('/api/discounts/public');
+      if (!res.ok) return [];
+      return res.json();
+    },
+    staleTime: 60_000,
+  });
+
   // Related products for "GỢI Ý XEM THÊM"
   const { data: relatedData } = useProducts({
     category_id: product?.category_id,
@@ -228,16 +238,6 @@ export const ProductDetailPage: React.FC = () => {
 
   const isOutOfStock = selectedVariant ? selectedVariant.stock_quantity === 0 : false;
   const isLowStock = selectedVariant && selectedVariant.stock_quantity > 0 && selectedVariant.stock_quantity <= 5;
-
-  const { data: publicDiscounts = [] } = useQuery<{ code: string; label: string }[]>({
-    queryKey: ['discounts', 'public'],
-    queryFn: async () => {
-      const res = await fetch('/api/discounts/public');
-      if (!res.ok) return [];
-      return res.json();
-    },
-    staleTime: 60_000,
-  });
 
   const promoCodes = publicDiscounts.length > 0
     ? publicDiscounts
