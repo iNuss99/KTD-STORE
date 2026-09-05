@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Package, ArrowRight, Clock, Loader2 } from 'lucide-react';
 import { useMyOrders } from '../../hooks/useOrders';
+import { formatDateTime } from '../../lib/date-utils';
 import { OrderStatusBadge } from '../../components/admin/OrderStatusBadge';
 
 export const MyOrdersPage: React.FC = () => {
@@ -48,13 +49,7 @@ export const MyOrdersPage: React.FC = () => {
         ) : (
           <div className="space-y-4">
             {orders.map((order) => {
-              const formattedDate = new Date(order.created_at).toLocaleDateString('vi-VN', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-              });
+              const formattedDate = formatDateTime(order.created_at);
 
               const formattedTotal = new Intl.NumberFormat('vi-VN', {
                 style: 'currency',

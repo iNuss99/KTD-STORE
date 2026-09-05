@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { CheckCircle2, Package, MapPin, ArrowRight, ShoppingBag, Loader2, Clock, Truck } from 'lucide-react';
 import { Order } from '../../types';
+import { formatDateTime } from '../../lib/date-utils';
 import { apiClient } from '../../lib/apiClient';
 
 export const OrderSuccessPage: React.FC = () => {
@@ -70,13 +71,7 @@ export const OrderSuccessPage: React.FC = () => {
     currency: 'VND',
   }).format(order.total || 0);
 
-  const formattedDate = new Date(order.created_at).toLocaleDateString('vi-VN', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  const formattedDate = formatDateTime(order.created_at);
 
   const payment = order.payments?.[0];
 

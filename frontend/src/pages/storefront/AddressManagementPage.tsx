@@ -5,7 +5,7 @@ import { MapPin, Plus, Check, Trash2, Edit, Loader2, Star, ArrowLeft } from 'luc
 import { Link } from 'react-router-dom';
 import { AddressSelector } from '../../components/storefront/AddressSelector';
 import { useToast } from '../../context/ToastContext';
-import { getAuthHeader } from '../../lib/auth-storage';
+import { getAuthHeader, getUser, getUserName } from '../../lib/auth-storage';
 
 export const AddressManagementPage: React.FC = () => {
   const queryClient = useQueryClient();
@@ -92,9 +92,10 @@ export const AddressManagementPage: React.FC = () => {
   });
 
   const openCreateModal = () => {
+    const user = getUser();
     setEditingAddress(null);
-    setReceiverName('');
-    setPhone('');
+    setReceiverName(user?.full_name || getUserName() || '');
+    setPhone(user?.phone || '');
     setAddressLine('');
     setWard('');
     setDistrict('');
@@ -265,7 +266,8 @@ export const AddressManagementPage: React.FC = () => {
                       placeholder="Ví dụ: 0912345678"
                       required
                       value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
+                      onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                      maxLength={10}
                       className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-sky-600 font-medium"
                     />
                   </div>

@@ -1,13 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Cart } from '../types';
-import { getAuthHeader, clearAuthToken } from '../lib/auth-storage';
-import { useAuth } from './useAuth';
+import { getAuthHeader, clearAuthToken, getAuthToken } from '../lib/auth-storage';
 
 export function useCart() {
-  const { token } = useAuth();
+  const token = getAuthToken();
 
   return useQuery<Cart | null>({
-    queryKey: ['cart'],
+    queryKey: ['cart', token],
     queryFn: async () => {
       if (!token) return null;
       const res = await fetch('/api/cart', {
@@ -23,7 +22,7 @@ export function useCart() {
       return res.json();
     },
     enabled: !!token,
-    staleTime: 0, // Giỏ hàng luôn phản ánh dữ liệu mới nhất
+    staleTime: 30_000, // 30s tránh refetch liên tục khi chuyển trang; mutations tự động invalidate cache
   });
 }
 
@@ -46,7 +45,8 @@ export function useAddToCartMutation() {
       }
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (updatedCart) => {
+      queryClient.setQueriesData({ queryKey: ['cart'] }, updatedCart);
       queryClient.invalidateQueries({ queryKey: ['cart'] });
     },
   });
@@ -72,8 +72,8 @@ export function useUpdateCartItemMutation() {
       return res.json();
     },
     onSuccess: (updatedCart) => {
-      // setQueryData trực tiếp — không cần invalidateQueries thêm để tránh double fetch
-      queryClient.setQueryData(['cart'], updatedCart);
+      queryClient.setQueriesData({ queryKey: ['cart'] }, updatedCart);
+      queryClient.invalidateQueries({ queryKey: ['cart'] });
     },
   });
 }
@@ -93,8 +93,8 @@ export function useRemoveCartItemMutation() {
       return res.json();
     },
     onSuccess: (updatedCart) => {
-      // setQueryData trực tiếp — không cần invalidateQueries thêm để tránh double fetch
-      queryClient.setQueryData(['cart'], updatedCart);
+      queryClient.setQueriesData({ queryKey: ['cart'] }, updatedCart);
+      queryClient.invalidateQueries({ queryKey: ['cart'] });
     },
   });
 }

@@ -1,5 +1,8 @@
 import { DataSource } from 'typeorm';
 import { config } from 'dotenv';
+import * as pg from 'pg';
+
+pg.types.setTypeParser(1114, (str: string) => (str ? new Date(str + 'Z') : null));
 
 import { User } from './modules/users/entities/user.entity';
 import { Permission } from './modules/permissions/entities/permission.entity';
@@ -27,6 +30,7 @@ import { WishlistItem } from './modules/wishlists/entities/wishlist-item.entity'
 import { SystemConfig } from './modules/system-configs/entities/system-config.entity';
 import { LoyaltyPoint } from './modules/loyalty/entities/loyalty-point.entity';
 import { InitialSchema1700000000000 } from './migrations/1700000000000-InitialSchema';
+import { AddColorToProductImages1700000000001 } from './migrations/1700000000001-AddColorToProductImages';
 
 config();
 
@@ -71,7 +75,7 @@ export default new DataSource({
     SystemConfig,
     LoyaltyPoint,
   ],
-  migrations: [InitialSchema1700000000000],
+  migrations: [InitialSchema1700000000000, AddColorToProductImages1700000000001],
   synchronize: false,
   ssl: isSsl ? { rejectUnauthorized: false } : false,
   extra: {

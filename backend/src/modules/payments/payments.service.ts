@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import * as crypto from 'crypto';
+import { PayOS } from '@payos/node';
 import { Order } from '../orders/entities/order.entity';
 import { Payment } from '../orders/entities/payment.entity';
 import { OrderStatus, PaymentStatus, PaymentMethod } from '../../common/enums/order.enum';
@@ -14,6 +15,7 @@ export class PaymentsService {
   private vnpHashSecret: string;
   private vnpUrl: string;
   private vnpReturnUrl: string;
+  private payOS: PayOS | null = null;
 
   constructor(
     @InjectRepository(Order)
@@ -27,6 +29,13 @@ export class PaymentsService {
     this.vnpHashSecret = this.configService.get<string>('VNP_HASH_SECRET', 'RAASTAVKVOEJRAENYVRGDCHJLTG0ANOM');
     this.vnpUrl = this.configService.get<string>('VNP_URL', 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html');
     this.vnpReturnUrl = this.configService.get<string>('VNP_RETURN_URL', 'http://localhost:5173/orders');
+
+    const clientId = this.configService.get<string>('PAYOS_CLIENT_ID');
+    const apiKey = this.configService.get<string>('PAYOS_API_KEY');
+    const checksumKey = this.configService.get<string>('PAYOS_CHECKSUM_KEY');
+    if (clientId && apiKey && checksumKey) {
+      this.payOS = new PayOS({ clientId, apiKey, checksumKey });
+    }
   }
 
   createVnpayPaymentUrl(orderId: string, amount: number, ipAddr = '127.0.0.1', bankCode?: string): { paymentUrl: string } {
@@ -126,5 +135,85 @@ export class PaymentsService {
     });
 
     return order;
+  }
+
+  async createPayosPaymentLink(orderId: string): Promise<any> {
+    if (!this.payOS) {
+      throw new BadRequestException('Cổng thanh toán PayOS chưa được cấu hình.');
+    }
+
+    const order = await this.orderRepo.findOne({
+      where: { id: orderId },
+      relations: ['items'],
+    });
+
+    if (!order) {
+      throw new NotFoundException(`Không tìm thấy đơn hàng #${orderId}`);
+    }
+
+    const orderCode = Number(String(Date.now()).slice(-6) + Math.floor(100 + Math.random() * 900));
+    const description = `KTD ${orderId.slice(0, 8).toUpperCase()}`;
+
+    const paymentLink = await this.payOS.paymentRequests.create({
+      orderCode,
+      amount: Math.round(Number(order.total)),
+      description,
+      cancelUrl: `http://localhost:5173/orders/${orderId}`,
+      returnUrl: `http://localhost:5173/orders/${orderId}?payment_success=1`,
+      items: order.items?.map((it) => ({
+        name: it.product_name,
+        quantity: it.quantity,
+        price: Math.round(Number(it.price)),
+      })) || [{ name: `Đơn hàng #${orderId.slice(0, 8)}`, quantity: 1, price: Math.round(Number(order.total)) }],
+    });
+
+    return {
+      orderId,
+      orderCode,
+      checkoutUrl: paymentLink.checkoutUrl,
+      qrCode: paymentLink.qrCode,
+      accountNumber: paymentLink.accountNumber,
+      accountName: paymentLink.accountName,
+      bin: paymentLink.bin,
+      amount: paymentLink.amount,
+      description: paymentLink.description,
+    };
+  }
+
+  async checkPayosPaymentStatus(orderId: string, orderCode?: number): Promise<{ isPaid: boolean; status: string; orderId: string }> {
+    const order = await this.orderRepo.findOne({
+      where: { id: orderId },
+      relations: ['payments'],
+    });
+
+    if (!order) {
+      throw new NotFoundException(`Không tìm thấy đơn hàng #${orderId}`);
+    }
+
+    const isAlreadyPaid =
+      order.status === OrderStatus.PROCESSING ||
+      order.status === OrderStatus.CONFIRMED ||
+      order.status === OrderStatus.SHIPPING ||
+      order.status === OrderStatus.DELIVERED ||
+      order.payments?.some((p) => p.status === PaymentStatus.COMPLETED);
+
+    if (isAlreadyPaid) {
+      return { isPaid: true, status: 'PAID', orderId };
+    }
+
+    if (this.payOS && orderCode) {
+      try {
+        const info = await this.payOS.paymentRequests.get(orderCode);
+        if (info && info.status === 'PAID') {
+          await this.handlePaymentSuccess(orderId, String(orderCode), 'PAYOS');
+          return { isPaid: true, status: 'PAID', orderId };
+        }
+        return { isPaid: false, status: info?.status || 'PENDING', orderId };
+      } catch (err) {
+        console.error('[checkPayosPaymentStatus error]:', err);
+      }
+    }
+
+    return { isPaid: false, status: 'PENDING', orderId };
   }
 }

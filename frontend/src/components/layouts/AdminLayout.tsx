@@ -4,6 +4,7 @@ import { Eye, RotateCcw } from 'lucide-react';
 import { AdminSidebar } from './AdminSidebar';
 import { AdminHeader } from './AdminHeader';
 import { useAuth } from '../../hooks/useAuth';
+import { getAdminAuthToken, getAdminRole, getUserRole } from '../../lib/auth-storage';
 
 export const AdminLayout: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -11,14 +12,31 @@ export const AdminLayout: React.FC = () => {
   const { isSimulating, role, setSimulatedRole } = useAuth();
 
   useEffect(() => {
-    const token = localStorage.getItem('access_token');
-    const roleVal = localStorage.getItem('user_role');
+    const checkAdminAuth = () => {
+      // Nếu phiên hiện tại đang là tài khoản khách hàng CUSTOMER, lập tức từ chối quyền vào CRM
+      const customerRole = getUserRole();
+      if (customerRole === 'CUSTOMER') {
+        setIsAuthenticated(false);
+        return;
+      }
 
-    if (token && roleVal && ['SUPER_ADMIN', 'CEO', 'MANAGER', 'STAFF'].includes(roleVal)) {
-      setIsAuthenticated(true);
-    } else {
-      setIsAuthenticated(false);
-    }
+      const token = getAdminAuthToken();
+      const roleVal = getAdminRole();
+
+      if (token && roleVal && ['SUPER_ADMIN', 'CEO', 'MANAGER', 'STAFF'].includes(roleVal)) {
+        setIsAuthenticated(true);
+      } else {
+        setIsAuthenticated(false);
+      }
+    };
+
+    checkAdminAuth();
+    window.addEventListener('admin-auth-change', checkAdminAuth);
+    window.addEventListener('auth-change', checkAdminAuth);
+    return () => {
+      window.removeEventListener('admin-auth-change', checkAdminAuth);
+      window.removeEventListener('auth-change', checkAdminAuth);
+    };
   }, []);
 
   if (isAuthenticated === null) {

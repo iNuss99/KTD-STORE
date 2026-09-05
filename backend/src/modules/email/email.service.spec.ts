@@ -8,6 +8,8 @@ import {
   AbandonedCartData,
   WelcomeEmailData,
   PasswordResetEmailData,
+  StaffCreatedEmailData,
+  StaffStatusEmailData,
 } from './email.types';
 
 describe('EmailService & EmailTemplatesService', () => {
@@ -155,6 +157,60 @@ describe('EmailService & EmailTemplatesService', () => {
       expect(result.html).toContain('859402');
       expect(result.html).toContain('15 phút');
     });
+
+    it('Scenario 6: should generate valid Staff Welcome Email HTML and subject', () => {
+      const data: StaffCreatedEmailData = {
+        staffName: 'Nguyễn Văn Staff',
+        staffEmail: 'staff.test@ktdstore.vn',
+        initialPassword: 'StaffPassword123!',
+        role: 'STAFF',
+        loginUrl: 'http://localhost:5173/admin/login',
+      };
+
+      const result = templatesService.generateStaffWelcomeEmail(data);
+
+      expect(result.subject).toContain('Nguyễn Văn Staff');
+      expect(result.html).toContain('Nguyễn Văn Staff');
+      expect(result.html).toContain('staff.test@ktdstore.vn');
+      expect(result.html).toContain('StaffPassword123!');
+      expect(result.html).toContain('Nhân viên vận hành (Staff)');
+      expect(result.html).toContain('http://localhost:5173/admin/login');
+    });
+
+    it('Scenario 7: should generate valid Staff Locked Email HTML and subject', () => {
+      const lockData: StaffStatusEmailData = {
+        staffName: 'Lê Văn Khóa',
+        staffEmail: 'lock.test@ktdstore.vn',
+        role: 'STAFF',
+        isLocked: true,
+        updatedAt: '20:00:00 05/09/2026',
+      };
+
+      const result = templatesService.generateStaffStatusEmail(lockData);
+
+      expect(result.subject).toContain('tạm khóa');
+      expect(result.html).toContain('Lê Văn Khóa');
+      expect(result.html).toContain('TÀI KHOẢN TẠM KHÓA');
+      expect(result.html).toContain('lock.test@ktdstore.vn');
+    });
+
+    it('Scenario 8: should generate valid Staff Unlocked Email HTML and subject', () => {
+      const unlockData: StaffStatusEmailData = {
+        staffName: 'Lê Văn Mở',
+        staffEmail: 'unlock.test@ktdstore.vn',
+        role: 'MANAGER',
+        isLocked: false,
+        updatedAt: '20:05:00 05/09/2026',
+        loginUrl: 'http://localhost:5173/admin/login',
+      };
+
+      const result = templatesService.generateStaffStatusEmail(unlockData);
+
+      expect(result.subject).toContain('mở khóa');
+      expect(result.html).toContain('Lê Văn Mở');
+      expect(result.html).toContain('TÀI KHOẢN ĐÃ MỞ KHÓA');
+      expect(result.html).toContain('unlock.test@ktdstore.vn');
+    });
   });
 
   describe('EmailService', () => {
@@ -182,5 +238,35 @@ describe('EmailService & EmailTemplatesService', () => {
       expect(result.provider).toBe('mock');
       expect(result.messageId).toBeDefined();
     });
+
+    it('should successfully send staff created email via dev mock provider', async () => {
+      const result = await emailService.sendStaffCreatedEmail({
+        staffName: 'Trần Quản Lý',
+        staffEmail: 'manager@ktdstore.vn',
+        initialPassword: 'SecretPassword999',
+        role: 'MANAGER',
+        loginUrl: 'http://localhost:5173/admin/login',
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.provider).toBe('mock');
+      expect(result.messageId).toBeDefined();
+    });
+
+    it('should successfully send staff status changed email via dev mock provider', async () => {
+      const result = await emailService.sendStaffStatusEmail({
+        staffName: 'Trần Nhân Viên',
+        staffEmail: 'staff@ktdstore.vn',
+        role: 'STAFF',
+        isLocked: true,
+        updatedAt: '20:10:00 05/09/2026',
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.provider).toBe('mock');
+      expect(result.messageId).toBeDefined();
+    });
   });
 });
+
+

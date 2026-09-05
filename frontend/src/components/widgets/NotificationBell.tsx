@@ -1,6 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Bell, CheckCheck, Clock } from 'lucide-react';
 import { getSocket } from '../../lib/socketClient';
+import { apiClient, adminApiClient } from '../../lib/apiClient';
+import { getAuthToken, getAdminAuthToken } from '../../lib/auth-storage';
 
 interface NotificationItem {
   id: string;
@@ -10,23 +13,46 @@ interface NotificationItem {
   created_at: string;
 }
 
-import { useAuth } from '../../hooks/useAuth';
-import { apiClient } from '../../lib/apiClient';
+interface NotificationBellProps {
+  isAdmin?: boolean;
+}
 
-export const NotificationBell: React.FC = () => {
+export const NotificationBell: React.FC<NotificationBellProps> = ({ isAdmin: isAdminProp }) => {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const { token } = useAuth();
+  const location = useLocation();
+  const isAdmin = Boolean(isAdminProp ?? (location.pathname.startsWith('/admin') || location.pathname.startsWith('/crm')));
 
-  const fetchNotifications = async () => {
-    if (!token) return;
+  const [activeToken, setActiveToken] = useState<string | null>(() =>
+    isAdmin ? getAdminAuthToken() : getAuthToken()
+  );
+
+  useEffect(() => {
+    const updateToken = () => {
+      setActiveToken(isAdmin ? getAdminAuthToken() : getAuthToken());
+    };
+    updateToken();
+    window.addEventListener('auth-change', updateToken);
+    window.addEventListener('customer-auth-change', updateToken);
+    window.addEventListener('admin-auth-change', updateToken);
+    return () => {
+      window.removeEventListener('auth-change', updateToken);
+      window.removeEventListener('customer-auth-change', updateToken);
+      window.removeEventListener('admin-auth-change', updateToken);
+    };
+  }, [isAdmin]);
+
+  const client = useMemo(() => (isAdmin ? adminApiClient : apiClient), [isAdmin]);
+
+  const fetchNotifications = useCallback(async () => {
+    if (!activeToken) return;
     try {
-      const data = await apiClient('/api/notifications');
-      setNotifications(data.notifications || []);
-      setUnreadCount(data.unreadCount || 0);
+      const data = await client('/api/notifications');
+      setNotifications(data?.notifications || []);
+      setUnreadCount(data?.unreadCount || 0);
     } catch (err: any) {
       const msg = err?.message ?? '';
       // Bỏ qua lỗi auth (401) và lỗi server chưa sẵn sàng (500/502/503)
@@ -35,15 +61,19 @@ export const NotificationBell: React.FC = () => {
         console.error('Error fetching notifications:', err);
       }
     }
-  };
+  }, [activeToken, client]);
 
   useEffect(() => {
+    if (!activeToken) {
+      setNotifications([]);
+      setUnreadCount(0);
+      return;
+    }
+
     fetchNotifications();
 
-    if (!token) return;
-
     // Connect to WebSockets via centralized client (proxy-aware)
-    const socket = getSocket(token);
+    const socket = getSocket(activeToken);
 
     const handleNotification = (newNotif: NotificationItem) => {
       setNotifications((prev) => [newNotif, ...prev]);
@@ -55,7 +85,7 @@ export const NotificationBell: React.FC = () => {
     return () => {
       socket.off('notification', handleNotification);
     };
-  }, [token]);
+  }, [activeToken, fetchNotifications]);
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -70,7 +100,7 @@ export const NotificationBell: React.FC = () => {
 
   const markAsRead = async (id: string) => {
     try {
-      await apiClient(`/api/notifications/${id}/read`, {
+      await client(`/api/notifications/${id}/read`, {
         method: 'PATCH',
       });
       setNotifications((prev) =>
@@ -84,7 +114,7 @@ export const NotificationBell: React.FC = () => {
 
   const markAllAsRead = async () => {
     try {
-      await apiClient('/api/notifications/read-all', {
+      await client('/api/notifications/read-all', {
         method: 'PATCH',
       });
       setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
@@ -94,7 +124,7 @@ export const NotificationBell: React.FC = () => {
     }
   };
 
-  if (!token) return null;
+  if (!activeToken) return null;
 
   return (
     <div className="relative" ref={dropdownRef}>

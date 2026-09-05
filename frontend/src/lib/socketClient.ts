@@ -28,8 +28,9 @@ export function getSocket(token?: string): Socket {
       autoConnect: true,
       reconnection: true,
       reconnectionAttempts: 5,
-      reconnectionDelay: 2000,
-      timeout: 10000,
+      reconnectionDelay: 3000,       // Chờ 3s trước khi retry (tránh spam khi backend cold start)
+      reconnectionDelayMax: 10000,   // Tối đa 10s giữa các lần retry
+      timeout: 15000,
     });
 
     socket.on('connect_error', (err) => {

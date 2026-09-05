@@ -48,6 +48,8 @@ export interface ProductImage {
   url: string;
   alt_text?: string;
   sort_order: number;
+  color_id?: string | null;
+  color?: Color | null;
 }
 
 export interface Product {

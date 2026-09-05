@@ -3,67 +3,85 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { ShoppingBag, User, Package, Heart, LogOut, ChevronDown, Menu, X, ShieldCheck } from 'lucide-react';
 import { NotificationBell } from '../widgets/NotificationBell';
 import { SearchAutocomplete } from '../widgets/SearchAutocomplete';
-import { useLanguage } from '../../context/LanguageContext';
 import { useCart } from '../../hooks/useCart';
-import { getAuthToken, clearAuthToken } from '../../lib/auth-storage';
+import {
+  getAuthToken,
+  clearAuthToken,
+  getUserRole,
+  getUserName,
+  getAdminAuthToken,
+  getAdminName,
+  getAdminRole,
+  clearAdminAuth,
+} from '../../lib/auth-storage';
 
 export const SiteHeader: React.FC = () => {
   const { data: cart } = useCart();
   const cartCount = cart?.items?.length || 0;
-  const { lang, currency, setLang, setCurrency, t } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
 
   const [userName, setUserName] = useState<string | null>(null);
-  const [isAdminUser, setIsAdminUser] = useState(false);
+  const [hasAdminSession, setHasAdminSession] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const checkAuth = useCallback(() => {
-    const token = getAuthToken();
-    if (token) {
-      const storedRole = localStorage.getItem('user_role');
-      const storedName = localStorage.getItem('user_name');
-      const userStr = localStorage.getItem('user');
+    const isAdminRoute = location.pathname.startsWith('/admin') || location.pathname.startsWith('/crm');
 
-      let role = storedRole;
-      if (!role && userStr) {
-        try {
-          const u = JSON.parse(userStr);
-          role = u.role;
-        } catch {}
-      }
+    // 1. Kiểm tra session Admin
+    const adminToken = getAdminAuthToken();
+    const adminRoleVal = getAdminRole();
+    const staffRoles = ['SUPER_ADMIN', 'CEO', 'MANAGER', 'STAFF'];
+    const hasValidAdmin = Boolean(adminToken && adminRoleVal && staffRoles.includes(adminRoleVal));
 
-      const staffRoles = ['SUPER_ADMIN', 'CEO', 'MANAGER', 'STAFF'];
-      setIsAdminUser(Boolean(role && staffRoles.includes(role)));
-
-      if (storedName) {
-        setUserName(storedName);
-      } else if (userStr) {
-        try {
-          const u = JSON.parse(userStr);
-          setUserName(u.full_name || u.email?.split('@')[0]);
-        } catch {
-          setUserName('Tài khoản');
-        }
+    // 2. Xác định tài khoản hiển thị trên Header tùy ngữ cảnh
+    if (isAdminRoute) {
+      if (adminToken) {
+        setUserName(getAdminName() || 'Admin');
       } else {
-        setUserName('Tài khoản');
+        setUserName(null);
       }
+      setHasAdminSession(hasValidAdmin);
     } else {
-      setUserName(null);
-      setIsAdminUser(false);
+      // Trên Storefront: chỉ đọc danh tính khách hàng từ customer namespace
+      const token = getAuthToken();
+      const customerRole = getUserRole();
+      if (token) {
+        const name = getUserName() || 'Tài khoản';
+        setUserName(name);
+      } else {
+        setUserName(null);
+      }
+
+      // TUYỆT ĐỐI KHÔNG hiển thị nút Trang Admin nếu tài khoản đang đăng nhập là CUSTOMER
+      // Chỉ hiển thị nút Trang Admin khi tài khoản đang đăng nhập thực sự là Staff/Admin
+      if (customerRole === 'CUSTOMER') {
+        setHasAdminSession(false);
+      } else {
+        const isStaffUser = Boolean(adminRoleVal && staffRoles.includes(adminRoleVal));
+        setHasAdminSession(isStaffUser && hasValidAdmin);
+      }
     }
-  }, []);
+  }, [location.pathname]);
+
+  const isAdminShopping = hasAdminSession && !userName;
 
   useEffect(() => {
     checkAuth();
     window.addEventListener('auth-change', checkAuth);
-    return () => window.removeEventListener('auth-change', checkAuth);
-  }, []);
+    window.addEventListener('customer-auth-change', checkAuth);
+    window.addEventListener('admin-auth-change', checkAuth);
+    return () => {
+      window.removeEventListener('auth-change', checkAuth);
+      window.removeEventListener('customer-auth-change', checkAuth);
+      window.removeEventListener('admin-auth-change', checkAuth);
+    };
+  }, [checkAuth]);
 
   const handleLogout = () => {
     clearAuthToken();
-    window.dispatchEvent(new Event('auth-change'));
+    clearAdminAuth();
     setShowUserMenu(false);
     setMobileMenuOpen(false);
     navigate('/login');
@@ -73,6 +91,23 @@ export const SiteHeader: React.FC = () => {
 
   return (
     <header className="sticky top-0 z-50 bg-[#F5F2EE]/90 backdrop-blur-md border-b border-[#1A1A1A]/10 transition-all duration-300">
+      {/* Admin Shopping Mode Banner */}
+      {isAdminShopping && (
+        <div className="bg-gradient-to-r from-amber-600 to-amber-700 text-white text-xs font-bold flex items-center justify-between px-4 py-2 shadow-xs">
+          <span className="flex items-center gap-2">
+            <span>👑</span>
+            <span>Đang dùng tài khoản Admin ({getAdminName() || 'Super Admin'}) để test mua sắm</span>
+          </span>
+          <button
+            onClick={() => {
+              navigate('/admin');
+            }}
+            className="ml-4 underline hover:no-underline bg-amber-800/80 hover:bg-amber-900 px-3 py-1 rounded-md text-white text-xs font-semibold transition"
+          >
+            ← Về trang Quản trị
+          </button>
+        </div>
+      )}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center h-16 sm:h-20 gap-4">
           {/* Brand Logo */}
@@ -126,7 +161,7 @@ export const SiteHeader: React.FC = () => {
 
           {/* Actions */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-            <NotificationBell />
+            <NotificationBell isAdmin={false} />
 
             <Link
               to="/wishlist"
@@ -151,6 +186,18 @@ export const SiteHeader: React.FC = () => {
 
 
 
+            {/* Admin Quick Shortcut if Admin session exists */}
+            {hasAdminSession && (
+              <Link
+                to="/admin/dashboard"
+                className="hidden md:inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 bg-slate-900 hover:bg-slate-800 text-amber-400 border border-slate-700/80 rounded-full font-sans text-[11px] sm:text-xs font-bold transition shadow-xs shrink-0"
+                title="Truy cập Bảng điều khiển Quản trị (Admin CRM)"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+                <span>Trang Admin</span>
+              </Link>
+            )}
+
             {/* Account Status / Login Button */}
             {userName ? (
               <div className="relative">
@@ -168,7 +215,7 @@ export const SiteHeader: React.FC = () => {
 
                 {showUserMenu && (
                   <div className="absolute right-0 mt-2 w-56 bg-card rounded-2xl border border-line py-2 z-50 shadow-md font-sans text-xs font-medium space-y-1">
-                    {isAdminUser && (
+                    {hasAdminSession && (
                       <>
                         <Link
                           to="/admin/dashboard"
@@ -242,7 +289,7 @@ export const SiteHeader: React.FC = () => {
             <SearchAutocomplete onSearchSubmitted={() => setMobileMenuOpen(false)} />
           </div>
 
-          {isAdminUser && (
+          {hasAdminSession && (
             <Link
               to="/admin/dashboard"
               onClick={() => setMobileMenuOpen(false)}

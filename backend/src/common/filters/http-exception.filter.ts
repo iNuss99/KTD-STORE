@@ -57,6 +57,10 @@ export class HttpExceptionFilter implements ExceptionFilter {
       }
     } else if (status === 429) {
       this.logger.warn(`Rate limit exceeded on ${request.method} ${request.url} from IP: ${request.ip}`);
+      if (typeof message === 'string' && message.includes('ThrottlerException')) {
+        message = 'Bạn đã gửi yêu cầu quá nhiều lần liên tiếp. Vui lòng đợi 30 giây rồi thử lại.';
+        errorResponse.message = message;
+      }
     }
 
     response.status(status).json(errorResponse);

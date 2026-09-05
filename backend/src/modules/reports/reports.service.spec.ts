@@ -103,6 +103,7 @@ describe('ReportsService', () => {
   it('should return top selling products', async () => {
     const qb = {
       innerJoin: jest.fn().mockReturnThis(),
+      leftJoin: jest.fn().mockReturnThis(),
       select: jest.fn().mockReturnThis(),
       addSelect: jest.fn().mockReturnThis(),
       where: jest.fn().mockReturnThis(),
@@ -147,6 +148,7 @@ describe('ReportsService', () => {
   it('should compute staff order processing performance', async () => {
     const qb = {
       innerJoin: jest.fn().mockReturnThis(),
+      leftJoin: jest.fn().mockReturnThis(),
       select: jest.fn().mockReturnThis(),
       addSelect: jest.fn().mockReturnThis(),
       where: jest.fn().mockReturnThis(),

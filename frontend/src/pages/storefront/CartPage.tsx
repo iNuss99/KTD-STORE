@@ -6,7 +6,8 @@ import { QtyStepper } from '../../components/common/QtyStepper';
 import { EmptyState } from '../../components/common/EmptyState';
 import { PromoBadge } from '../../components/common/PromoBadge';
 import { ProductImage } from '../../components/common/ProductImage';
-import { getAuthToken } from '../../lib/auth-storage';
+import { getAuthToken, getAuthHeader } from '../../lib/auth-storage';
+import { useToast } from '../../context/ToastContext';
 
 // Module-level formatter — tạo 1 lần, dùng lại mỗi render
 const vndFormatter = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' });
@@ -14,6 +15,7 @@ const formatVND = (amount: number) => vndFormatter.format(amount);
 
 export const CartPage: React.FC = () => {
   const navigate = useNavigate();
+  const { showSuccess, showError } = useToast();
   const { data: cart, isLoading: loading } = useCart();
   const updateQuantityMutation = useUpdateCartItemMutation();
   const removeItemMutation = useRemoveCartItemMutation();
@@ -30,7 +32,14 @@ export const CartPage: React.FC = () => {
   };
 
   const handleRemoveItem = (itemId: string) => {
-    removeItemMutation.mutate(itemId);
+    removeItemMutation.mutate(itemId, {
+      onSuccess: () => {
+        showSuccess('Thành công', 'Đã xóa sản phẩm khỏi giỏ hàng');
+      },
+      onError: (err: any) => {
+        showError('Lỗi', err.message || 'Không thể xóa sản phẩm khỏi giỏ hàng');
+      },
+    });
   };
 
   const handleApplyPromoCode = async (e: React.FormEvent) => {
@@ -45,10 +54,11 @@ export const CartPage: React.FC = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${getAuthToken()}`,
+          ...getAuthHeader(),
         },
         body: JSON.stringify({
           code: promoCode.trim(),
+          items: (cart?.items || []).map((i) => ({ variant_id: i.variant_id, quantity: i.quantity })),
           cart_items: cart?.items || [],
         }),
       });
@@ -239,10 +249,15 @@ export const CartPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => handleRemoveItem(item.id)}
-                        className="p-2 text-ink-soft hover:text-coral transition-colors rounded-lg hover:bg-coral/10"
+                        disabled={removeItemMutation.isPending && removeItemMutation.variables === item.id}
+                        className="p-2 text-ink-soft hover:text-coral transition-colors rounded-lg hover:bg-coral/10 disabled:opacity-50 inline-flex items-center justify-center"
                         title="Xóa khỏi giỏ hàng"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        {removeItemMutation.isPending && removeItemMutation.variables === item.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin text-coral" />
+                        ) : (
+                          <Trash2 className="w-4 h-4" />
+                        )}
                       </button>
                     </div>
                   </div>
@@ -324,9 +339,9 @@ export const CartPage: React.FC = () => {
                   onClick={() => {
                     const token = getAuthToken();
                     if (!token) {
-                      navigate('/login?redirect=/checkout', { state: { from: '/checkout' } });
+                      navigate('/login?redirect=/checkout', { state: { from: '/checkout', appliedCode } });
                     } else {
-                      navigate('/checkout');
+                      navigate('/checkout', { state: { appliedCode } });
                     }
                   }}
                   className={`w-full py-4 rounded-full font-sans text-xs uppercase tracking-wider font-semibold flex items-center justify-center gap-2 transition-all shadow-sm ${

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards, Request, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards, Request, HttpCode, HttpStatus, BadRequestException } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { DiscountsService } from './discounts.service';
 import { CreateDiscountDto } from './dto/create-discount.dto';
@@ -14,12 +14,42 @@ import { GetUser } from '../../common/decorators/get-user.decorator';
 export class DiscountsController {
   constructor(private readonly discountsService: DiscountsService) {}
 
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @Get('public')
+  async getPublicDiscounts() {
+    return this.discountsService.findActivePublic();
+  }
+
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @HttpCode(HttpStatus.OK)
+  @Post('validate')
+  async validateDiscount(@Request() req: any, @Body() body: any) {
+    if (!body?.code) {
+      throw new BadRequestException('Vui lòng nhập mã giảm giá');
+    }
+    const rawItems = (body.items || body.cart_items || []).map((i: any) => ({
+      variant_id: i.variant_id || i.variant?.id,
+      quantity: Number(i.quantity) || 1,
+    }));
+    const result = await this.discountsService.validateAndCalculate(
+      body.code,
+      req.user?.id,
+      rawItems.length > 0 ? rawItems : undefined,
+    );
+    return {
+      code: result.discount.code,
+      discount_type: result.discount.discount_type,
+      value: result.discount.value,
+      discount_amount: result.discount_amount,
+      applicable_subtotal: result.applicable_subtotal,
+    };
+  }
+
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   @Post('apply')
   async applyDiscount(@Request() req: any, @Body() dto: ApplyDiscountDto) {
-    const result = await this.discountsService.validateAndCalculate(dto.code, req.user.id, dto.items);
+    const result = await this.discountsService.validateAndCalculate(dto.code, req.user?.id, dto.items);
     return {
       code: result.discount.code,
       discount_type: result.discount.discount_type,

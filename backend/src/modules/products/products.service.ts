@@ -9,6 +9,7 @@ import { Color } from './entities/color.entity';
 import { Brand } from '../brands/entities/brand.entity';
 import { Category } from '../categories/entities/category.entity';
 import { CreateProductDto } from './dto/create-product.dto';
+import { UpdateProductDto } from './dto/update-product.dto';
 import { CreateVariantDto } from './dto/create-variant.dto';
 import { FilterProductDto } from './dto/filter-product.dto';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
@@ -35,7 +36,6 @@ export class ProductsService implements OnApplicationBootstrap {
 
   async onApplicationBootstrap() {
     await this.seedSizesAndColors();
-    await this.seedMockProducts();
   }
 
   async seedMockProducts() {
@@ -272,8 +272,9 @@ export class ProductsService implements OnApplicationBootstrap {
     }
   }
 
-  generateSku(brandCode: string, productCode: string, sizeCode: string, colorCode: string): string {
-    return `${brandCode}-${productCode}-${sizeCode}-${colorCode}`.toUpperCase();
+  generateSku(brandCode: string | undefined, productCode: string, sizeCode: string, colorCode: string): string {
+    const bCode = brandCode || 'KTD';
+    return `${bCode}-${productCode}-${sizeCode}-${colorCode}`.toUpperCase();
   }
 
   calculateEffectivePrice(basePrice: number, priceOverride?: number): number {
@@ -411,7 +412,12 @@ export class ProductsService implements OnApplicationBootstrap {
 
     const product = await this.productRepo.findOne({
       where: isUuid ? { id: idOrSlug } : { slug: idOrSlug },
-      relations: ['brand', 'category', 'images', 'variants', 'variants.size', 'variants.color'],
+      relations: ['brand', 'category', 'images', 'images.color', 'variants', 'variants.size', 'variants.color'],
+      order: {
+        images: {
+          sort_order: 'ASC',
+        },
+      },
     });
 
     if (!product) {
@@ -434,12 +440,6 @@ export class ProductsService implements OnApplicationBootstrap {
     }
 
     let brand = dto.brand_id ? await this.brandRepo.findOne({ where: { id: dto.brand_id } }) : null;
-    if (!brand) {
-      brand = await this.brandRepo.findOne({ where: {} });
-    }
-    if (!brand) {
-      brand = await this.brandRepo.save(this.brandRepo.create({ name: 'Default Brand', code: 'DEF', slug: 'default-brand' }));
-    }
 
     const category = await this.categoryRepo.findOne({ where: { id: dto.category_id } });
     if (!category) {
@@ -451,7 +451,7 @@ export class ProductsService implements OnApplicationBootstrap {
       code: dto.code,
       slug: dto.slug,
       description: dto.description,
-      brand_id: brand.id,
+      brand_id: brand ? brand.id : null,
       category_id: dto.category_id,
       base_price: dto.base_price,
       is_active: dto.is_active !== undefined ? dto.is_active : true,
@@ -459,12 +459,24 @@ export class ProductsService implements OnApplicationBootstrap {
 
     const savedProduct = await this.productRepo.save(product);
 
-    // Save product images
-    if (dto.image_urls && dto.image_urls.length > 0) {
+    // Save product images with optional color_id
+    if (dto.images && dto.images.length > 0) {
+      const images = dto.images.map((img, idx) =>
+        this.imageRepo.create({
+          product_id: savedProduct.id,
+          url: img.url,
+          color_id: img.color_id || null,
+          alt_text: img.alt_text,
+          sort_order: img.sort_order !== undefined ? img.sort_order : idx,
+        }),
+      );
+      await this.imageRepo.save(images);
+    } else if (dto.image_urls && dto.image_urls.length > 0) {
       const images = dto.image_urls.map((url, idx) =>
         this.imageRepo.create({
           product_id: savedProduct.id,
           url,
+          color_id: null,
           sort_order: idx,
         }),
       );
@@ -491,6 +503,130 @@ export class ProductsService implements OnApplicationBootstrap {
     }
 
     return result;
+  }
+
+  async update(id: string, dto: UpdateProductDto, performedByUserId?: string) {
+    const product = await this.productRepo.findOne({
+      where: { id },
+      relations: ['images', 'variants', 'brand'],
+    });
+
+    if (!product) {
+      throw new NotFoundException('Sản phẩm không tồn tại');
+    }
+
+    if (dto.code && dto.code !== product.code) {
+      const existingCode = await this.productRepo.findOne({ where: { code: dto.code } });
+      if (existingCode && existingCode.id !== id) {
+        throw new BadRequestException('Mã sản phẩm (code) đã tồn tại');
+      }
+      product.code = dto.code;
+    }
+
+    if (dto.slug && dto.slug !== product.slug) {
+      const existingSlug = await this.productRepo.findOne({ where: { slug: dto.slug } });
+      if (existingSlug && existingSlug.id !== id) {
+        throw new BadRequestException('Slug sản phẩm đã tồn tại');
+      }
+      product.slug = dto.slug;
+    }
+
+    if (dto.name !== undefined) product.name = dto.name;
+    if (dto.description !== undefined) product.description = dto.description;
+    if (dto.base_price !== undefined) product.base_price = dto.base_price;
+    if (dto.is_active !== undefined) product.is_active = dto.is_active;
+
+    if (dto.category_id) {
+      const cat = await this.categoryRepo.findOne({ where: { id: dto.category_id } });
+      if (!cat) throw new NotFoundException('Danh mục không tồn tại');
+      product.category_id = dto.category_id;
+    }
+
+    if (dto.brand_id) {
+      const b = await this.brandRepo.findOne({ where: { id: dto.brand_id } });
+      if (!b) throw new NotFoundException('Thương hiệu không tồn tại');
+      product.brand_id = dto.brand_id;
+    }
+
+    await this.productRepo.save(product);
+
+    // Synchronize images if provided
+    if (dto.images !== undefined) {
+      await this.imageRepo.delete({ product_id: id });
+      if (dto.images.length > 0) {
+        const newImages = dto.images.map((img, idx) =>
+          this.imageRepo.create({
+            product_id: id,
+            url: img.url,
+            color_id: img.color_id || null,
+            alt_text: img.alt_text,
+            sort_order: img.sort_order !== undefined ? img.sort_order : idx,
+          }),
+        );
+        await this.imageRepo.save(newImages);
+      }
+    } else if (dto.image_urls !== undefined) {
+      await this.imageRepo.delete({ product_id: id });
+      if (dto.image_urls.length > 0) {
+        const newImages = dto.image_urls.map((url, idx) =>
+          this.imageRepo.create({
+            product_id: id,
+            url,
+            color_id: null,
+            sort_order: idx,
+          }),
+        );
+        await this.imageRepo.save(newImages);
+      }
+    }
+
+    // Synchronize or update variants if provided
+    if (dto.variants && dto.variants.length > 0) {
+      for (const vItem of dto.variants) {
+        if (vItem.id) {
+          const existing = await this.variantRepo.findOne({ where: { id: vItem.id, product_id: id } });
+          if (existing) {
+            if (vItem.stock_quantity !== undefined) existing.stock_quantity = vItem.stock_quantity;
+            if (vItem.price_override !== undefined) existing.price_override = vItem.price_override;
+            if (vItem.is_active !== undefined) existing.is_active = vItem.is_active;
+            await this.variantRepo.save(existing);
+          }
+        } else if (vItem.size_id && vItem.color_id) {
+          const existing = await this.variantRepo.findOne({
+            where: { product_id: id, size_id: vItem.size_id, color_id: vItem.color_id },
+          });
+          if (!existing) {
+            await this.addVariant(
+              id,
+              {
+                size_id: vItem.size_id,
+                color_id: vItem.color_id,
+                stock_quantity: vItem.stock_quantity ?? 50,
+                price_override: vItem.price_override,
+              },
+              product.brand?.code,
+              product.code,
+            );
+          } else {
+            if (vItem.stock_quantity !== undefined) existing.stock_quantity = vItem.stock_quantity;
+            if (vItem.price_override !== undefined) existing.price_override = vItem.price_override;
+            await this.variantRepo.save(existing);
+          }
+        }
+      }
+    }
+
+    if (performedByUserId) {
+      await this.auditLogsService.log(
+        performedByUserId,
+        'UPDATE_PRODUCT',
+        'Product',
+        id,
+        { name: product.name, code: product.code },
+      );
+    }
+
+    return this.findOne(id);
   }
 
   async addVariant(productId: string, dto: CreateVariantDto, brandCode?: string, productCode?: string, performedByUserId?: string) {

@@ -268,150 +268,178 @@ export class ReportsService {
   }
 
   async getOverview() {
-    const overviewRaw = await this.orderRepo
-      .createQueryBuilder('order')
-      .select('COALESCE(SUM(order.total), 0)', 'totalRevenue')
-      .addSelect('COUNT(order.id)', 'totalCompletedOrders')
-      .where('order.status = :status', { status: OrderStatus.DELIVERED })
-      .getRawOne();
+    try {
+      const overviewRaw = await this.orderRepo
+        .createQueryBuilder('order')
+        .select('COALESCE(SUM(order.total), 0)', 'totalRevenue')
+        .addSelect('COUNT(order.id)', 'totalCompletedOrders')
+        .where('order.status = :status', { status: OrderStatus.DELIVERED })
+        .getRawOne();
 
-    const pendingOrdersCount = await this.orderRepo.count({
-      where: [
-        { status: OrderStatus.PENDING },
-        { status: OrderStatus.CONFIRMED },
-        { status: OrderStatus.PROCESSING },
-        { status: OrderStatus.SHIPPING },
-      ],
-    });
+      const pendingOrdersCount = await this.orderRepo.count({
+        where: [
+          { status: OrderStatus.PENDING },
+          { status: OrderStatus.CONFIRMED },
+          { status: OrderStatus.PROCESSING },
+          { status: OrderStatus.SHIPPING },
+        ],
+      });
 
-    const lowStockCount = await this.variantRepo.count({
-      where: { is_active: true, stock_quantity: LessThanOrEqual(5) },
-    });
+      const lowStockCount = await this.variantRepo.count({
+        where: { is_active: true, stock_quantity: LessThanOrEqual(5) },
+      });
 
-    return {
-      totalRevenue: Number(overviewRaw?.totalRevenue || 0),
-      totalCompletedOrders: Number(overviewRaw?.totalCompletedOrders || 0),
-      pendingOrdersCount,
-      lowStockCount,
-    };
+      return {
+        totalRevenue: Number(overviewRaw?.totalRevenue || 0),
+        totalCompletedOrders: Number(overviewRaw?.totalCompletedOrders || 0),
+        pendingOrdersCount,
+        lowStockCount,
+      };
+    } catch (err) {
+      return {
+        totalRevenue: 0,
+        totalCompletedOrders: 0,
+        pendingOrdersCount: 0,
+        lowStockCount: 0,
+      };
+    }
   }
 
   async getRevenueReport(query: ReportQueryDto) {
-    const { startDate, endDate, period = ReportPeriod.DAY } = query;
+    try {
+      const { startDate, endDate, period = ReportPeriod.DAY } = query;
 
-    const queryBuilder = this.orderRepo
-      .createQueryBuilder('order')
-      .select(['order.created_at', 'order.total'])
-      .where('order.status = :status', { status: OrderStatus.DELIVERED });
+      const queryBuilder = this.orderRepo
+        .createQueryBuilder('order')
+        .select(['order.created_at', 'order.total'])
+        .where('order.status = :status', { status: OrderStatus.DELIVERED });
 
-    if (startDate) {
-      queryBuilder.andWhere('order.created_at >= :startDate', { startDate: new Date(startDate) });
-    }
-    if (endDate) {
-      const end = new Date(endDate);
-      end.setHours(23, 59, 59, 999);
-      queryBuilder.andWhere('order.created_at <= :endDate', { endDate: end });
-    }
-
-    const orders = await queryBuilder.getRawMany();
-
-    const groupedData = new Map<string, { period: string; revenue: number; orderCount: number }>();
-
-    for (const order of orders) {
-      const dateVal = order.order_created_at || order.created_at;
-      if (!dateVal) continue;
-      const date = new Date(dateVal);
-      let periodKey = '';
-
-      if (period === ReportPeriod.YEAR) {
-        periodKey = `${date.getFullYear()}`;
-      } else if (period === ReportPeriod.QUARTER) {
-        const quarterNum = Math.floor(date.getMonth() / 3) + 1;
-        periodKey = `${date.getFullYear()}-Q${quarterNum}`;
-      } else if (period === ReportPeriod.MONTH) {
-        periodKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      } else if (period === ReportPeriod.WEEK) {
-        const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
-        const pastDaysOfYear = (date.getTime() - firstDayOfYear.getTime()) / 86400000;
-        const weekNum = Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
-        periodKey = `${date.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
-      } else {
-        periodKey = date.toISOString().split('T')[0];
+      if (startDate) {
+        queryBuilder.andWhere('order.created_at >= :startDate', { startDate: new Date(startDate) });
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        queryBuilder.andWhere('order.created_at <= :endDate', { endDate: end });
       }
 
-      const existing = groupedData.get(periodKey) || { period: periodKey, revenue: 0, orderCount: 0 };
-      existing.revenue += Number(order.order_total || order.total || 0);
-      existing.orderCount += 1;
-      groupedData.set(periodKey, existing);
-    }
+      const orders = await queryBuilder.getRawMany();
 
-    return Array.from(groupedData.values()).sort((a, b) => a.period.localeCompare(b.period));
+      const groupedData = new Map<string, { period: string; revenue: number; orderCount: number }>();
+
+      for (const order of orders) {
+        const dateVal = order.order_created_at || order.created_at;
+        if (!dateVal) continue;
+        const date = new Date(dateVal);
+        if (isNaN(date.getTime())) continue;
+        let periodKey = '';
+
+        if (period === ReportPeriod.YEAR) {
+          periodKey = `${date.getFullYear()}`;
+        } else if (period === ReportPeriod.QUARTER) {
+          const quarterNum = Math.floor(date.getMonth() / 3) + 1;
+          periodKey = `${date.getFullYear()}-Q${quarterNum}`;
+        } else if (period === ReportPeriod.MONTH) {
+          periodKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        } else if (period === ReportPeriod.WEEK) {
+          const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
+          const pastDaysOfYear = (date.getTime() - firstDayOfYear.getTime()) / 86400000;
+          const weekNum = Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
+          periodKey = `${date.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+        } else {
+          periodKey = date.toISOString().split('T')[0];
+        }
+
+        const existing = groupedData.get(periodKey) || { period: periodKey, revenue: 0, orderCount: 0 };
+        existing.revenue += Number(order.order_total || order.total || 0);
+        existing.orderCount += 1;
+        groupedData.set(periodKey, existing);
+      }
+
+      return Array.from(groupedData.values()).sort((a, b) => a.period.localeCompare(b.period));
+    } catch (err) {
+      return [];
+    }
   }
 
   async getTopProducts(limit: number = 10) {
-    const rawResults = await this.orderItemRepo
-      .createQueryBuilder('item')
-      .innerJoin('item.order', 'order')
-      .select('COALESCE(item.product_name, item.sku)', 'productName')
-      .addSelect('SUM(item.quantity)::int', 'totalQuantity')
-      .addSelect('SUM(item.price * item.quantity)::numeric', 'totalRevenue')
-      .where('order.status = :status', { status: OrderStatus.DELIVERED })
-      .groupBy('COALESCE(item.product_name, item.sku)')
-      .orderBy('"totalQuantity"', 'DESC')
-      .limit(limit)
-      .getRawMany();
+    try {
+      const parsedLimit = Number(limit) > 0 ? Number(limit) : 10;
+      const rawResults = await this.orderItemRepo
+        .createQueryBuilder('item')
+        .leftJoin('item.order', 'order')
+        .select('COALESCE(item.product_name, item.sku)', 'productName')
+        .addSelect('SUM(item.quantity)::int', 'totalQuantity')
+        .addSelect('SUM(item.price * item.quantity)::numeric', 'totalRevenue')
+        .where('order.status = :status', { status: OrderStatus.DELIVERED })
+        .groupBy('COALESCE(item.product_name, item.sku)')
+        .orderBy('"totalQuantity"', 'DESC')
+        .limit(parsedLimit)
+        .getRawMany();
 
-    return rawResults.map((r) => ({
-      productName: r.productName,
-      totalQuantity: Number(r.totalQuantity || 0),
-      totalRevenue: Number(r.totalRevenue || 0),
-    }));
+      return rawResults.map((r) => ({
+        productName: r.productName,
+        totalQuantity: Number(r.totalQuantity || 0),
+        totalRevenue: Number(r.totalRevenue || 0),
+      }));
+    } catch (err) {
+      return [];
+    }
   }
 
   async getLowStockVariants(threshold: number = 5) {
-    const variants = await this.variantRepo.find({
-      where: {
-        is_active: true,
-        stock_quantity: LessThanOrEqual(threshold),
-      },
-      relations: ['product', 'size', 'color'],
-      order: { stock_quantity: 'ASC' },
-    });
+    try {
+      const parsedThreshold = Number(threshold) >= 0 ? Number(threshold) : 5;
+      const variants = await this.variantRepo.find({
+        where: {
+          is_active: true,
+          stock_quantity: LessThanOrEqual(parsedThreshold),
+        },
+        relations: ['product', 'size', 'color'],
+        order: { stock_quantity: 'ASC' },
+      });
 
-    return variants.map((v) => ({
-      id: v.id,
-      sku: v.sku,
-      productName: v.product?.name || 'N/A',
-      sizeName: v.size?.name || 'N/A',
-      colorName: v.color?.name || 'N/A',
-      stockQuantity: v.stock_quantity,
-      price: v.price_override || v.product?.base_price || 0,
-    }));
+      return variants.map((v) => ({
+        id: v.id,
+        sku: v.sku,
+        productName: v.product?.name || 'N/A',
+        sizeName: v.size?.name || 'N/A',
+        colorName: v.color?.name || 'N/A',
+        stockQuantity: v.stock_quantity,
+        price: v.price_override || v.product?.base_price || 0,
+      }));
+    } catch (err) {
+      return [];
+    }
   }
 
   async getStaffPerformance() {
-    const rawResults = await this.paymentRepo
-      .createQueryBuilder('payment')
-      .innerJoin('payment.confirmed_user', 'user')
-      .innerJoin('payment.order', 'order')
-      .select('user.id', 'staffId')
-      .addSelect('COALESCE(user.full_name, user.email)', 'staffName')
-      .addSelect('user.email', 'staffEmail')
-      .addSelect('COUNT(payment.id)::int', 'confirmedOrdersCount')
-      .addSelect('SUM(order.total)::numeric', 'totalAmount')
-      .where('payment.confirmed_by IS NOT NULL')
-      .groupBy('user.id')
-      .addGroupBy('user.full_name')
-      .addGroupBy('user.email')
-      .orderBy('"confirmedOrdersCount"', 'DESC')
-      .getRawMany();
+    try {
+      const rawResults = await this.paymentRepo
+        .createQueryBuilder('payment')
+        .leftJoin('payment.confirmed_user', 'user')
+        .leftJoin('payment.order', 'order')
+        .select('user.id', 'staffId')
+        .addSelect('COALESCE(user.full_name, user.email)', 'staffName')
+        .addSelect('user.email', 'staffEmail')
+        .addSelect('COUNT(payment.id)::int', 'confirmedOrdersCount')
+        .addSelect('SUM(order.total)::numeric', 'totalAmount')
+        .where('payment.confirmed_by IS NOT NULL')
+        .groupBy('user.id')
+        .addGroupBy('user.full_name')
+        .addGroupBy('user.email')
+        .orderBy('"confirmedOrdersCount"', 'DESC')
+        .getRawMany();
 
-    return rawResults.map((r) => ({
-      staffId: r.staffId,
-      staffName: r.staffName,
-      staffEmail: r.staffEmail,
-      confirmedOrdersCount: Number(r.confirmedOrdersCount || 0),
-      totalAmount: Number(r.totalAmount || 0),
-    }));
+      return rawResults.map((r) => ({
+        staffId: r.staffId,
+        staffName: r.staffName,
+        staffEmail: r.staffEmail,
+        confirmedOrdersCount: Number(r.confirmedOrdersCount || 0),
+        totalAmount: Number(r.totalAmount || 0),
+      }));
+    } catch (err) {
+      return [];
+    }
   }
 }

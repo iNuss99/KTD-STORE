@@ -1,6 +1,7 @@
 import React from 'react';
 import { CheckCircle2, Clock, PackageCheck, Truck, ShoppingBag, XCircle } from 'lucide-react';
 import { OrderStatus } from '../../types';
+import { formatDate } from '../../lib/date-utils';
 
 interface OrderTimelineProps {
   status: OrderStatus;
@@ -52,7 +53,7 @@ export const OrderTimeline: React.FC<OrderTimelineProps> = ({ status, createdAt,
           </p>
         </div>
         <span className="font-mono text-xs font-semibold px-3 py-1 bg-bg-alt border border-line rounded-full text-ink">
-          {new Date(createdAt).toLocaleDateString('vi-VN')}
+          {formatDate(createdAt)}
         </span>
       </div>
 

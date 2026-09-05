@@ -5,6 +5,8 @@ import {
   AbandonedCartData,
   WelcomeEmailData,
   PasswordResetEmailData,
+  StaffCreatedEmailData,
+  StaffStatusEmailData,
 } from './email.types';
 
 @Injectable()
@@ -293,4 +295,146 @@ export class EmailTemplatesService {
       html: this.wrapBaseLayout(subject, htmlContent),
     };
   }
+
+  generateStaffWelcomeEmail(data: StaffCreatedEmailData): { subject: string; html: string } {
+    const roleLabels: Record<string, string> = {
+      SUPER_ADMIN: 'Quản trị viên cấp cao (Super Admin)',
+      CEO: 'Ban Giám Đốc (CEO)',
+      MANAGER: 'Quản lý (Manager)',
+      STAFF: 'Nhân viên vận hành (Staff)',
+    };
+    const roleLabel = roleLabels[data.role] || data.role;
+
+    const subject = `[KTD Store] Thông tin tài khoản nhân sự mới - Chào mừng ${data.staffName}`;
+
+    const htmlContent = `
+      <div style="text-align: center; margin-bottom: 24px;">
+        <span class="badge badge-success">CHÀO MỪNG NHÂN SỰ MỚI</span>
+        <h2 style="margin: 12px 0 6px; color: #0f172a; font-size: 22px;">Chào mừng ${data.staffName}!</h2>
+        <p style="margin: 0; color: #64748b; font-size: 14px;">Tài khoản làm việc của bạn trên hệ thống <strong>KTD Store</strong> đã được kích hoạt thành công.</p>
+      </div>
+
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+        <h4 style="margin: 0 0 14px; color: #0f172a; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
+          Thông tin đăng nhập của bạn:
+        </h4>
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+          <tr>
+            <td style="padding: 6px 0; color: #64748b; width: 140px;">Họ và tên:</td>
+            <td style="padding: 6px 0; color: #0f172a; font-weight: 700;">${data.staffName}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; color: #64748b;">Email đăng nhập:</td>
+            <td style="padding: 6px 0; color: #0f172a; font-weight: 700;">${data.staffEmail}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; color: #64748b;">Mật khẩu ban đầu:</td>
+            <td style="padding: 6px 0;">
+              <code style="background: #eef2ff; color: #4f46e5; padding: 3px 8px; border-radius: 6px; font-size: 15px; font-weight: bold; font-family: monospace;">
+                ${data.initialPassword || '(Đã được thiết lập)'}
+              </code>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; color: #64748b;">Vai trò / Chức vụ:</td>
+            <td style="padding: 6px 0;">
+              <span style="background: #fef3c7; color: #b45309; padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: 700;">
+                ${roleLabel}
+              </span>
+            </td>
+          </tr>
+        </table>
+      </div>
+
+      <div style="text-align: center; margin: 28px 0;">
+        <a href="${data.loginUrl}" class="btn" style="background: #d97706; text-decoration: none;">
+          🔑 Đăng Nhập Trang Quản Trị
+        </a>
+      </div>
+
+      <div style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: 10px; padding: 14px 18px; margin-top: 20px;">
+        <p style="margin: 0; font-size: 13px; color: #92400e; line-height: 1.5;">
+          <strong>🔒 Lưu ý bảo mật:</strong> Để bảo vệ tài khoản và dữ liệu hệ thống, vui lòng đổi lại mật khẩu cá nhân ngay sau lần đăng nhập đầu tiên. Tuyệt đối không chia sẻ thông tin đăng nhập này cho bất kỳ ai.
+        </p>
+      </div>
+    `;
+
+    return {
+      subject,
+      html: this.wrapBaseLayout(subject, htmlContent),
+    };
+  }
+
+  generateStaffStatusEmail(data: StaffStatusEmailData): { subject: string; html: string } {
+    const roleLabels: Record<string, string> = {
+      SUPER_ADMIN: 'Quản trị viên cấp cao (Super Admin)',
+      CEO: 'Ban Giám Đốc (CEO)',
+      MANAGER: 'Quản lý (Manager)',
+      STAFF: 'Nhân viên vận hành (Staff)',
+    };
+    const roleLabel = roleLabels[data.role] || data.role;
+
+    const isLocked = data.isLocked;
+    const subject = isLocked
+      ? `[KTD Store] Thông báo: Tài khoản của bạn đã bị tạm khóa`
+      : `[KTD Store] Thông báo: Tài khoản của bạn đã được mở khóa hoạt động`;
+
+    const htmlContent = isLocked
+      ? `
+        <div style="text-align: center; margin-bottom: 24px;">
+          <span class="badge" style="background: #fee2e2; color: #dc2626; padding: 4px 12px; font-size: 12px; font-weight: 700; border-radius: 9999px;">
+            🔒 TÀI KHOẢN TẠM KHÓA
+          </span>
+          <h2 style="margin: 14px 0 6px; color: #0f172a; font-size: 22px;">Thông báo tạm khóa tài khoản</h2>
+          <p style="margin: 0; color: #64748b; font-size: 14px;">Kính gửi <strong>${data.staffName}</strong>,</p>
+        </div>
+
+        <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+          <p style="margin: 0 0 10px; font-size: 14px; color: #991b1b; line-height: 1.6;">
+            Tài khoản nhân sự của bạn trên hệ thống <strong>KTD Store</strong> đã được chuyển sang trạng thái <strong>TẠM KHÓA</strong> vào lúc <strong>${data.updatedAt}</strong>.
+          </p>
+          <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #b91c1c; line-height: 1.6;">
+            <li>Email tài khoản: <strong>${data.staffEmail}</strong></li>
+            <li>Vai trò: <strong>${roleLabel}</strong></li>
+            <li>Quyền hạn: Tạm ngưng quyền truy cập cổng quản trị và các tác vụ nội bộ.</li>
+          </ul>
+        </div>
+
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 18px; margin-top: 20px; font-size: 13px; color: #475569;">
+          <p style="margin: 0;">
+            Nếu bạn cho rằng đây là sự nhầm lẫn hoặc cần mở lại quyền truy cập, vui lòng liên hệ trực tiếp với <strong>Ban Giám Đốc / Super Admin</strong> của KTD Store qua email hoặc hotline công ty để được giải quyết.
+          </p>
+        </div>
+      `
+      : `
+        <div style="text-align: center; margin-bottom: 24px;">
+          <span class="badge" style="background: #dcfce7; color: #16a34a; padding: 4px 12px; font-size: 12px; font-weight: 700; border-radius: 9999px;">
+            🔓 TÀI KHOẢN ĐÃ MỞ KHÓA
+          </span>
+          <h2 style="margin: 14px 0 6px; color: #0f172a; font-size: 22px;">Tài khoản đã được mở khóa!</h2>
+          <p style="margin: 0; color: #64748b; font-size: 14px;">Kính gửi <strong>${data.staffName}</strong>,</p>
+        </div>
+
+        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+          <p style="margin: 0 0 10px; font-size: 14px; color: #166534; line-height: 1.6;">
+            Tài khoản nhân sự của bạn (<strong>${data.staffEmail}</strong> - ${roleLabel}) đã được Quản trị viên <strong>MỞ KHÓA THÀNH CÔNG</strong> vào lúc <strong>${data.updatedAt}</strong>.
+          </p>
+          <p style="margin: 0; font-size: 13px; color: #15803d;">
+            Bạn hiện có thể tiếp tục đăng nhập và thực hiện công việc bình thường trên hệ thống quản trị KTD Store.
+          </p>
+        </div>
+
+        <div style="text-align: center; margin: 28px 0;">
+          <a href="${data.loginUrl || 'http://localhost:5173/admin/login'}" class="btn" style="background: #16a34a; text-decoration: none;">
+            🔑 Đăng Nhập Hệ Thống Ngay
+          </a>
+        </div>
+      `;
+
+    return {
+      subject,
+      html: this.wrapBaseLayout(subject, htmlContent),
+    };
+  }
 }
+

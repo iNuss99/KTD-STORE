@@ -10,15 +10,15 @@ import { GetUser } from '../../common/decorators/get-user.decorator';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  // Task T1.4: Strict rate limit - max 3 registrations per minute per IP
-  @Throttle({ default: { limit: 3, ttl: 60000 } })
+  // Rate limit: cho phép tối đa 20 lần đăng ký / phút mỗi IP
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
   @Post('register')
   async register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);
   }
 
-  // Task T1.4: Strict rate limit - max 5 login attempts per minute to prevent brute-force
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  // Rate limit: cho phép tối đa 30 lần đăng nhập / phút mỗi IP
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   @Post('login')
   async login(@Body() dto: LoginDto) {

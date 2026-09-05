@@ -3,6 +3,7 @@ export * from './common/Accordion';
 export * from './common/EmptyState';
 export * from './common/QtyStepper';
 export * from './common/PromoBadge';
+export * from './common/ProductImage';
 export * from './common/ScrollToTop';
 export * from './common/SizeChip';
 
@@ -20,8 +21,6 @@ export * from './storefront/VariantSelector';
 export * from './storefront/SizeGuideModal';
 export * from './storefront/FilterSidebar';
 export * from './storefront/AddressSelector';
-export * from './storefront/RecentlyViewed';
-export * from './storefront/RelatedProducts';
 export * from './storefront/ReviewSection';
 export * from './storefront/OrderTimeline';
 export * from './storefront/OrderReviewModal';
@@ -34,7 +33,6 @@ export * from './admin/OrderStatusBadge';
 export * from './widgets/AIChatWidget';
 export * from './widgets/FloatingContactWidget';
 export * from './widgets/NotificationBell';
-export * from './widgets/PWAInstallPrompt';
 export * from './widgets/SearchAutocomplete';
 
 // Guards

@@ -107,11 +107,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           ) : badgeType === 'sale' ? (
             <PromoBadge type="sale">Giảm giá</PromoBadge>
           ) : null}
-          {product?.brand && (
-            <span className="bg-[#1A1A1A] text-white font-mono text-[9px] uppercase font-bold tracking-widest px-2 py-0.5 shadow-xs">
-              {product.brand.name}
-            </span>
-          )}
         </div>
 
         {/* Wishlist Button */}

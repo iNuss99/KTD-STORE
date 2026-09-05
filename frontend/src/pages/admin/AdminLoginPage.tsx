@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, AlertCircle, Eye, EyeOff, Lock } from 'lucide-react';
-import { setAuthToken, setRefreshToken, setUserId } from '../../lib/auth-storage';
+import { setAdminActiveSession } from '../../lib/auth-storage';
 
 export const AdminLoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -36,18 +36,14 @@ export const AdminLoginPage: React.FC = () => {
         if (data.user?.role === 'CUSTOMER') {
           setError('Tài khoản của bạn không có quyền quản trị CRM.');
         } else {
-          setAuthToken(data.access_token);
-          if (data.refresh_token) setRefreshToken(data.refresh_token);
-          if (data.user) {
-            setUserId(data.user.id);
-            localStorage.setItem('user', JSON.stringify(data.user));
-            localStorage.setItem('user_role', data.user.role);
-            localStorage.setItem('user_name', data.user.full_name || 'Admin');
-          }
+          setAdminActiveSession({
+            accessToken: data.access_token,
+            refreshToken: data.refresh_token,
+            user: data.user,
+          });
           if (rememberMe) {
             localStorage.setItem('saved_admin_email', email);
           }
-          window.dispatchEvent(new Event('auth-change'));
           navigate('/admin');
         }
       } else {

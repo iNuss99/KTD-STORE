@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, Query, Req, Res, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, Query, Req, Res, BadRequestException } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
 
 @Controller('payments')
@@ -59,5 +59,18 @@ export class PaymentsController {
     }
 
     return { RspCode: '00', Message: 'Confirm Success' };
+  }
+
+  @Post('payos/create-link')
+  createPayosLink(@Body('orderId') orderId: string) {
+    if (!orderId) {
+      throw new BadRequestException('Mã đơn hàng là bắt buộc.');
+    }
+    return this.paymentsService.createPayosPaymentLink(orderId);
+  }
+
+  @Get('payos/check-status/:orderId')
+  checkPayosStatus(@Param('orderId') orderId: string, @Query('orderCode') orderCode?: string) {
+    return this.paymentsService.checkPayosPaymentStatus(orderId, orderCode ? Number(orderCode) : undefined);
   }
 }

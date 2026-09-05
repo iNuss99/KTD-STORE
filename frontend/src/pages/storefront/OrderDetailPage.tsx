@@ -9,6 +9,7 @@ import { getSocket } from '../../lib/socketClient';
 
 import { getAuthToken, getAuthHeader } from '../../lib/auth-storage';
 import { useToast } from '../../context/ToastContext';
+import { formatDateTime } from '../../lib/date-utils';
 
 export const OrderDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -213,13 +214,7 @@ export const OrderDetailPage: React.FC = () => {
     );
   }
 
-  const formattedDate = new Date(order.created_at).toLocaleDateString('vi-VN', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  const formattedDate = formatDateTime(order.created_at);
 
   const formattedTotal = new Intl.NumberFormat('vi-VN', {
     style: 'currency',

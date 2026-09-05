@@ -27,6 +27,8 @@ export const PERMISSION_CODES = {
   ORDER_MANAGE: 'ORDER_MANAGE',
   ORDER_UPDATE: 'ORDER_UPDATE',
   DISCOUNT_MANAGE: 'DISCOUNT_MANAGE',
+  RETURN_MANAGE: 'RETURN_MANAGE',
+  LOYALTY_MANAGE: 'LOYALTY_MANAGE',
   AUDIT_LOG_VIEW: 'AUDIT_LOG_VIEW',
   REPORT_VIEW: 'REPORT_VIEW',
 };
@@ -67,13 +69,15 @@ export class PermissionsService implements OnApplicationBootstrap {
       { code: PERMISSION_CODES.ORDER_MANAGE, description: 'Quản lý đơn hàng' },
       { code: PERMISSION_CODES.ORDER_UPDATE, description: 'Cập nhật trạng thái đơn hàng' },
       { code: PERMISSION_CODES.DISCOUNT_MANAGE, description: 'Quản lý mã giảm giá' },
+      { code: PERMISSION_CODES.RETURN_MANAGE, description: 'Xem & xử lý yêu cầu hoàn trả' },
+      { code: PERMISSION_CODES.LOYALTY_MANAGE, description: 'Quản lý điểm tích lũy khách hàng' },
       { code: PERMISSION_CODES.AUDIT_LOG_VIEW, description: 'Xem audit log hệ thống' },
       { code: PERMISSION_CODES.REPORT_VIEW, description: 'Xem báo cáo & dashboard' },
     ];
 
     const permCount = await this.permissionRepo.count();
     const rolePermCount = await this.rolePermissionRepo.count();
-    if (permCount >= permissionsToSeed.length && rolePermCount >= 40) {
+    if (permCount === permissionsToSeed.length && rolePermCount === 65) {
       return; // Đã seed đầy đủ permissions và role mappings, bỏ qua để tránh lag khởi động
     }
 
@@ -106,11 +110,17 @@ export class PermissionsService implements OnApplicationBootstrap {
           PERMISSION_CODES.STAFF_CREATE,
           PERMISSION_CODES.STAFF_UPDATE,
           PERMISSION_CODES.STAFF_LOCK,
+          PERMISSION_CODES.CATEGORY_MANAGE,
+          PERMISSION_CODES.BRAND_MANAGE,
+          PERMISSION_CODES.PRODUCT_MANAGE,
           PERMISSION_CODES.PRODUCT_VIEW,
           PERMISSION_CODES.ORDER_VIEW,
           PERMISSION_CODES.ORDER_MANAGE,
           PERMISSION_CODES.ORDER_UPDATE,
           PERMISSION_CODES.DISCOUNT_MANAGE,
+          PERMISSION_CODES.RETURN_MANAGE,
+          PERMISSION_CODES.LOYALTY_MANAGE,
+          PERMISSION_CODES.AUDIT_LOG_VIEW,
           PERMISSION_CODES.REPORT_VIEW,
         ],
       },
@@ -118,13 +128,19 @@ export class PermissionsService implements OnApplicationBootstrap {
         role: UserRole.MANAGER,
         codes: [
           PERMISSION_CODES.STAFF_VIEW,
+          PERMISSION_CODES.STAFF_CREATE,
           PERMISSION_CODES.STAFF_UPDATE,
+          PERMISSION_CODES.STAFF_LOCK,
           PERMISSION_CODES.CATEGORY_MANAGE,
           PERMISSION_CODES.BRAND_MANAGE,
           PERMISSION_CODES.PRODUCT_MANAGE,
+          PERMISSION_CODES.PRODUCT_VIEW,
           PERMISSION_CODES.ORDER_VIEW,
           PERMISSION_CODES.ORDER_MANAGE,
           PERMISSION_CODES.ORDER_UPDATE,
+          PERMISSION_CODES.DISCOUNT_MANAGE,
+          PERMISSION_CODES.RETURN_MANAGE,
+          PERMISSION_CODES.LOYALTY_MANAGE,
           PERMISSION_CODES.REPORT_VIEW,
         ],
       },
@@ -134,6 +150,8 @@ export class PermissionsService implements OnApplicationBootstrap {
           PERMISSION_CODES.PRODUCT_VIEW,
           PERMISSION_CODES.ORDER_VIEW,
           PERMISSION_CODES.ORDER_UPDATE,
+          PERMISSION_CODES.RETURN_MANAGE,
+          PERMISSION_CODES.LOYALTY_MANAGE,
         ],
       },
       {
@@ -171,11 +189,17 @@ export class PermissionsService implements OnApplicationBootstrap {
   }
 
   async getUserPermissions(role: UserRole): Promise<string[]> {
-    const rolePerms = await this.rolePermissionRepo.find({
-      where: { role },
-      relations: ['permission'],
-    });
-    return rolePerms.map((rp) => rp.permission.code);
+    try {
+      const rolePerms = await this.rolePermissionRepo.find({
+        where: { role },
+        relations: ['permission'],
+      });
+      return rolePerms
+        .filter((rp) => rp && rp.permission && rp.permission.code)
+        .map((rp) => rp.permission.code);
+    } catch {
+      return [];
+    }
   }
 
   async getAllPermissions(): Promise<Permission[]> {

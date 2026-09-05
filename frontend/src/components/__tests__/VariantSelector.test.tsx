@@ -58,4 +58,24 @@ describe('VariantSelector Component', () => {
     // callback không được gọi với v2
     expect(handleSelect).not.toHaveBeenCalledWith(expect.objectContaining({ id: 'v2' }));
   });
+
+  it('Gọi onColorChange khi khởi tạo hoặc khi người dùng click chọn màu', async () => {
+    const user = userEvent.setup();
+    const handleSelect = vi.fn();
+    const handleColorChange = vi.fn();
+
+    render(
+      <VariantSelector
+        variants={mockVariants}
+        onVariantSelect={handleSelect}
+        onColorChange={handleColorChange}
+      />
+    );
+
+    expect(handleColorChange).toHaveBeenCalledWith('c-red');
+
+    const colorBtn = screen.getByRole('button', { name: /Đỏ/i });
+    await user.click(colorBtn);
+    expect(handleColorChange).toHaveBeenCalledWith('c-red');
+  });
 });

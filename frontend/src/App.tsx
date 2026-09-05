@@ -25,6 +25,7 @@ const AdminLoginPage = lazy(() => import('./pages/admin/AdminLoginPage').then((m
 const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage').then((m) => ({ default: m.AdminDashboardPage })));
 const AdminStaffPage = lazy(() => import('./pages/admin/AdminStaffPage').then((m) => ({ default: m.AdminStaffPage })));
 const AdminCatalogPage = lazy(() => import('./pages/admin/AdminCatalogPage').then((m) => ({ default: m.AdminCatalogPage })));
+const AdminProductEditPage = lazy(() => import('./pages/admin/AdminProductEditPage').then((m) => ({ default: m.AdminProductEditPage })));
 const AdminOrdersPage = lazy(() => import('./pages/admin/AdminOrdersPage').then((m) => ({ default: m.AdminOrdersPage })));
 const AdminDiscountsPage = lazy(() => import('./pages/admin/AdminDiscountsPage').then((m) => ({ default: m.AdminDiscountsPage })));
 const AdminReturnsPage = lazy(() => import('./pages/admin/AdminReturnsPage').then((m) => ({ default: m.AdminReturnsPage })));
@@ -73,6 +74,7 @@ export const App: React.FC = () => {
                 <Route path="dashboard" element={<AdminDashboardPage />} />
                 <Route path="staff" element={<AdminStaffPage />} />
                 <Route path="catalog" element={<AdminCatalogPage />} />
+                <Route path="products/:id/edit" element={<AdminProductEditPage />} />
                 <Route path="orders" element={<AdminOrdersPage />} />
                 <Route path="discounts" element={<AdminDiscountsPage />} />
                 <Route path="returns" element={<AdminReturnsPage />} />

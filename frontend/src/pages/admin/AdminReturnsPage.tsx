@@ -16,8 +16,7 @@ import {
   Check,
   X,
 } from 'lucide-react';
-import { getAuthHeader } from '../../lib/auth-storage';
-import { apiClient } from '../../lib/apiClient';
+import { adminApiClient } from '../../lib/apiClient';
 
 export const AdminReturnsPage: React.FC = () => {
   const [returns, setReturns] = useState<ReturnRequest[]>([]);
@@ -44,7 +43,7 @@ export const AdminReturnsPage: React.FC = () => {
     setLoading(true);
     try {
       const url = selectedTab === 'ALL' ? '/api/returns' : `/api/returns?status=${selectedTab}`;
-      const data = await apiClient(url);
+      const data = await adminApiClient(url);
       setReturns(data);
     } catch (err) {
       console.error('Error fetching return requests:', err);
@@ -128,7 +127,7 @@ export const AdminReturnsPage: React.FC = () => {
         payload.refund_amount = Number(confirmModal.refundAmountInput) || 0;
       }
 
-      await apiClient(`/api/returns/${confirmModal.item.id}/status`, {
+      await adminApiClient(`/api/returns/${confirmModal.item.id}/status`, {
         method: 'PATCH',
         body: JSON.stringify(payload),
       });

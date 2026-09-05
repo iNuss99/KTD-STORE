@@ -7,6 +7,8 @@ import {
   AbandonedCartData,
   WelcomeEmailData,
   PasswordResetEmailData,
+  StaffCreatedEmailData,
+  StaffStatusEmailData,
 } from './email.types';
 
 @Injectable()
@@ -107,4 +109,30 @@ export class EmailConsumer {
       this.logger.error(`Failed to process cart.abandoned email: ${err.message}`);
     }
   }
+
+  @OnEvent('staff.created')
+  async handleStaffCreated(payload: StaffCreatedEmailData) {
+    try {
+      if (payload.staffEmail) {
+        this.logger.log(`Received staff.created event for: ${payload.staffEmail} (${payload.staffName})`);
+        await this.emailService.sendStaffCreatedEmail(payload);
+      }
+    } catch (err: any) {
+      this.logger.error(`Failed to process staff.created email: ${err.message}`);
+    }
+  }
+
+  @OnEvent('staff.status_changed')
+  async handleStaffStatusChanged(payload: StaffStatusEmailData) {
+    try {
+      if (payload.staffEmail) {
+        this.logger.log(`Received staff.status_changed event for: ${payload.staffEmail} (isLocked: ${payload.isLocked})`);
+        await this.emailService.sendStaffStatusEmail(payload);
+      }
+    } catch (err: any) {
+      this.logger.error(`Failed to process staff.status_changed email: ${err.message}`);
+    }
+  }
 }
+
+

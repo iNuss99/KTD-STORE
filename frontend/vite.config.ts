@@ -28,6 +28,8 @@ export default defineConfig({
           query: ['@tanstack/react-query'],
           charts: ['recharts'],
           lucide: ['lucide-react'],
+          motion: ['framer-motion'],
+          socket: ['socket.io-client'],
         },
       },
     },

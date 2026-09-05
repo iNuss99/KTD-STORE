@@ -31,21 +31,21 @@ export class OrdersController {
 
   @Get()
   @UseGuards(PermissionsGuard)
-  @Permissions(PERMISSION_CODES.ORDER_VIEW, PERMISSION_CODES.ORDER_MANAGE, PERMISSION_CODES.ORDER_UPDATE)
+  @Permissions(PERMISSION_CODES.ORDER_VIEW)
   findAllAdmin(@Query('status') status?: OrderStatus) {
     return this.ordersService.findAllAdmin(status);
   }
 
   @Patch(':id/status')
   @UseGuards(PermissionsGuard)
-  @Permissions(PERMISSION_CODES.ORDER_UPDATE, PERMISSION_CODES.ORDER_MANAGE)
+  @Permissions(PERMISSION_CODES.ORDER_UPDATE)
   updateStatus(@Request() req: any, @Param('id') id: string, @Body() dto: UpdateOrderStatusDto) {
     return this.ordersService.updateStatus(id, dto, req.user);
   }
 
   @Post(':id/confirm-payment')
   @UseGuards(PermissionsGuard)
-  @Permissions(PERMISSION_CODES.ORDER_UPDATE, PERMISSION_CODES.ORDER_MANAGE)
+  @Permissions(PERMISSION_CODES.ORDER_UPDATE)
   confirmPayment(@Request() req: any, @Param('id') id: string) {
     return this.ordersService.confirmPayment(id, req.user.id);
   }
@@ -57,7 +57,7 @@ export class OrdersController {
 
   @Delete(':id')
   @UseGuards(PermissionsGuard)
-  @Permissions(PERMISSION_CODES.ORDER_MANAGE, PERMISSION_CODES.ORDER_UPDATE)
+  @Permissions(PERMISSION_CODES.ORDER_MANAGE)
   removeOrder(@Request() req: any, @Param('id') id: string) {
     return this.ordersService.removeOrder(id, req.user.id);
   }

@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   LayoutDashboard,
   TrendingUp,
@@ -9,10 +10,7 @@ import {
   AlertTriangle,
   RefreshCw,
   Award,
-  ArrowUpRight,
-  ChevronRight,
   Users,
-  Sparkles,
   Box,
   ArrowRight,
   MoveHorizontal,
@@ -121,70 +119,90 @@ interface StaffPerf {
 }
 
 import { useAuth } from '../../hooks/useAuth';
-import { getAuthHeader } from '../../lib/auth-storage';
+import { getAdminAuthHeader, getAuthHeader } from '../../lib/auth-storage';
 
 export const AdminDashboardPage: React.FC = () => {
   const { isSuperAdmin, isCEO, isManager, role } = useAuth();
-  const [overview, setOverview] = useState<OverviewStats>({
-    totalRevenue: 0,
-    totalCompletedOrders: 0,
-    pendingOrdersCount: 0,
-    lowStockCount: 0,
-  });
-  const [revenueData, setRevenueData] = useState<RevenueItem[]>([]);
-  const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
-  const [lowStockVariants, setLowStockVariants] = useState<LowStockVariant[]>([]);
-  const [staffPerformance, setStaffPerformance] = useState<StaffPerf[]>([]);
   const [periodFilter, setPeriodFilter] = useState<'day' | 'week' | 'month' | 'quarter' | 'year'>('day');
-  const [loading, setLoading] = useState<boolean>(true);
 
-  const fetchRevenueData = async (period: string) => {
-    try {
-      const headers = { ...getAuthHeader() };
-      const resRevenue = await fetch(`/api/reports/revenue?period=${period}`, { headers });
-      if (resRevenue.ok) setRevenueData(await resRevenue.json());
-    } catch (err) {
-      console.error('Error fetching revenue data:', err);
-    }
+  const getEffectiveHeaders = (): Record<string, string> => {
+    const adminH = getAdminAuthHeader();
+    if (adminH.Authorization) return adminH;
+    return getAuthHeader();
   };
 
-  const fetchDashboardData = async () => {
-    setLoading(true);
-    try {
-      const headers = { ...getAuthHeader() };
+  const isAllowed = Boolean(isSuperAdmin || isCEO || isManager);
 
-      const [resOverview, resRevenue, resTop, resStock, resStaff] = await Promise.all([
+  const {
+    data: dashboardData,
+    isLoading: dashboardLoading,
+    refetch: refetchDashboard,
+  } = useQuery({
+    queryKey: ['admin', 'reports', 'dashboard'],
+    queryFn: async () => {
+      const headers = getEffectiveHeaders();
+      const [resOverview, resTop, resStock, resStaff] = await Promise.all([
         fetch('/api/reports/overview', { headers }),
-        fetch(`/api/reports/revenue?period=${periodFilter}`, { headers }),
         fetch('/api/reports/top-products?limit=10', { headers }),
         fetch('/api/reports/low-stock?threshold=5', { headers }),
         fetch('/api/reports/staff-performance', { headers }),
       ]);
 
-      if (resOverview.ok) setOverview(await resOverview.json());
-      if (resRevenue.ok) setRevenueData(await resRevenue.json());
-      if (resTop.ok) setTopProducts(await resTop.json());
-      if (resStock.ok) setLowStockVariants(await resStock.json());
-      if (resStaff.ok) setStaffPerformance(await resStaff.json());
-    } catch (err) {
-      console.error('Error fetching dashboard data:', err);
-    } finally {
-      setLoading(false);
-    }
+      const [overview, topProducts, lowStockVariants, staffPerformance] = await Promise.all([
+        resOverview.ok ? resOverview.json() : null,
+        resTop.ok ? resTop.json() : [],
+        resStock.ok ? resStock.json() : [],
+        resStaff.ok ? resStaff.json() : [],
+      ]);
+
+      return {
+        overview: overview || {
+          totalRevenue: 0,
+          totalCompletedOrders: 0,
+          pendingOrdersCount: 0,
+          lowStockCount: 0,
+        },
+        topProducts: Array.isArray(topProducts) ? topProducts : [],
+        lowStockVariants: Array.isArray(lowStockVariants) ? lowStockVariants : [],
+        staffPerformance: Array.isArray(staffPerformance) ? staffPerformance : [],
+      };
+    },
+    enabled: isAllowed,
+    staleTime: 60_000,
+  });
+
+  const {
+    data: revenueData = [],
+    isLoading: revenueLoading,
+    refetch: refetchRevenue,
+  } = useQuery<RevenueItem[]>({
+    queryKey: ['admin', 'reports', 'revenue', periodFilter],
+    queryFn: async () => {
+      const headers = getEffectiveHeaders();
+      const res = await fetch(`/api/reports/revenue?period=${periodFilter}`, { headers });
+      if (!res.ok) return [];
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
+    },
+    enabled: isAllowed,
+    staleTime: 60_000,
+  });
+
+  const overview = dashboardData?.overview || {
+    totalRevenue: 0,
+    totalCompletedOrders: 0,
+    pendingOrdersCount: 0,
+    lowStockCount: 0,
   };
+  const topProducts = dashboardData?.topProducts || [];
+  const lowStockVariants = dashboardData?.lowStockVariants || [];
+  const staffPerformance = dashboardData?.staffPerformance || [];
+  const loading = dashboardLoading || revenueLoading;
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
-  const isInitialMount = React.useRef(true);
-  useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      return;
-    }
-    fetchRevenueData(periodFilter);
-  }, [periodFilter]);
+  const handleRefresh = () => {
+    refetchDashboard();
+    refetchRevenue();
+  };
 
   if (!isSuperAdmin && !isCEO && !isManager) {
     return (
@@ -236,7 +254,7 @@ export const AdminDashboardPage: React.FC = () => {
             </select>
 
             <button
-              onClick={() => fetchDashboardData()}
+              onClick={handleRefresh}
               className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-medium text-xs rounded-xl shadow-sm transition flex items-center gap-1.5"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
@@ -445,11 +463,12 @@ export const AdminDashboardPage: React.FC = () => {
                 </div>
               ) : (
                 <div className="space-y-3.5">
-                  {topProducts.map((prod, idx) => {
-                    const maxQty = Math.max(...topProducts.map(p => p.totalQuantity), 1);
-                    const percent = Math.min((prod.totalQuantity / maxQty) * 100, 100);
-                    return (
-                      <div key={idx} className="flex items-center justify-between group">
+                  {(() => {
+                    const maxProductQty = Math.max(...topProducts.map((p) => p.totalQuantity), 1);
+                    return topProducts.map((prod, idx) => {
+                      const percent = Math.min((prod.totalQuantity / maxProductQty) * 100, 100);
+                      return (
+                        <div key={idx} className="flex items-center justify-between group">
                         <div className="flex items-center gap-3 flex-1 min-w-0">
                           <span className={`w-6 h-6 rounded-md font-bold flex items-center justify-center text-[10px] shrink-0 ${
                             idx === 0 ? 'bg-amber-100 text-amber-700' : idx === 1 ? 'bg-slate-200 text-slate-700' : idx === 2 ? 'bg-orange-100 text-orange-700' : 'bg-slate-50 text-slate-400'
@@ -474,8 +493,9 @@ export const AdminDashboardPage: React.FC = () => {
                         </div>
                       </div>
                     );
-                  })}
-                </div>
+                  });
+                })()}
+              </div>
               )}
             </div>
           </div>

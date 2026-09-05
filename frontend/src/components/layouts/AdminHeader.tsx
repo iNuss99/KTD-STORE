@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { LogOut, ChevronDown, ShieldCheck, Eye, Store, Menu } from 'lucide-react';
 import { NotificationBell } from '../widgets/NotificationBell';
 import { useAuth, Role } from '../../hooks/useAuth';
+import { clearAdminAuth, getAdminName } from '../../lib/auth-storage';
 
 interface AdminHeaderProps {
   onToggleMobileSidebar?: () => void;
@@ -15,18 +16,19 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onToggleMobileSidebar 
   const [showUserMenu, setShowUserMenu] = useState(false);
 
   useEffect(() => {
-    const storedName = localStorage.getItem('user_name');
-    if (storedName) {
-      setUserName(storedName);
-    }
+    const updateName = () => {
+      const storedName = getAdminName() || localStorage.getItem('user_name');
+      if (storedName) {
+        setUserName(storedName);
+      }
+    };
+    updateName();
+    window.addEventListener('admin-auth-change', updateName);
+    return () => window.removeEventListener('admin-auth-change', updateName);
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('user_role');
-    localStorage.removeItem('user_name');
-    localStorage.removeItem('view_as_role');
-    window.dispatchEvent(new Event('auth-change'));
+    clearAdminAuth();
     navigate('/crm');
   };
 
@@ -77,17 +79,19 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onToggleMobileSidebar 
         )}
 
         {/* Return to Storefront Button */}
-        <Link
-          to="/"
+        <button
+          onClick={() => {
+            navigate('/');
+          }}
           className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-slate-100 hover:bg-amber-500 hover:text-white text-slate-800 rounded-xl text-xs font-bold transition shadow-2xs border border-slate-200/80"
-          title="Quay về trang bán hàng (Storefront)"
+          title="Quay về trang bán hàng để trải nghiệm mua sắm (Storefront)"
         >
           <Store className="w-4 h-4 text-amber-600 group-hover:text-white shrink-0" />
           <span className="hidden sm:inline">Quay về trang bán hàng</span>
-        </Link>
+        </button>
 
         {/* Notification Bell */}
-        <NotificationBell />
+        <NotificationBell isAdmin={true} />
 
         {/* User Profile Avatar Dropdown */}
         <div className="relative">

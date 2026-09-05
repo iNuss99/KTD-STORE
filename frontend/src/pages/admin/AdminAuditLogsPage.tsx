@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ShieldAlert, Search, RefreshCw, ChevronLeft, ChevronRight, User, Calendar, Code, Lock } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
-import { getAuthHeader } from '../../lib/auth-storage';
+import { getAdminAuthHeader } from '../../lib/auth-storage';
 
 interface AuditLogItem {
   id: string;
@@ -37,7 +37,7 @@ export const AdminAuditLogsPage: React.FC = () => {
       if (entityFilter) url += `&entity=${encodeURIComponent(entityFilter)}`;
 
       const res = await fetch(url, {
-        headers: getAuthHeader(),
+        headers: getAdminAuthHeader(),
       });
 
       if (res.ok) {

@@ -1,6 +1,7 @@
 import { Injectable, OnApplicationBootstrap, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import * as bcrypt from 'bcrypt';
 import { User } from './entities/user.entity';
 import { UserRole } from '../../common/enums/role.enum';
@@ -14,6 +15,7 @@ export class UsersService implements OnApplicationBootstrap {
     @InjectRepository(User)
     private userRepo: Repository<User>,
     private auditLogsService: AuditLogsService,
+    private eventEmitter: EventEmitter2,
   ) {}
 
   async onApplicationBootstrap() {
@@ -70,7 +72,12 @@ export class UsersService implements OnApplicationBootstrap {
       throw new BadRequestException('Email đã tồn tại trong hệ thống');
     }
 
-    const password_hash = await bcrypt.hash(dto.password, 10);
+    const rawPassword =
+      dto.password && dto.password.trim().length >= 6
+        ? dto.password.trim()
+        : `Ktd@${Math.random().toString(36).substring(2, 7)}${Math.floor(100 + Math.random() * 900)}`;
+
+    const password_hash = await bcrypt.hash(rawPassword, 10);
     const user = this.userRepo.create({
       ...dto,
       password_hash,
@@ -86,6 +93,18 @@ export class UsersService implements OnApplicationBootstrap {
       { email: savedUser.email, role: savedUser.role },
     );
 
+    // Gửi email chào mừng và thông tin tài khoản cho nhân sự nội bộ (trừ khách hàng CUSTOMER)
+    if (savedUser.role !== UserRole.CUSTOMER) {
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      this.eventEmitter.emit('staff.created', {
+        staffName: savedUser.full_name,
+        staffEmail: savedUser.email,
+        initialPassword: rawPassword,
+        role: savedUser.role,
+        loginUrl: `${frontendUrl}/admin/login`,
+      });
+    }
+
     const { password_hash: _, refresh_token_hash: __, ...result } = savedUser;
     return result;
   }
@@ -95,6 +114,8 @@ export class UsersService implements OnApplicationBootstrap {
     if (!user) {
       throw new NotFoundException('Tài khoản không tồn tại');
     }
+
+    const wasLocked = user.is_locked;
 
     // Checking Super Admin Protection when locking or changing role of Super Admin
     if (user.role === UserRole.SUPER_ADMIN) {
@@ -124,6 +145,23 @@ export class UsersService implements OnApplicationBootstrap {
       id,
       dto,
     );
+
+    // Gửi email thông báo nếu trạng thái khóa / mở khóa của nhân sự thay đổi
+    if (
+      dto.is_locked !== undefined &&
+      dto.is_locked !== wasLocked &&
+      updatedUser.role !== UserRole.CUSTOMER
+    ) {
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      this.eventEmitter.emit('staff.status_changed', {
+        staffName: updatedUser.full_name,
+        staffEmail: updatedUser.email,
+        role: updatedUser.role,
+        isLocked: updatedUser.is_locked,
+        updatedAt: new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }),
+        loginUrl: `${frontendUrl}/admin/login`,
+      });
+    }
 
     const { password_hash: _, refresh_token_hash: __, ...result } = updatedUser;
     return result;

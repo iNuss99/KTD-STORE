@@ -22,12 +22,12 @@ export class Product {
   @Column({ type: 'text', nullable: true })
   description: string;
 
-  @Column()
-  brand_id: string;
+  @Column({ nullable: true })
+  brand_id?: string | null;
 
-  @ManyToOne(() => Brand)
+  @ManyToOne(() => Brand, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'brand_id' })
-  brand: Brand;
+  brand?: Brand | null;
 
   @Column()
   category_id: string;

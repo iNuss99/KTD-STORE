@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
+import { UpdateProductDto } from './dto/update-product.dto';
 import { CreateVariantDto } from './dto/create-variant.dto';
 import { FilterProductDto } from './dto/filter-product.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -52,6 +53,17 @@ export class ProductsController {
   @Permissions('PRODUCT_MANAGE')
   create(@Body() dto: CreateProductDto, @GetUser('id') performedByUserId: string) {
     return this.productsService.create(dto, performedByUserId);
+  }
+
+  @Patch(':id')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('PRODUCT_MANAGE')
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateProductDto,
+    @GetUser('id') performedByUserId: string,
+  ) {
+    return this.productsService.update(id, dto, performedByUserId);
   }
 
   @Post(':id/variants')

@@ -5,11 +5,13 @@ import { UsersService } from './users.service';
 import { User } from './entities/user.entity';
 import { UserRole } from '../../common/enums/role.enum';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 describe('UsersService', () => {
   let service: UsersService;
   let userRepo: any;
   let auditLogsService: any;
+  let eventEmitter: any;
 
   beforeEach(async () => {
     userRepo = {
@@ -24,11 +26,16 @@ describe('UsersService', () => {
       log: jest.fn(),
     };
 
+    eventEmitter = {
+      emit: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         UsersService,
         { provide: getRepositoryToken(User), useValue: userRepo },
         { provide: AuditLogsService, useValue: auditLogsService },
+        { provide: EventEmitter2, useValue: eventEmitter },
       ],
     }).compile();
 

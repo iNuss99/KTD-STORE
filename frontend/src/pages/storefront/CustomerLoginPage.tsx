@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { ArrowLeft, Loader2, AlertCircle, CheckCircle2, Eye, EyeOff } from 'lucide-react';
-import { setAuthToken, setRefreshToken, setUserId } from '../../lib/auth-storage';
+import { setActiveSession, setAdminActiveSession } from '../../lib/auth-storage';
 
 export const CustomerLoginPage: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -43,26 +43,37 @@ export const CustomerLoginPage: React.FC = () => {
       }
 
       if (res.ok) {
-        setAuthToken(data.access_token);
-        if (data.refresh_token) setRefreshToken(data.refresh_token);
-        if (data.user) {
-          setUserId(data.user.id);
-          localStorage.setItem('user', JSON.stringify(data.user));
-          localStorage.setItem('user_role', data.user.role || 'CUSTOMER');
-          localStorage.setItem('user_name', data.user.full_name || email.split('@')[0]);
+        if (data.user?.role && data.user.role !== 'CUSTOMER') {
+          // Admin role: write ONLY to admin namespace
+          setAdminActiveSession({
+            accessToken: data.access_token,
+            refreshToken: data.refresh_token,
+            user: data.user,
+          });
+          setSuccess('Đăng nhập Quản trị thành công! Đang chuyển hướng sang CRM...');
+          setTimeout(() => {
+            navigate('/admin');
+          }, 500);
+          return;
         }
-        window.dispatchEvent(new Event('auth-change'));
+
+        // Customer role: write ONLY to customer namespace
+        setActiveSession({
+          accessToken: data.access_token,
+          refreshToken: data.refresh_token,
+          user: data.user,
+        });
 
         setSuccess('Đăng nhập thành công! Đang chuyển hướng...');
         setTimeout(() => {
-          if (data.user?.role && data.user.role !== 'CUSTOMER') {
-            navigate('/admin');
-          } else {
-            navigate(from);
-          }
+          navigate(from);
         }, 500);
       } else {
-        setError(data.message || 'Email hoặc mật khẩu không chính xác.');
+        if (res.status === 429) {
+          setError('Bạn đã thử đăng nhập quá nhiều lần liên tiếp. Vui lòng chờ 30 giây rồi thử lại.');
+        } else {
+          setError(data.message || 'Email hoặc mật khẩu không chính xác.');
+        }
       }
     } catch (err) {
       console.error(err);
@@ -78,6 +89,13 @@ export const CustomerLoginPage: React.FC = () => {
     setError('');
     setSuccess('');
 
+    const cleanPhone = phone.trim();
+    if (!/^0[0-9]{9}$/.test(cleanPhone)) {
+      setError('Số điện thoại phải gồm đúng 10 chữ số và bắt đầu bằng số 0 (ví dụ: 0912345678).');
+      setLoading(false);
+      return;
+    }
+
     try {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
@@ -86,7 +104,7 @@ export const CustomerLoginPage: React.FC = () => {
           email,
           password,
           full_name: fullName,
-          phone: phone || undefined,
+          phone: cleanPhone,
         }),
       });
 
@@ -102,16 +120,12 @@ export const CustomerLoginPage: React.FC = () => {
           });
           if (loginRes.ok) {
             const loginData = await loginRes.json();
-            setAuthToken(loginData.access_token);
-            if (loginData.refresh_token) setRefreshToken(loginData.refresh_token);
-            if (loginData.user) {
-              setUserId(loginData.user.id);
-              localStorage.setItem('user', JSON.stringify(loginData.user));
-              localStorage.setItem('user_role', loginData.user.role || 'CUSTOMER');
-              localStorage.setItem('user_name', loginData.user.full_name || email.split('@')[0]);
-            }
-            window.dispatchEvent(new Event('auth-change'));
-            setSuccess('Đăng ký thành công! Đang chuyển hướng đến thanh toán...');
+            setActiveSession({
+              accessToken: loginData.access_token,
+              refreshToken: loginData.refresh_token,
+              user: loginData.user,
+            });
+            setSuccess('Đăng ký thành công! Đang chuyển hướng...');
             setTimeout(() => navigate(from), 600);
             return;
           }
@@ -123,8 +137,12 @@ export const CustomerLoginPage: React.FC = () => {
         setIsLogin(true);
         setPassword('');
       } else {
-        const errorMsg = Array.isArray(data.message) ? data.message.join(', ') : data.message;
-        setError(errorMsg || 'Đăng ký thất bại. Vui lòng kiểm tra lại thông tin.');
+        if (res.status === 429) {
+          setError('Hệ thống đang ghi nhận quá nhiều thao tác liên tiếp. Vui lòng đợi 30 giây rồi thử lại.');
+        } else {
+          const errorMsg = Array.isArray(data.message) ? data.message.join(', ') : data.message;
+          setError(errorMsg || 'Đăng ký thất bại. Vui lòng kiểm tra lại thông tin.');
+        }
       }
     } catch (err) {
       console.error(err);
@@ -676,14 +694,19 @@ export const CustomerLoginPage: React.FC = () => {
                 </div>
 
                 <div className="friendly-field">
-                  <label className="friendly-label">Số điện thoại</label>
+                  <label className="friendly-label">Số điện thoại *</label>
                   <div className="friendly-input-wrap">
                     <input
                       type="tel"
+                      required
                       value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                        setPhone(val);
+                      }}
                       className="friendly-input"
-                      placeholder="0912..."
+                      placeholder="0912345678"
+                      maxLength={10}
                     />
                   </div>
                 </div>

@@ -25,7 +25,7 @@ export class ReturnsController {
 
   @Get()
   @UseGuards(PermissionsGuard)
-  @Permissions(PERMISSION_CODES.ORDER_VIEW, PERMISSION_CODES.ORDER_MANAGE)
+  @Permissions(PERMISSION_CODES.RETURN_MANAGE)
   findAllAdmin(@Query('status') status?: ReturnStatus) {
     return this.returnsService.findAllAdmin(status);
   }
@@ -38,7 +38,7 @@ export class ReturnsController {
 
   @Patch(':id/status')
   @UseGuards(PermissionsGuard)
-  @Permissions(PERMISSION_CODES.ORDER_MANAGE, PERMISSION_CODES.ORDER_UPDATE)
+  @Permissions(PERMISSION_CODES.RETURN_MANAGE)
   updateStatus(@Request() req: any, @Param('id') id: string, @Body() dto: UpdateReturnStatusDto) {
     return this.returnsService.updateStatus(id, dto, req.user);
   }

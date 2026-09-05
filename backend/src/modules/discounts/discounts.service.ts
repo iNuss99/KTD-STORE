@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, OnApplicationBootstrap } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, EntityManager } from 'typeorm';
 import { Discount } from './entities/discount.entity';
@@ -18,7 +18,7 @@ export interface DiscountValidationResult {
 }
 
 @Injectable()
-export class DiscountsService {
+export class DiscountsService implements OnApplicationBootstrap {
   constructor(
     @InjectRepository(Discount)
     private discountRepo: Repository<Discount>,
@@ -30,6 +30,80 @@ export class DiscountsService {
     private cartRepo: Repository<Cart>,
     private auditLogsService: AuditLogsService,
   ) {}
+
+  async onApplicationBootstrap() {
+    await this.seedDefaultDiscounts();
+  }
+
+  async seedDefaultDiscounts() {
+    const defaultDiscounts = [
+      {
+        code: 'GIAM20K',
+        discount_type: DiscountType.FIXED_AMOUNT,
+        value: 20000,
+        max_uses: 10000,
+        used_count: 0,
+        valid_from: new Date('2025-01-01'),
+        valid_to: new Date('2030-01-01'),
+        min_order_amount: 0,
+        is_active: true,
+      },
+      {
+        code: 'GIAM10',
+        discount_type: DiscountType.PERCENTAGE,
+        value: 10,
+        max_uses: 10000,
+        used_count: 0,
+        valid_from: new Date('2025-01-01'),
+        valid_to: new Date('2030-01-01'),
+        min_order_amount: 0,
+        is_active: true,
+      },
+      {
+        code: 'GIAM12',
+        discount_type: DiscountType.PERCENTAGE,
+        value: 12,
+        max_uses: 10000,
+        used_count: 0,
+        valid_from: new Date('2025-01-01'),
+        valid_to: new Date('2030-01-01'),
+        min_order_amount: 0,
+        is_active: true,
+      },
+    ];
+
+    for (const item of defaultDiscounts) {
+      const existing = await this.discountRepo.findOne({ where: { code: item.code } });
+      if (!existing) {
+        await this.discountRepo.save(this.discountRepo.create(item));
+      }
+    }
+  }
+
+  async findActivePublic() {
+    const now = new Date();
+    const discounts = await this.discountRepo.find({
+      where: { is_active: true },
+      order: { value: 'DESC' },
+    });
+    return discounts
+      .filter(
+        (d) =>
+          now >= new Date(d.valid_from) &&
+          now <= new Date(d.valid_to) &&
+          (d.max_uses == null || d.used_count < d.max_uses),
+      )
+      .map((d) => ({
+        code: d.code,
+        label:
+          d.discount_type === DiscountType.PERCENTAGE
+            ? `Giảm ${Number(d.value)}%`
+            : `Giảm ${Number(d.value) >= 1000 ? `${Math.round(Number(d.value) / 1000)}K` : `${d.value}đ`}`,
+        discount_type: d.discount_type,
+        value: Number(d.value),
+        min_order_amount: Number(d.min_order_amount || 0),
+      }));
+  }
 
   async create(dto: CreateDiscountDto, performedByUserId?: string): Promise<Discount> {
     const code = dto.code.trim().toUpperCase();
@@ -194,6 +268,9 @@ export class DiscountsService {
     if (dtoItems && dtoItems.length > 0) {
       rawItems = dtoItems;
     } else {
+      if (!userId) {
+        throw new BadRequestException('Vui lòng đăng nhập hoặc cung cấp danh sách sản phẩm để áp dụng mã');
+      }
       const cart = await manager.findOne(Cart, {
         where: { user_id: userId },
         relations: ['items'],

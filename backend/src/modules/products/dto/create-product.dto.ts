@@ -2,6 +2,24 @@ import { IsNotEmpty, IsString, IsUUID, IsNumber, IsOptional, Min, IsArray, Valid
 import { Type } from 'class-transformer';
 import { CreateVariantDto } from './create-variant.dto';
 
+export class CreateProductImageDto {
+  @IsNotEmpty({ message: 'URL ảnh không được để trống' })
+  @IsString()
+  url: string;
+
+  @IsOptional()
+  @IsUUID('4', { message: 'color_id phải là UUID hợp lệ' })
+  color_id?: string | null;
+
+  @IsOptional()
+  @IsNumber()
+  sort_order?: number;
+
+  @IsOptional()
+  @IsString()
+  alt_text?: string;
+}
+
 export class CreateProductDto {
   @IsNotEmpty({ message: 'Tên sản phẩm không được để trống' })
   @IsString()
@@ -39,6 +57,12 @@ export class CreateProductDto {
   @IsArray()
   @IsString({ each: true })
   image_urls?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateProductImageDto)
+  images?: CreateProductImageDto[];
 
   @IsOptional()
   @IsArray()

@@ -31,6 +31,7 @@ import { WishlistItem } from './modules/wishlists/entities/wishlist-item.entity'
 import { SystemConfig } from './modules/system-configs/entities/system-config.entity';
 import { LoyaltyPoint } from './modules/loyalty/entities/loyalty-point.entity';
 import { InitialSchema1700000000000 } from './migrations/1700000000000-InitialSchema';
+import { AddColorToProductImages1700000000001 } from './migrations/1700000000001-AddColorToProductImages';
 import { CacheModule } from '@nestjs/cache-manager';
 
 import { AuthModule } from './modules/auth/auth.module';
@@ -119,7 +120,7 @@ import { LoyaltyModule } from './modules/loyalty/loyalty.module';
           ],
           // Task T1.1: Disabled synchronize for production safety. Migrations are used instead.
           synchronize: false,
-          migrations: [InitialSchema1700000000000],
+          migrations: [InitialSchema1700000000000, AddColorToProductImages1700000000001],
           ssl: isSsl ? { rejectUnauthorized: false } : false,
           extra: {
             max: 20,

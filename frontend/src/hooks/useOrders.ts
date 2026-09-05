@@ -18,7 +18,7 @@ export function useMyOrders() {
       return res.json();
     },
     enabled: !!token,
-    staleTime: 0,
+    staleTime: 30_000, // 30s cache để tránh spam request khi chuyển trang; mutations tự động invalidate
   });
 }
 

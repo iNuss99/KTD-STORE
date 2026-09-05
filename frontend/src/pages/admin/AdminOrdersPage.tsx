@@ -1,18 +1,20 @@
 import React, { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Order, OrderStatus } from '../../types';
-import { Package, Search, CheckCircle2, Clock, Truck, ShieldCheck, XCircle, DollarSign, Loader2, AlertCircle, Trash2, Sparkles } from 'lucide-react';
+import { Package, Search, CheckCircle2, Clock, Truck, ShieldCheck, XCircle, DollarSign, Loader2, AlertCircle, Trash2, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
 import { OrderStatusBadge } from '../../components/admin/OrderStatusBadge';
 import { PermissionGuard } from '../../components/guards/PermissionGuard';
-import { getAuthHeader } from '../../lib/auth-storage';
-import { apiClient } from '../../lib/apiClient';
+import { adminApiClient } from '../../lib/apiClient';
 import { useToast } from '../../context/ToastContext';
+import { formatDateTime } from '../../lib/date-utils';
 
 export const AdminOrdersPage: React.FC = () => {
+  const queryClient = useQueryClient();
   const { showSuccess, showError } = useToast();
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
   const [selectedTab, setSelectedTab] = useState<string>('ALL');
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const pageSize = 10;
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   // Manual Override Modal
   const [overrideOrder, setOverrideOrder] = useState<Order | null>(null);
@@ -126,24 +128,24 @@ export const AdminOrdersPage: React.FC = () => {
       const orderId = confirmModal.order.id;
 
       if (confirmModal.actionType === 'DELETE_ORDER') {
-        await apiClient(`/api/orders/${orderId}`, {
+        await adminApiClient(`/api/orders/${orderId}`, {
           method: 'DELETE',
         });
       } else if (confirmModal.actionType === 'CONFIRM_COD' || autoConfirmPayment) {
-        await apiClient(`/api/orders/${orderId}/confirm-payment`, {
+        await adminApiClient(`/api/orders/${orderId}/confirm-payment`, {
           method: 'POST',
         });
       }
 
       if (confirmModal.actionType === 'UPDATE_STATUS' && confirmModal.newStatus) {
-        await apiClient(`/api/orders/${orderId}/status`, {
+        await adminApiClient(`/api/orders/${orderId}/status`, {
           method: 'PATCH',
           body: JSON.stringify({ status: confirmModal.newStatus }),
         });
       }
 
       setConfirmModal(null);
-      await fetchOrders();
+      await queryClient.invalidateQueries({ queryKey: ['admin', 'orders'] });
     } catch (err: any) {
       console.error('Error executing order action:', err);
       setConfirmModal((prev) =>
@@ -152,31 +154,32 @@ export const AdminOrdersPage: React.FC = () => {
     }
   };
 
-  const fetchOrders = async () => {
-    setLoading(true);
-    try {
+  const {
+    data: orders = [],
+    isLoading: loading,
+    refetch: fetchOrders,
+  } = useQuery<Order[]>({
+    queryKey: ['admin', 'orders', selectedTab],
+    queryFn: async () => {
       const url = selectedTab === 'ALL' ? '/api/orders' : `/api/orders?status=${selectedTab}`;
-      const data = await apiClient(url);
-      setOrders(data);
-    } catch (err) {
-      console.error('Error fetching admin orders:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+      const data = await adminApiClient(url);
+      return Array.isArray(data) ? data : [];
+    },
+    staleTime: 30_000,
+  });
 
   useEffect(() => {
-    fetchOrders();
-  }, [selectedTab]);
+    setCurrentPage(1);
+  }, [selectedTab, searchTerm]);
 
   const handleUpdateStatus = async (orderId: string, newStatus: OrderStatus, reason?: string) => {
     setActionLoadingId(orderId);
     try {
-      await apiClient(`/api/orders/${orderId}/status`, {
+      await adminApiClient(`/api/orders/${orderId}/status`, {
         method: 'PATCH',
         body: JSON.stringify({ status: newStatus, reason }),
       });
-      await fetchOrders();
+      await queryClient.invalidateQueries({ queryKey: ['admin', 'orders'] });
       setOverrideOrder(null);
       setOverrideReason('');
     } catch (err: any) {
@@ -195,6 +198,9 @@ export const AdminOrdersPage: React.FC = () => {
     const phone = order.shipping_snapshot?.phone || '';
     return orderId.includes(term) || name.includes(term) || phone.includes(term);
   });
+
+  const totalPages = Math.ceil(filteredOrders.length / pageSize) || 1;
+  const paginatedOrders = filteredOrders.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const tabs = [
     { key: 'ALL', label: 'Tất cả đơn' },
@@ -263,159 +269,257 @@ export const AdminOrdersPage: React.FC = () => {
             <p className="text-sm font-semibold text-gray-500">Không có đơn hàng nào khớp với điều kiện tìm kiếm.</p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {filteredOrders.map((order) => {
-              const payment = order.payments?.[0];
-              const formattedTotal = new Intl.NumberFormat('vi-VN', {
-                style: 'currency',
-                currency: 'VND',
-              }).format(order.total || 0);
+          <div className="bg-white rounded-2xl border border-gray-200/80 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse min-w-[960px]">
+                <thead>
+                  <tr className="bg-slate-50/80 border-b border-gray-200 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                    <th className="py-3.5 px-4 w-36">Mã đơn & Ngày</th>
+                    <th className="py-3.5 px-4 min-w-[200px]">Khách hàng</th>
+                    <th className="py-3.5 px-4 w-32 text-right">Tổng tiền</th>
+                    <th className="py-3.5 px-4 w-40">Thanh toán</th>
+                    <th className="py-3.5 px-4 w-44">Trạng thái</th>
+                    <th className="py-3.5 px-4 w-56 text-right">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 text-xs">
+                  {paginatedOrders.map((order) => {
+                    const payment = order.payments?.[0];
+                    const formattedTotal = new Intl.NumberFormat('vi-VN', {
+                      style: 'currency',
+                      currency: 'VND',
+                    }).format(order.total || 0);
+                    const formattedDate = order.created_at
+                      ? formatDateTime(order.created_at, {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })
+                      : '---';
 
-              return (
-                <div
-                  key={order.id}
-                  className="bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4 flex items-center gap-4 hover:shadow-md hover:border-gray-200 transition"
-                >
-                  {/* Mã đơn */}
-                  <div className="w-28 shrink-0">
-                    <span className="font-extrabold text-slate-900 text-xs font-label tracking-wide">
-                      #{order.id.slice(0, 8).toUpperCase()}
-                    </span>
-                  </div>
+                    return (
+                      <tr key={order.id} className="hover:bg-slate-50/70 transition-colors">
+                        {/* Mã đơn & Ngày */}
+                        <td className="py-3.5 px-4 align-middle">
+                          <span className="font-mono font-bold text-slate-900 text-xs tracking-wider block">
+                            #{order.id.slice(0, 8).toUpperCase()}
+                          </span>
+                          <span className="text-[11px] text-gray-400 font-normal mt-0.5 block">
+                            {formattedDate}
+                          </span>
+                        </td>
 
-                  {/* Khách hàng */}
-                  <div className="flex-1 min-w-0">
-                    <div className="font-bold text-slate-800 text-sm truncate">
-                      {order.shipping_snapshot?.receiver_name || 'Khách vãng lai'}
-                    </div>
-                    <div className="text-[11px] text-gray-500">{order.shipping_snapshot?.phone}</div>
-                    <div className="text-[11px] text-gray-400 truncate">
-                      {order.shipping_snapshot?.address_line}, {order.shipping_snapshot?.district},{' '}
-                      {order.shipping_snapshot?.province}
-                    </div>
-                  </div>
+                        {/* Khách hàng */}
+                        <td className="py-3.5 px-4 align-middle">
+                          <div className="font-bold text-slate-800 text-xs truncate max-w-[200px]">
+                            {order.shipping_snapshot?.receiver_name || 'Khách vãng lai'}
+                          </div>
+                          <div className="text-[11px] text-gray-500 font-medium">
+                            {order.shipping_snapshot?.phone || '---'}
+                          </div>
+                          <div
+                            className="text-[11px] text-gray-400 truncate max-w-[240px]"
+                            title={[
+                              order.shipping_snapshot?.address_line,
+                              order.shipping_snapshot?.district,
+                              order.shipping_snapshot?.province,
+                            ]
+                              .filter(Boolean)
+                              .join(', ')}
+                          >
+                            {[
+                              order.shipping_snapshot?.address_line,
+                              order.shipping_snapshot?.district,
+                              order.shipping_snapshot?.province,
+                            ]
+                              .filter(Boolean)
+                              .join(', ') || '---'}
+                          </div>
+                        </td>
 
-                  {/* Tổng tiền */}
-                  <div className="w-28 shrink-0 text-right">
-                    <span className="font-bold text-slate-900 text-sm">{formattedTotal}</span>
-                  </div>
+                        {/* Tổng tiền */}
+                        <td className="py-3.5 px-4 align-middle text-right">
+                          <span className="font-bold text-slate-900 text-xs block">
+                            {formattedTotal}
+                          </span>
+                          {order.items && order.items.length > 0 && (
+                            <span className="text-[10px] text-gray-400 font-normal mt-0.5 block">
+                              {order.items.length} món
+                            </span>
+                          )}
+                        </td>
 
-                  {/* Thanh toán */}
-                  <div className="w-36 shrink-0">
-                    <div className="font-semibold text-slate-700 text-xs">
-                      {payment?.method === 'COD' ? 'Thanh toán COD' : 'Chuyển khoản'}
-                    </div>
-                    {payment?.status === 'COMPLETED' ? (
-                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md inline-flex items-center gap-1 mt-0.5">
-                        <CheckCircle2 className="w-3 h-3" /> Đã thu tiền
-                      </span>
-                    ) : (
-                      <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-md inline-flex items-center gap-1 mt-0.5">
-                        <Clock className="w-3 h-3" /> Chưa thu tiền
-                      </span>
-                    )}
-                  </div>
+                        {/* Thanh toán */}
+                        <td className="py-3.5 px-4 align-middle">
+                          <div className="font-semibold text-slate-700 text-xs">
+                            {payment?.method === 'COD' ? 'Thanh toán COD' : 'Chuyển khoản'}
+                          </div>
+                          {payment?.status === 'COMPLETED' ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-md mt-1">
+                              <CheckCircle2 className="w-3 h-3" /> Đã thu tiền
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200/80 px-2 py-0.5 rounded-md mt-1">
+                              <Clock className="w-3 h-3" /> Chưa thu tiền
+                            </span>
+                          )}
+                        </td>
 
-                  {/* Trạng thái */}
-                  <div className="w-36 shrink-0">
-                    <OrderStatusBadge status={order.status} />
-                  </div>
+                        {/* Trạng thái đơn */}
+                        <td className="py-3.5 px-4 align-middle">
+                          <OrderStatusBadge status={order.status} />
+                        </td>
 
-                  {/* Thao tác */}
-                  <div className="shrink-0 flex items-center gap-2">
-                    {payment?.status !== 'COMPLETED' && order.status !== 'CANCELLED' && (
-                      <button
-                        disabled={actionLoadingId === order.id}
-                        onClick={() => openConfirmCodModal(order)}
-                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] rounded-lg transition shadow-sm flex items-center gap-1 whitespace-nowrap"
-                        title={`Xác nhận đã thu tiền (${payment?.method === 'COD' ? 'Thanh toán COD' : 'Chuyển khoản'})`}
-                      >
-                        <DollarSign className="w-3.5 h-3.5" /> {payment?.method === 'COD' ? 'XN COD' : 'XN CK'}
-                      </button>
-                    )}
+                        {/* Thao tác */}
+                        <td className="py-3.5 px-4 align-middle text-right">
+                          <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                            {payment?.status !== 'COMPLETED' && order.status !== 'CANCELLED' && (
+                              <button
+                                disabled={actionLoadingId === order.id}
+                                onClick={() => openConfirmCodModal(order)}
+                                className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] rounded-lg transition shadow-sm flex items-center gap-1 shrink-0"
+                                title={`Xác nhận đã thu tiền (${payment?.method === 'COD' ? 'Thanh toán COD' : 'Chuyển khoản'})`}
+                              >
+                                <DollarSign className="w-3.5 h-3.5" />
+                                <span>{payment?.method === 'COD' ? 'XN COD' : 'XN CK'}</span>
+                              </button>
+                            )}
 
-                    {order.status === 'PENDING' && (
-                      <>
-                        <button
-                          disabled={actionLoadingId === order.id}
-                          onClick={() => openUpdateStatusModal(order, 'CONFIRMED')}
-                          className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] rounded-lg transition whitespace-nowrap"
-                        >
-                          Xác nhận đơn
-                        </button>
-                        <button
-                          disabled={actionLoadingId === order.id}
-                          onClick={() => openUpdateStatusModal(order, 'CANCELLED')}
-                          className="px-2.5 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 font-bold text-[11px] rounded-lg transition"
-                        >
-                          Hủy
-                        </button>
-                      </>
-                    )}
+                            {order.status === 'PENDING' && (
+                              <>
+                                <button
+                                  disabled={actionLoadingId === order.id}
+                                  onClick={() => openUpdateStatusModal(order, 'CONFIRMED')}
+                                  className="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] rounded-lg transition shadow-sm shrink-0"
+                                >
+                                  Xác nhận đơn
+                                </button>
+                                <button
+                                  disabled={actionLoadingId === order.id}
+                                  onClick={() => openUpdateStatusModal(order, 'CANCELLED')}
+                                  className="px-2 py-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold text-[11px] rounded-lg transition shrink-0"
+                                  title="Hủy đơn hàng"
+                                >
+                                  Hủy
+                                </button>
+                              </>
+                            )}
 
-                    {order.status === 'CONFIRMED' && (
-                      <>
-                        <button
-                          disabled={actionLoadingId === order.id}
-                          onClick={() => openUpdateStatusModal(order, 'PROCESSING')}
-                          className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-[11px] rounded-lg transition whitespace-nowrap"
-                        >
-                          Đóng gói
-                        </button>
-                        <button
-                          disabled={actionLoadingId === order.id}
-                          onClick={() => openUpdateStatusModal(order, 'CANCELLED')}
-                          className="px-2.5 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 font-bold text-[11px] rounded-lg transition"
-                        >
-                          Hủy
-                        </button>
-                      </>
-                    )}
+                            {order.status === 'CONFIRMED' && (
+                              <>
+                                <button
+                                  disabled={actionLoadingId === order.id}
+                                  onClick={() => openUpdateStatusModal(order, 'PROCESSING')}
+                                  className="px-2.5 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-[11px] rounded-lg transition shadow-sm shrink-0"
+                                >
+                                  Đóng gói
+                                </button>
+                                <button
+                                  disabled={actionLoadingId === order.id}
+                                  onClick={() => openUpdateStatusModal(order, 'CANCELLED')}
+                                  className="px-2 py-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold text-[11px] rounded-lg transition shrink-0"
+                                  title="Hủy đơn hàng"
+                                >
+                                  Hủy
+                                </button>
+                              </>
+                            )}
 
-                    {order.status === 'PROCESSING' && (
-                      <button
-                        disabled={actionLoadingId === order.id}
-                        onClick={() => openUpdateStatusModal(order, 'SHIPPING')}
-                        className="px-3 py-1.5 bg-sky-600 hover:bg-sky-700 text-white font-bold text-[11px] rounded-lg transition flex items-center gap-1 whitespace-nowrap"
-                      >
-                        <Truck className="w-3.5 h-3.5" /> Giao vận chuyển
-                      </button>
-                    )}
+                            {order.status === 'PROCESSING' && (
+                              <button
+                                disabled={actionLoadingId === order.id}
+                                onClick={() => openUpdateStatusModal(order, 'SHIPPING')}
+                                className="px-2.5 py-1.5 bg-sky-600 hover:bg-sky-700 text-white font-bold text-[11px] rounded-lg transition shadow-sm flex items-center gap-1 shrink-0"
+                              >
+                                <Truck className="w-3.5 h-3.5" /> Giao hàng
+                              </button>
+                            )}
 
-                    {order.status === 'SHIPPING' && (
-                      <button
-                        disabled={actionLoadingId === order.id}
-                        onClick={() => openUpdateStatusModal(order, 'DELIVERED')}
-                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] rounded-lg transition flex items-center gap-1 whitespace-nowrap"
-                      >
-                        <CheckCircle2 className="w-3.5 h-3.5" /> Hoàn tất giao
-                      </button>
-                    )}
+                            {order.status === 'SHIPPING' && (
+                              <button
+                                disabled={actionLoadingId === order.id}
+                                onClick={() => openUpdateStatusModal(order, 'DELIVERED')}
+                                className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] rounded-lg transition shadow-sm flex items-center gap-1 shrink-0"
+                              >
+                                <CheckCircle2 className="w-3.5 h-3.5" /> Hoàn tất
+                              </button>
+                            )}
 
-                    {order.status === 'DELIVERED' && (
-                      <button
-                        disabled={actionLoadingId === order.id}
-                        onClick={() => openDeleteOrderModal(order)}
-                        className="p-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition flex items-center justify-center"
-                        title="Xóa đơn hàng đã hoàn tất"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
+                            {order.status === 'DELIVERED' && (
+                              <button
+                                disabled={actionLoadingId === order.id}
+                                onClick={() => openDeleteOrderModal(order)}
+                                className="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg transition flex items-center justify-center shrink-0"
+                                title="Xóa đơn hàng đã hoàn tất"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
 
-                    <PermissionGuard requireSuperAdmin>
-                      <button
-                        onClick={() => setOverrideOrder(order)}
-                        className="px-2 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-[11px] rounded-lg transition"
-                        title="Can thiệp thủ công (Super Admin)"
-                      >
-                        Sửa
-                      </button>
-                    </PermissionGuard>
-                  </div>
+                            <PermissionGuard requireSuperAdmin>
+                              <button
+                                onClick={() => setOverrideOrder(order)}
+                                className="px-2 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-[11px] rounded-lg transition shrink-0"
+                                title="Can thiệp thủ công (Super Admin)"
+                              >
+                                Sửa
+                              </button>
+                            </PermissionGuard>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination Footer */}
+            {filteredOrders.length > 0 && (
+              <div className="bg-slate-50/60 border-t border-gray-200 px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-500">
+                <div>
+                  Hiển thị{' '}
+                  <span className="font-bold text-slate-800">
+                    {(currentPage - 1) * pageSize + 1}
+                  </span>{' '}
+                  -{' '}
+                  <span className="font-bold text-slate-800">
+                    {Math.min(currentPage * pageSize, filteredOrders.length)}
+                  </span>{' '}
+                  trên tổng số{' '}
+                  <span className="font-bold text-slate-800">
+                    {filteredOrders.length}
+                  </span>{' '}
+                  đơn hàng
                 </div>
-              );
-            })}
+
+                <div className="flex items-center gap-2">
+                  <button
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    className="p-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 transition shadow-sm"
+                    title="Trang trước"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+
+                  <span className="text-xs font-semibold text-slate-700 px-2">
+                    Trang {currentPage} / {totalPages}
+                  </span>
+
+                  <button
+                    disabled={currentPage >= totalPages}
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    className="p-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 transition shadow-sm"
+                    title="Trang tiếp theo"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

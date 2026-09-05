@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Discount, Category, Brand } from '../../types';
 import { Ticket, Plus, Calendar, Tag, Layers, CheckCircle2, XCircle, Trash2, Loader2, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
-import { getAuthHeader } from '../../lib/auth-storage';
+import { getAdminAuthHeader } from '../../lib/auth-storage';
 
 export const AdminDiscountsPage: React.FC = () => {
   const { isSuperAdmin, isCEO, isManager, role } = useAuth();
@@ -32,7 +32,7 @@ export const AdminDiscountsPage: React.FC = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const headers = getAuthHeader();
+      const headers = getAdminAuthHeader();
       const [discRes, catRes, brandRes] = await Promise.all([
         fetch('/api/discounts', { headers }),
         fetch('/api/categories', { headers }),
@@ -98,7 +98,7 @@ export const AdminDiscountsPage: React.FC = () => {
 
       const res = await fetch('/api/discounts', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+        headers: { 'Content-Type': 'application/json', ...getAdminAuthHeader() },
         body: JSON.stringify(payload),
       });
 
@@ -122,7 +122,7 @@ export const AdminDiscountsPage: React.FC = () => {
     try {
       const res = await fetch(`/api/discounts/${discount.id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+        headers: { 'Content-Type': 'application/json', ...getAdminAuthHeader() },
         body: JSON.stringify({ is_active: !discount.is_active }),
       });
 
@@ -139,7 +139,7 @@ export const AdminDiscountsPage: React.FC = () => {
     try {
       const res = await fetch(`/api/discounts/${id}`, {
         method: 'DELETE',
-        headers: getAuthHeader(),
+        headers: getAdminAuthHeader(),
       });
       if (res.ok) {
         await fetchData();

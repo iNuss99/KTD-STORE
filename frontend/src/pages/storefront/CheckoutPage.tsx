@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { SandboxPaymentModal } from '../../components/storefront/SandboxPaymentModal';
 import { useLanguage } from '../../context/LanguageContext';
@@ -10,7 +10,7 @@ import { ProductImage } from '../../components/common/ProductImage';
 import { useCart } from '../../hooks/useCart';
 import { useCreateOrderMutation } from '../../hooks/useOrders';
 import { apiClient } from '../../lib/apiClient';
-import { getAuthHeader, getAuthToken } from '../../lib/auth-storage';
+import { getAuthHeader, getAuthToken, getUser, getUserName } from '../../lib/auth-storage';
 import { CartItem } from '../../types';
 import { useToast } from '../../context/ToastContext';
 
@@ -42,7 +42,9 @@ export const CheckoutPage: React.FC = () => {
   const [activeSandboxOrder, setActiveSandboxOrder] = useState<{ id: string; total: number; method: 'VNPAY' } | null>(null);
 
   // Discount State
-  const [discountCode, setDiscountCode] = useState<string>('');
+  const location = useLocation();
+  const initialDiscountCode = ((location.state as any)?.appliedCode || '').trim();
+  const [discountCode, setDiscountCode] = useState<string>(initialDiscountCode);
   const [appliedDiscount, setAppliedDiscount] = useState<{ code: string; discount_amount: number } | null>(null);
   const [discountLoading, setDiscountLoading] = useState<boolean>(false);
   const [discountError, setDiscountError] = useState<string | null>(null);
@@ -55,6 +57,17 @@ export const CheckoutPage: React.FC = () => {
   const [newWard, setNewWard] = useState<string>('');
   const [newDistrict, setNewDistrict] = useState<string>('');
   const [newProvince, setNewProvince] = useState<string>('');
+
+  const openAddModal = () => {
+    const user = getUser();
+    setNewReceiverName(user?.full_name || getUserName() || '');
+    setNewPhone(user?.phone || '');
+    setNewAddressLine('');
+    setNewWard('');
+    setNewDistrict('');
+    setNewProvince('');
+    setShowAddModal(true);
+  };
 
   useEffect(() => {
     const token = getAuthToken();
@@ -74,17 +87,27 @@ export const CheckoutPage: React.FC = () => {
     }
   }, [addresses, selectedAddressId]);
 
-  const handleApplyDiscount = async () => {
-    if (!discountCode.trim()) return;
+  useEffect(() => {
+    if (initialDiscountCode && cart?.items && cart.items.length > 0 && !appliedDiscount && !discountLoading) {
+      handleApplyDiscount(initialDiscountCode);
+    }
+  }, [initialDiscountCode, cart?.items]);
+
+  const handleApplyDiscount = async (codeOverride?: string) => {
+    const code = (codeOverride || discountCode).trim();
+    if (!code) return;
     setDiscountLoading(true);
     setDiscountError(null);
     try {
       const items = cart?.items || [];
       const res = await fetch('/api/discounts/apply', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeader(),
+        },
         body: JSON.stringify({
-          code: discountCode.trim(),
+          code,
           items: items.map((i) => ({ variant_id: i.variant_id, quantity: i.quantity })),
         }),
       });
@@ -198,12 +221,16 @@ export const CheckoutPage: React.FC = () => {
           totalAmount={activeSandboxOrder.total}
           paymentMethod={activeSandboxOrder.method}
           onSuccess={() => {
+            const id = activeSandboxOrder.id;
+            setActiveSandboxOrder(null);
             showSuccess('Thanh toán thành công!', 'Đơn hàng của bạn đã chuyển sang trạng thái Đang xử lý (PROCESSING).');
-            navigate(`/orders/${activeSandboxOrder.id}`);
+            navigate(`/orders/${id}`);
           }}
           onCancel={() => {
+            const id = activeSandboxOrder.id;
+            setActiveSandboxOrder(null);
             showInfo('Đã hủy thanh toán', 'Bạn đã chọn hủy thanh toán đơn hàng này.');
-            navigate(`/orders/${activeSandboxOrder.id}`);
+            navigate(`/orders/${id}`);
           }}
         />
       )}
@@ -225,7 +252,7 @@ export const CheckoutPage: React.FC = () => {
                   <MapPin className="w-4 h-4 text-stitch" /> Địa Chỉ Giao Hàng
                 </h3>
                 <button
-                  onClick={() => setShowAddModal(true)}
+                  onClick={openAddModal}
                   className="font-mono text-xs text-stitch hover:underline flex items-center gap-1 bg-warm-white border border-chalk px-3 py-1.5 transition-colors"
                 >
                   <Plus className="w-3.5 h-3.5" /> Thêm địa chỉ mới
@@ -233,8 +260,14 @@ export const CheckoutPage: React.FC = () => {
               </div>
 
               {addresses.length === 0 ? (
-                <div className="text-center py-6 text-smoke font-mono text-xs">
-                  Bạn chưa có địa chỉ giao hàng nào. Vui lòng thêm địa chỉ mới để tiếp tục.
+                <div className="text-center py-6 text-smoke font-mono text-xs space-y-3">
+                  <p>Bạn chưa có địa chỉ giao hàng nào. Vui lòng thêm địa chỉ mới để tiếp tục.</p>
+                  <button
+                    onClick={openAddModal}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-ink hover:bg-accent text-white font-mono text-xs font-semibold rounded-lg transition-colors shadow-xs"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Thêm địa chỉ nhận hàng
+                  </button>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -375,7 +408,7 @@ export const CheckoutPage: React.FC = () => {
                   />
                   <button
                     disabled={discountLoading || !discountCode.trim()}
-                    onClick={handleApplyDiscount}
+                    onClick={() => handleApplyDiscount()}
                     className="px-4 py-2 bg-ink hover:bg-accent text-white font-mono text-xs uppercase tracking-wider transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     {discountLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin text-white" /> : 'Áp dụng'}
@@ -442,7 +475,8 @@ export const CheckoutPage: React.FC = () => {
                       placeholder="Ví dụ: 0912345678"
                       required
                       value={newPhone}
-                      onChange={(e) => setNewPhone(e.target.value)}
+                      onChange={(e) => setNewPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                      maxLength={10}
                       className="w-full px-3 py-2.5 bg-card border border-line rounded-xl text-xs text-ink placeholder-ink-soft focus:outline-none focus:border-accent shadow-2xs font-medium"
                     />
                   </div>

@@ -14,13 +14,13 @@ export class ReportsController {
   @Post('seed')
   @Permissions(PERMISSION_CODES.REPORT_VIEW)
   async seedMockData() {
-    return this.reportsService.seedMockData();
+    return { message: 'Chức năng tạo dữ liệu ảo đã bị vô hiệu hóa để bảo vệ cơ sở dữ liệu Neon.', seeded: false };
   }
 
   @Post('seed-single')
   @Permissions(PERMISSION_CODES.REPORT_VIEW)
   async seedSingleOrder() {
-    return this.reportsService.seedSingleOrder();
+    return { message: 'Chức năng tạo dữ liệu ảo đã bị vô hiệu hóa để bảo vệ cơ sở dữ liệu Neon.', seeded: false };
   }
 
   @Get('overview')

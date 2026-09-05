@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AdminOrdersPage } from '../admin/AdminOrdersPage';
 import { ToastProvider } from '../../context/ToastContext';
 
@@ -39,12 +40,18 @@ describe('AdminOrdersPage Component', () => {
       } as Response;
     }));
 
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
     render(
-      <ToastProvider>
-        <MemoryRouter>
-          <AdminOrdersPage />
-        </MemoryRouter>
-      </ToastProvider>
+      <QueryClientProvider client={queryClient}>
+        <ToastProvider>
+          <MemoryRouter>
+            <AdminOrdersPage />
+          </MemoryRouter>
+        </ToastProvider>
+      </QueryClientProvider>
     );
 
     // Chờ đơn PENDING hiển thị nút "Xác nhận đơn"

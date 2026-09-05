@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { CheckCircle2, XCircle, ShieldCheck, QrCode, AlertCircle, Loader2 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { getAuthHeader } from '../../lib/auth-storage';
@@ -30,6 +30,21 @@ export const SandboxPaymentModal: React.FC<SandboxPaymentModalProps> = ({
 
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
+
+  // PayOS Dynamic Link State
+  const [payosLink, setPayosLink] = useState<{
+    orderCode: number;
+    checkoutUrl: string;
+    qrCode: string;
+    accountNumber: string;
+    accountName: string;
+    bin: string;
+    amount: number;
+    description: string;
+  } | null>(null);
+  const [loadingPayos, setLoadingPayos] = useState(false);
+  const payosLinkRef = useRef(payosLink);
+  useEffect(() => { payosLinkRef.current = payosLink; }, [payosLink]);
 
   useEffect(() => {
     const fetchBankConfigs = async () => {
@@ -68,18 +83,77 @@ export const SandboxPaymentModal: React.FC<SandboxPaymentModalProps> = ({
       }
     };
 
+    const initPayosLink = async () => {
+      setLoadingPayos(true);
+      try {
+        const res = await fetch('/api/payments/payos/create-link', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...getAuthHeader(),
+          },
+          body: JSON.stringify({ orderId }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setPayosLink(data);
+          if (data.accountNumber) setBankAccountNo(data.accountNumber);
+          if (data.accountName) setBankAccountName(data.accountName);
+          if (data.bin === '970422') {
+            setBankCode('MB');
+            setBankName('MBBank (Ngân hàng Quân Đội)');
+          }
+        }
+      } catch (err) {
+        console.error('Error initializing PayOS payment link:', err);
+      } finally {
+        setLoadingPayos(false);
+      }
+    };
+
     fetchBankConfigs();
     if (orderId) {
       fetchOrderDetails();
+      initPayosLink();
     }
   }, [orderId]);
 
-  // Auto-poll order status every 2.5s to detect PayOS/Casso/Bank webhook confirmation automatically
+  // Stable refs so the polling interval never captures stale closures
+  const onSuccessRef = useRef(onSuccess);
+  const showSuccessRef = useRef(showSuccess);
+  useEffect(() => { onSuccessRef.current = onSuccess; }, [onSuccess]);
+  useEffect(() => { showSuccessRef.current = showSuccess; }, [showSuccess]);
+
+  // Auto-poll PayOS API + Order status every 2.5s to detect real bank transfer automatically
   useEffect(() => {
     if (!orderId) return;
 
+    const calledRef = { current: false };
+
     const checkStatus = async () => {
+      if (calledRef.current) return;
       try {
+        // 1. Check PayOS direct API (instant auto-confirmation even on localhost)
+        const orderCode = payosLinkRef.current?.orderCode;
+        const payosUrl = orderCode
+          ? `/api/payments/payos/check-status/${orderId}?orderCode=${orderCode}`
+          : `/api/payments/payos/check-status/${orderId}`;
+        
+        const payosRes = await fetch(payosUrl, { headers: getAuthHeader() });
+        if (payosRes.ok) {
+          const payosData = await payosRes.json();
+          if (payosData.isPaid) {
+            calledRef.current = true;
+            showSuccessRef.current(
+              'Tự động xác nhận thành công!',
+              'PayOS đã nhận tiền từ Ngân hàng và tự động duyệt đơn hàng của bạn.',
+            );
+            onSuccessRef.current();
+            return;
+          }
+        }
+
+        // 2. Fallback check order entity status (e.g. if Webhook triggered first)
         const res = await fetch(`/api/orders/${orderId}`, {
           headers: getAuthHeader(),
         });
@@ -92,11 +166,12 @@ export const SandboxPaymentModal: React.FC<SandboxPaymentModalProps> = ({
             data.payments?.some((p: any) => p.status === 'COMPLETED');
 
           if (isPaid) {
-            showSuccess(
+            calledRef.current = true;
+            showSuccessRef.current(
               'Tự động xác nhận thành công!',
               'Hệ thống đã nhận tiền từ Ngân hàng và duyệt đơn tự động.',
             );
-            onSuccess();
+            onSuccessRef.current();
           }
         }
       } catch (err) {
@@ -106,7 +181,7 @@ export const SandboxPaymentModal: React.FC<SandboxPaymentModalProps> = ({
 
     const intervalId = setInterval(checkStatus, 2500);
     return () => clearInterval(intervalId);
-  }, [orderId, onSuccess, showSuccess]);
+  }, [orderId]);
 
   const removeAccents = (str: string): string => {
     return str
@@ -151,7 +226,13 @@ export const SandboxPaymentModal: React.FC<SandboxPaymentModalProps> = ({
     }
   };
 
-  const qrImageUrl = `https://img.vietqr.io/image/${bankCode}-${bankAccountNo}-compact2.png?amount=${totalAmount}&addInfo=${encodeURIComponent(transferContent)}&accountName=${encodeURIComponent(bankAccountName)}`;
+  const effectiveAmount = payosLink?.amount || totalAmount;
+  const effectiveTransferContent = payosLink?.description || transferContent;
+  const effectiveBankCode = payosLink?.bin === '970422' ? 'MB' : bankCode;
+  const effectiveAccountNo = payosLink?.accountNumber || bankAccountNo;
+  const effectiveAccountName = payosLink?.accountName || bankAccountName;
+
+  const qrImageUrl = `https://img.vietqr.io/image/${effectiveBankCode}-${effectiveAccountNo}-compact2.png?amount=${effectiveAmount}&addInfo=${encodeURIComponent(effectiveTransferContent)}&accountName=${encodeURIComponent(effectiveAccountName)}`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-2 sm:p-4 font-sans select-none">
@@ -161,10 +242,13 @@ export const SandboxPaymentModal: React.FC<SandboxPaymentModalProps> = ({
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-5 h-5" />
             <h3 className="font-bold text-sm sm:text-base">
-              {isVnpay ? 'Cổng Thanh Toán VNPAY (Sandbox)' : 'Cổng Ví MoMo (Sandbox)'}
+              Cổng Thanh Toán Chuyển Khoản QR (Tự Động Duyệt)
             </h3>
           </div>
-          <span className="text-[10px] sm:text-xs bg-white/20 px-2 py-0.5 rounded font-mono font-semibold">TEST MODE</span>
+          <span className="text-[10px] sm:text-xs bg-emerald-500/80 px-2.5 py-0.5 rounded-full font-mono font-semibold text-white tracking-wider flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+            PAYOS LIVE DETECT
+          </span>
         </div>
 
         {/* Modal Body - 2 Column Layout with Extra Large QR */}
@@ -172,20 +256,34 @@ export const SandboxPaymentModal: React.FC<SandboxPaymentModalProps> = ({
           {/* Left: Extra Large VietQR Image */}
           <div className="flex flex-col items-center justify-center shrink-0">
             <div className="w-64 h-64 sm:w-80 sm:h-80 bg-white rounded-2xl p-3 flex items-center justify-center relative shadow-lg border-2 border-slate-200 overflow-hidden">
-              <img
-                src={qrImageUrl}
-                alt="VietQR Payment Code"
-                className="w-full h-full object-contain transform scale-105"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = `https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=STK:${bankAccountNo}_NH:${bankCode}_ND:${encodeURIComponent(transferContent)}_SOTIEN:${totalAmount}`;
-                }}
-              />
+              {loadingPayos ? (
+                <div className="flex flex-col items-center gap-2 text-slate-400">
+                  <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+                  <span className="text-xs font-mono">Đang tạo mã PayOS QR...</span>
+                </div>
+              ) : (
+                <img
+                  src={qrImageUrl}
+                  alt="VietQR Payment Code"
+                  className="w-full h-full object-contain transform scale-105"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = `https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=STK:${effectiveAccountNo}_NH:${effectiveBankCode}_ND:${encodeURIComponent(effectiveTransferContent)}_SOTIEN:${effectiveAmount}`;
+                  }}
+                />
+              )}
             </div>
-            <p className="text-[10px] text-slate-400 font-mono text-center mt-2">
-              HMAC-{isVnpay ? 'SHA512' : 'SHA256'}:{' '}
-              <span className="text-[10px] text-slate-400 inline-block truncate max-w-[180px] align-bottom">
-                {btoa(orderId + totalAmount).slice(0, 18)}...
-              </span>
+            <p className="text-[10px] text-slate-400 font-mono text-center mt-2 flex items-center gap-2">
+              <span>Mã đơn: #{orderId.slice(0, 8).toUpperCase()}</span>
+              {payosLink?.checkoutUrl && (
+                <a
+                  href={payosLink.checkoutUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-blue-600 hover:underline font-semibold"
+                >
+                  [Mở PayOS Checkout ↗]
+                </a>
+              )}
             </p>
           </div>
 
@@ -211,11 +309,11 @@ export const SandboxPaymentModal: React.FC<SandboxPaymentModalProps> = ({
               <div className="flex justify-between items-center bg-white py-1.5 px-3 rounded-lg border border-slate-200">
                 <span className="text-slate-500 font-medium text-[11px]">Số tài khoản:</span>
                 <div className="flex items-center gap-1.5">
-                  <span className="font-mono font-extrabold text-slate-900 text-sm">{bankAccountNo}</span>
+                  <span className="font-mono font-extrabold text-slate-900 text-sm">{effectiveAccountNo}</span>
                   <button
                     type="button"
                     onClick={() => {
-                      navigator.clipboard.writeText(bankAccountNo);
+                      navigator.clipboard.writeText(effectiveAccountNo);
                       showSuccess('Đã sao chép', 'Đã sao chép số tài khoản vào khay nhớ tạm.');
                     }}
                     className="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-0.5 rounded font-bold transition"
@@ -226,16 +324,16 @@ export const SandboxPaymentModal: React.FC<SandboxPaymentModalProps> = ({
               </div>
               <div className="flex justify-between items-center bg-white py-1.5 px-3 rounded-lg border border-slate-200">
                 <span className="text-slate-500 font-medium text-[11px]">Chủ tài khoản:</span>
-                <span className="font-mono font-bold text-slate-800 text-xs uppercase">{bankAccountName}</span>
+                <span className="font-mono font-bold text-slate-800 text-xs uppercase">{effectiveAccountName}</span>
               </div>
               <div className="flex justify-between items-center bg-white py-1.5 px-3 rounded-lg border border-slate-200">
                 <span className="text-slate-500 font-medium text-[11px]">Nội dung CK:</span>
                 <div className="flex items-center gap-1.5">
-                  <span className="font-mono font-extrabold text-blue-700 text-xs sm:text-sm">{transferContent}</span>
+                  <span className="font-mono font-extrabold text-blue-700 text-xs sm:text-sm">{effectiveTransferContent}</span>
                   <button
                     type="button"
                     onClick={() => {
-                      navigator.clipboard.writeText(transferContent);
+                      navigator.clipboard.writeText(effectiveTransferContent);
                       showSuccess('Đã sao chép', 'Đã sao chép nội dung chuyển khoản.');
                     }}
                     className="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-0.5 rounded font-bold transition shrink-0"
@@ -250,7 +348,7 @@ export const SandboxPaymentModal: React.FC<SandboxPaymentModalProps> = ({
             <div className="flex items-start gap-1.5 bg-emerald-50 p-2.5 rounded-lg text-emerald-900 border border-emerald-200/80 shadow-2xs">
               <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-ping shrink-0 mt-1"></span>
               <p className="text-[11px] leading-tight font-medium">
-                <strong>Hệ thống đang tự động lắng nghe Ngân hàng...</strong> Quét mã QR bằng App Ngân hàng, ngay khi bạn chuyển tiền thành công, cửa sổ này sẽ <b>tự động duyệt & chuyển trang</b> mà không cần bấm nút.
+                <strong>Hệ thống PayOS đang tự động lắng nghe Ngân hàng...</strong> Quét mã QR bằng App Ngân hàng bất kỳ, ngay khi chuyển tiền thành công, hệ thống sẽ <b>tự động duyệt & chuyển trang</b> mà không cần bấm nút.
               </p>
             </div>
           </div>

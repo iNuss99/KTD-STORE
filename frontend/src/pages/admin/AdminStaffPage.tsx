@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Users, AlertCircle, Plus, ShieldCheck, Lock, Unlock, Loader2, Trash2, UserPlus, X } from 'lucide-react';
 import { PermissionGuard } from '../../components/guards/PermissionGuard';
 import { useAuth } from '../../hooks/useAuth';
-import { getAuthHeader } from '../../lib/auth-storage';
+import { getAdminAuthHeader } from '../../lib/auth-storage';
 
 interface User {
   id: string;
@@ -32,6 +32,15 @@ export const AdminStaffPage: React.FC = () => {
     role: 'STAFF',
   });
 
+  const generateRandomPassword = () => {
+    const chars = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#';
+    let pass = 'Ktd@';
+    for (let i = 0; i < 6; i++) {
+      pass += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return pass;
+  };
+
   const handleCreateStaff = async (e: React.FormEvent) => {
     e.preventDefault();
     setCreateLoading(true);
@@ -42,7 +51,7 @@ export const AdminStaffPage: React.FC = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...getAuthHeader(),
+          ...getAdminAuthHeader(),
         },
         body: JSON.stringify(createForm),
       });
@@ -74,7 +83,7 @@ export const AdminStaffPage: React.FC = () => {
       const res = await fetch('/api/users', {
         headers: {
           'Content-Type': 'application/json',
-          ...getAuthHeader(),
+          ...getAdminAuthHeader(),
         },
       });
       if (res.ok) {
@@ -149,7 +158,7 @@ export const AdminStaffPage: React.FC = () => {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
-            ...getAuthHeader(),
+            ...getAdminAuthHeader(),
           },
           body: JSON.stringify({ is_locked: type === 'lock' }),
         });
@@ -169,7 +178,7 @@ export const AdminStaffPage: React.FC = () => {
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',
-            ...getAuthHeader(),
+            ...getAdminAuthHeader(),
           },
         });
         if (res.ok) {
@@ -366,16 +375,26 @@ export const AdminStaffPage: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Mật khẩu *</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-slate-700">Mật khẩu khởi tạo</label>
+                    <button
+                      type="button"
+                      onClick={() => setCreateForm({ ...createForm, password: generateRandomPassword() })}
+                      className="text-[11px] text-amber-600 hover:text-amber-700 font-bold hover:underline cursor-pointer"
+                    >
+                      Tạo ngẫu nhiên
+                    </button>
+                  </div>
                   <input
-                    type="password"
-                    required
-                    minLength={6}
-                    placeholder="Tối thiểu 6 ký tự"
+                    type="text"
+                    placeholder="Nhập hoặc để trống để tự động tạo"
                     value={createForm.password}
                     onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-medium"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-medium font-mono"
                   />
+                  <p className="text-[11px] text-amber-700 mt-1 font-medium">
+                    📧 Mật khẩu này sẽ được gửi trực tiếp đến email của nhân sự.
+                  </p>
                 </div>
 
                 <div>

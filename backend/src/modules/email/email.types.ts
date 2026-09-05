@@ -82,3 +82,21 @@ export interface PasswordResetEmailData {
   otpCode?: string;
   expiresInMinutes: number;
 }
+
+export interface StaffCreatedEmailData {
+  staffName: string;
+  staffEmail: string;
+  initialPassword?: string;
+  role: string;
+  loginUrl: string;
+}
+
+export interface StaffStatusEmailData {
+  staffName: string;
+  staffEmail: string;
+  role: string;
+  isLocked: boolean;
+  updatedAt: string;
+  loginUrl?: string;
+}
+

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Settings, Save, Store, ShieldAlert, Bell, Palette, CheckCircle2, RefreshCw, QrCode } from 'lucide-react';
-import { getAuthHeader } from '../../lib/auth-storage';
+import { getAdminAuthHeader } from '../../lib/auth-storage';
 
 export const AdminSettingsPage: React.FC = () => {
   const [storeName, setStoreName] = useState('Knot To Detail');
@@ -25,7 +25,7 @@ export const AdminSettingsPage: React.FC = () => {
   useEffect(() => {
     const fetchConfigs = async () => {
       try {
-        const res = await fetch('/api/system-configs', { headers: getAuthHeader() });
+        const res = await fetch('/api/system-configs', { headers: getAdminAuthHeader() });
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data)) {
@@ -81,7 +81,7 @@ export const AdminSettingsPage: React.FC = () => {
             method: 'PATCH',
             headers: {
               'Content-Type': 'application/json',
-              ...getAuthHeader(),
+              ...getAdminAuthHeader(),
             },
             body: JSON.stringify({ value: cfg.value }),
           })
