@@ -22,7 +22,7 @@ export const SandboxPaymentModal: React.FC<SandboxPaymentModalProps> = ({
 }) => {
   const [processing, setProcessing] = useState(false);
   const { formatPrice } = useLanguage();
-  const { showSuccess, showError } = useToast();
+  const { showSuccess, showError, showWarning } = useToast();
 
   const [bankCode, setBankCode] = useState('MB');
   const [bankName, setBankName] = useState('MBBank (Ngân hàng Quân Đội)');
@@ -243,12 +243,15 @@ export const SandboxPaymentModal: React.FC<SandboxPaymentModalProps> = ({
       }
 
       // STRICT REFUSAL: Bank has not confirmed money into the account
-      showError(
-        'Chưa nhận được thanh toán',
-        'Tài khoản ngân hàng chưa ghi nhận tiền cho đơn hàng này. Quý khách vui lòng hoàn tất chuyển khoản đúng số tiền và nội dung CK trên mã QR.',
+      showWarning(
+        'Chưa ghi nhận thanh toán',
+        'Tài khoản ngân hàng chưa nhận được tiền cho đơn hàng này. Quý khách vui lòng quét mã QR chuyển khoản, hệ thống sẽ tự động xác nhận ngay khi tiền vào.',
       );
     } catch (err: any) {
-      showError('Lỗi kiểm tra', err.message || 'Không thể kiểm tra trạng thái thanh toán.');
+      showWarning(
+        'Chưa ghi nhận thanh toán',
+        'Tài khoản ngân hàng chưa nhận được tiền cho đơn hàng này. Quý khách vui lòng quét mã QR chuyển khoản, hệ thống sẽ tự động xác nhận ngay khi tiền vào.',
+      );
     } finally {
       setProcessing(false);
     }

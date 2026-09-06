@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, Request, ForbiddenException } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, Request, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
@@ -51,11 +51,9 @@ export class OrdersController {
   }
 
   @Post(':id/sandbox-payment')
-  @UseGuards(PermissionsGuard)
-  @Permissions(PERMISSION_CODES.ORDER_UPDATE)
   processSandboxPayment(@Request() req: any, @Param('id') id: string, @Body() body: { action: 'SUCCESS' | 'CANCEL' }) {
-    if (process.env.NODE_ENV === 'production') {
-      throw new ForbiddenException('Chức năng giả lập thanh toán (sandbox-payment) bị khóa trong môi trường production.');
+    if (process.env.NODE_ENV === 'production' || req.user?.role === 'CUSTOMER') {
+      throw new BadRequestException('Chưa ghi nhận thanh toán từ ngân hàng. Quý khách vui lòng quét mã QR chuyển khoản.');
     }
     return this.ordersService.processSandboxPayment(id, body.action || 'SUCCESS', req.user.id);
   }
