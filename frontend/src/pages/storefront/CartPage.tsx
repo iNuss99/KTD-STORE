@@ -8,6 +8,7 @@ import { PromoBadge } from '../../components/common/PromoBadge';
 import { ProductImage } from '../../components/common/ProductImage';
 import { getAuthToken, getAuthHeader } from '../../lib/auth-storage';
 import { useToast } from '../../context/ToastContext';
+import { useMaintenanceMode } from '../../hooks/useSystemConfig';
 
 // Module-level formatter — tạo 1 lần, dùng lại mỗi render
 const vndFormatter = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' });
@@ -17,6 +18,7 @@ export const CartPage: React.FC = () => {
   const navigate = useNavigate();
   const { showSuccess, showError } = useToast();
   const { data: cart, isLoading: loading } = useCart();
+  const { isMaintenance } = useMaintenanceMode();
   const updateQuantityMutation = useUpdateCartItemMutation();
   const removeItemMutation = useRemoveCartItemMutation();
 
@@ -332,10 +334,21 @@ export const CartPage: React.FC = () => {
                   <span className="text-2xl font-bold text-accent tracking-tight">{formattedTotal}</span>
                 </div>
 
+                {isMaintenance && (
+                  <div className="p-3 bg-amber-500/10 border border-amber-400 rounded-xl text-xs text-amber-950 font-sans space-y-1">
+                    <p className="font-bold flex items-center gap-1.5 text-amber-900">
+                      <span>⚠️</span> Hệ thống đang trong chế độ bảo trì
+                    </p>
+                    <p className="text-[11px] text-amber-800">
+                      Tạm ngưng nhận đơn hàng mới. Quý khách vui lòng quay lại sau ít phút để hoàn tất đặt hàng.
+                    </p>
+                  </div>
+                )}
+
                 {/* Checkout Button */}
                 <button
                   type="button"
-                  disabled={hasUnavailableItems || items.length === 0}
+                  disabled={hasUnavailableItems || items.length === 0 || isMaintenance}
                   onClick={() => {
                     const token = getAuthToken();
                     if (!token) {
@@ -345,12 +358,18 @@ export const CartPage: React.FC = () => {
                     }
                   }}
                   className={`w-full py-4 rounded-full font-sans text-xs uppercase tracking-wider font-semibold flex items-center justify-center gap-2 transition-all shadow-sm ${
-                    !hasUnavailableItems && items.length > 0
+                    !hasUnavailableItems && items.length > 0 && !isMaintenance
                       ? 'bg-accent hover:bg-accent-dark text-white'
                       : 'bg-card text-ink-soft/40 border border-line cursor-not-allowed'
                   }`}
                 >
-                  Tiến hành thanh toán <ArrowRight className="w-4 h-4" />
+                  {isMaintenance ? (
+                    'Hệ thống đang bảo trì'
+                  ) : (
+                    <>
+                      Tiến hành thanh toán <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
                 </button>
 
                 {hasUnavailableItems && (

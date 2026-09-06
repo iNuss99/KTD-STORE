@@ -8,6 +8,7 @@ import { Address } from '../addresses/entities/address.entity';
 import { Payment } from './entities/payment.entity';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import { DiscountsService } from '../discounts/discounts.service';
+import { SystemConfigsService } from '../system-configs/system-configs.service';
 import { OrderStatus, PaymentMethod, PaymentStatus } from '../../common/enums/order.enum';
 import { UserRole } from '../../common/enums/role.enum';
 
@@ -18,6 +19,7 @@ describe('OrdersService', () => {
   let paymentRepo: any;
   let auditLogsService: any;
   let discountsService: any;
+  let systemConfigsService: any;
   let mockQueryRunner: any;
 
   beforeEach(async () => {
@@ -47,6 +49,10 @@ describe('OrdersService', () => {
       }),
     };
 
+    systemConfigsService = {
+      getValue: jest.fn().mockResolvedValue('false'),
+    };
+
     mockQueryRunner = {
       connect: jest.fn(),
       startTransaction: jest.fn(),
@@ -74,6 +80,7 @@ describe('OrdersService', () => {
         { provide: DataSource, useValue: dataSourceMock },
         { provide: AuditLogsService, useValue: auditLogsService },
         { provide: DiscountsService, useValue: discountsService },
+        { provide: SystemConfigsService, useValue: systemConfigsService },
       ],
     }).compile();
 
@@ -85,6 +92,18 @@ describe('OrdersService', () => {
   });
 
   describe('Tạo Đơn hàng & Trừ tồn kho Concurrency (FOR UPDATE)', () => {
+    it('chặn đặt hàng mới khi hệ thống đang bật chế độ bảo trì (MAINTENANCE_MODE)', async () => {
+      systemConfigsService.getValue.mockResolvedValueOnce('true');
+
+      await expect(
+        service.create('user-1', {
+          address_id: 'addr-1',
+          payment_method: PaymentMethod.COD,
+          items: [{ variant_id: 'var-1', quantity: 1 }],
+        }),
+      ).rejects.toThrow('Hệ thống đang trong chế độ bảo trì và tạm ngưng nhận đơn hàng mới');
+    });
+
     it('tạo đơn hàng thành công và trừ tồn kho biến thể', async () => {
       addressRepo.findOne.mockResolvedValue({
         id: 'addr-1',

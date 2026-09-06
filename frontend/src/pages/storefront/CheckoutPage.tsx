@@ -13,10 +13,12 @@ import { apiClient } from '../../lib/apiClient';
 import { getAuthHeader, getAuthToken, getUser, getUserName } from '../../lib/auth-storage';
 import { CartItem } from '../../types';
 import { useToast } from '../../context/ToastContext';
+import { useMaintenanceMode } from '../../hooks/useSystemConfig';
 
 export const CheckoutPage: React.FC = () => {
   const navigate = useNavigate();
   const { showSuccess, showError, showWarning, showInfo } = useToast();
+  const { isMaintenance } = useMaintenanceMode();
   const queryClient = useQueryClient();
   const { formatPrice, t } = useLanguage();
   const [selectedAddressId, setSelectedAddressId] = useState<string>('');
@@ -429,17 +431,30 @@ export const CheckoutPage: React.FC = () => {
                 </span>
               </div>
 
+              {isMaintenance && (
+                <div className="p-3 bg-amber-500/10 border border-amber-400 text-amber-950 text-xs font-sans rounded-xl space-y-1 my-2">
+                  <p className="font-bold flex items-center gap-1.5 text-amber-900">
+                    <span>⚠️</span> Hệ thống đang bảo trì
+                  </p>
+                  <p className="text-[11px] text-amber-800">
+                    Cửa hàng tạm ngưng tiếp nhận đơn hàng mới. Quý khách vui lòng quay lại sau ít phút để hoàn tất đặt hàng.
+                  </p>
+                </div>
+              )}
+
               <button
-                disabled={!cart?.items || cart.items.length === 0 || !selectedAddressId || createOrderMutation.isPending}
+                disabled={!cart?.items || cart.items.length === 0 || !selectedAddressId || createOrderMutation.isPending || isMaintenance}
                 onClick={handlePlaceOrder}
                 className={`w-full py-4 font-mono text-xs uppercase tracking-widest font-semibold flex items-center justify-center gap-2 transition-colors ${
-                  cart?.items && cart.items.length > 0 && selectedAddressId
+                  cart?.items && cart.items.length > 0 && selectedAddressId && !isMaintenance
                     ? 'bg-ink hover:bg-accent text-white shadow-xs cursor-pointer'
                     : 'bg-chalk text-smoke/50 cursor-not-allowed'
                 }`}
               >
                 {createOrderMutation.isPending ? (
                   <Loader2 className="w-4 h-4 animate-spin text-white" />
+                ) : isMaintenance ? (
+                  'Hệ thống đang bảo trì - Tạm ngưng đặt hàng'
                 ) : (
                   <>
                     Xác nhận Đặt hàng ({formatPrice(Math.max(0, subtotal - (appliedDiscount?.discount_amount || 0)))})

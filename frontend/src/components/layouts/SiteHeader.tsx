@@ -4,6 +4,7 @@ import { ShoppingBag, User, Package, Heart, LogOut, ChevronDown, Menu, X, Shield
 import { NotificationBell } from '../widgets/NotificationBell';
 import { SearchAutocomplete } from '../widgets/SearchAutocomplete';
 import { useCart } from '../../hooks/useCart';
+import { useMaintenanceMode } from '../../hooks/useSystemConfig';
 import {
   getAuthToken,
   clearAuthToken,
@@ -17,6 +18,7 @@ import {
 
 export const SiteHeader: React.FC = () => {
   const { data: cart } = useCart();
+  const { isMaintenance } = useMaintenanceMode();
   const cartCount = cart?.items?.length || 0;
   const navigate = useNavigate();
   const location = useLocation();
@@ -91,6 +93,16 @@ export const SiteHeader: React.FC = () => {
 
   return (
     <header className="sticky top-0 z-50 bg-[#F5F2EE]/90 backdrop-blur-md border-b border-[#1A1A1A]/10 transition-all duration-300">
+      {/* Maintenance Mode Alert Banner */}
+      {isMaintenance && (
+        <div className="bg-gradient-to-r from-amber-500 via-amber-600 to-amber-500 text-slate-950 text-xs font-bold flex items-center justify-center gap-2 px-4 py-2.5 shadow-sm border-b border-amber-600 select-none">
+          <span className="text-sm">⚠️</span>
+          <span>
+            <strong>THÔNG BÁO BẢO TRÌ:</strong> Hệ thống đang tạm ngưng nhận đơn hàng mới để bảo trì nâng cấp. Quý khách vẫn có thể tham quan sản phẩm!
+          </span>
+        </div>
+      )}
+
       {/* Admin Shopping Mode Banner */}
       {isAdminShopping && (
         <div className="bg-gradient-to-r from-amber-600 to-amber-700 text-white text-xs font-bold flex items-center justify-between px-4 py-2 shadow-xs">

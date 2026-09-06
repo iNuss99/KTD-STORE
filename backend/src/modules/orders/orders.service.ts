@@ -15,6 +15,7 @@ import { OrderStatus, PaymentStatus, PaymentMethod } from '../../common/enums/or
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import { UserRole } from '../../common/enums/role.enum';
 import { DiscountsService } from '../discounts/discounts.service';
+import { SystemConfigsService } from '../system-configs/system-configs.service';
 
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
@@ -30,10 +31,19 @@ export class OrdersService {
     private dataSource: DataSource,
     private auditLogsService: AuditLogsService,
     private discountsService: DiscountsService,
+    private systemConfigsService: SystemConfigsService,
     @Optional() private eventEmitter?: EventEmitter2,
   ) {}
 
   async create(userId: string, dto: CreateOrderDto): Promise<Order> {
+    // 0. Check System Maintenance Mode
+    const isMaintenance = await this.systemConfigsService.getValue('MAINTENANCE_MODE', 'false');
+    if (isMaintenance === 'true') {
+      throw new BadRequestException(
+        'Hệ thống đang trong chế độ bảo trì và tạm ngưng nhận đơn hàng mới. Quý khách vui lòng quay lại sau ít phút.',
+      );
+    }
+
     // 1. Resolve Shipping Address Snapshot
     let shippingSnapshot: {
       receiver_name: string;
@@ -401,7 +411,7 @@ export class OrdersService {
 
     await this.auditLogsService.log(
       performedByUserId,
-      'CONFIRM_PAYMENT',
+      payment.method === PaymentMethod.COD ? 'CONFIRM_COD_PAYMENT' : 'CONFIRM_PAYMENT',
       'Payment',
       savedPayment.id,
       { order_id: orderId, paid_at: savedPayment.paid_at },

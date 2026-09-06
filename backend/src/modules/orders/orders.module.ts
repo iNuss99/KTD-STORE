@@ -13,6 +13,7 @@ import { WebhooksController } from './webhooks.controller';
 import { PermissionsModule } from '../permissions/permissions.module';
 import { AuditLogsModule } from '../audit-logs/audit-logs.module';
 import { DiscountsModule } from '../discounts/discounts.module';
+import { SystemConfigsModule } from '../system-configs/system-configs.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { DiscountsModule } from '../discounts/discounts.module';
     PermissionsModule,
     AuditLogsModule,
     DiscountsModule,
+    SystemConfigsModule,
   ],
   providers: [OrdersService],
   controllers: [OrdersController, WebhooksController],

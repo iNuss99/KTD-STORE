@@ -13,6 +13,7 @@ export const SYSTEM_CONFIG_KEYS = {
   BANK_NAME: 'BANK_NAME',
   BANK_ACCOUNT_NO: 'BANK_ACCOUNT_NO',
   BANK_ACCOUNT_NAME: 'BANK_ACCOUNT_NAME',
+  MAINTENANCE_MODE: 'MAINTENANCE_MODE',
 };
 
 @Injectable()
@@ -31,11 +32,6 @@ export class SystemConfigsService implements OnApplicationBootstrap {
   }
 
   async seedDefaultConfigs() {
-    const configCount = await this.configRepo.count();
-    if (configCount >= 7) {
-      return; // Cấu hình hệ thống đã tồn tại đầy đủ
-    }
-
     const defaults = [
       {
         key: SYSTEM_CONFIG_KEYS.RETURN_DAYS_LIMIT,
@@ -72,6 +68,11 @@ export class SystemConfigsService implements OnApplicationBootstrap {
         value: 'DO MINH KHOA',
         description: 'Tên chủ tài khoản nhận thanh toán VietQR',
       },
+      {
+        key: 'ZALO_URL',
+        value: 'https://zalo.me/0931143830',
+        description: 'Đường dẫn liên hệ Zalo Chat tư vấn',
+      },
     ];
 
     for (const item of defaults) {
@@ -79,7 +80,11 @@ export class SystemConfigsService implements OnApplicationBootstrap {
       if (!exists) {
         const config = this.configRepo.create(item);
         await this.configRepo.save(config);
-      } else if (exists.value === '999988888' || exists.value === 'KNOT TO DETAIL') {
+      } else if (
+        exists.value === '999988888' ||
+        exists.value === 'KNOT TO DETAIL' ||
+        (item.key === 'ZALO_URL' && (exists.value.includes('0912345678') || exists.value === 'https://zalo.me'))
+      ) {
         exists.value = item.value;
         await this.configRepo.save(exists);
       }
@@ -143,5 +148,21 @@ export class SystemConfigsService implements OnApplicationBootstrap {
     );
 
     return saved;
+  }
+
+  async updateBatch(
+    configs: { key: string; value: string; description?: string }[],
+    performedByUserId: string,
+  ): Promise<SystemConfig[]> {
+    const updated: SystemConfig[] = [];
+    for (const item of configs) {
+      const res = await this.update(
+        item.key,
+        { value: item.value, description: item.description },
+        performedByUserId,
+      );
+      updated.push(res);
+    }
+    return updated;
   }
 }
