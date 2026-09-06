@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { CheckCircle2, XCircle, ShieldCheck, QrCode, AlertCircle, Loader2 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { getAuthHeader } from '../../lib/auth-storage';
+import { apiClient } from '../../lib/apiClient';
 import { useToast } from '../../context/ToastContext';
 
 interface SandboxPaymentModalProps {
@@ -200,18 +201,25 @@ export const SandboxPaymentModal: React.FC<SandboxPaymentModalProps> = ({
   const handleSimulate = async (action: 'SUCCESS' | 'CANCEL') => {
     setProcessing(true);
     try {
-      const res = await fetch(`/api/orders/${orderId}/sandbox-payment`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeader(),
-        },
-        body: JSON.stringify({ action }),
-      });
+      try {
+        await apiClient(`/api/orders/${orderId}/sandbox-payment`, {
+          method: 'POST',
+          body: JSON.stringify({ action }),
+        });
+      } catch {
+        const res = await fetch(`/api/orders/${orderId}/sandbox-payment`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...getAuthHeader(),
+          },
+          body: JSON.stringify({ action }),
+        });
 
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.message || 'Xử lý thanh toán sandbox thất bại');
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.message || 'Xử lý thanh toán thất bại');
+        }
       }
 
       if (action === 'SUCCESS') {
@@ -245,10 +253,16 @@ export const SandboxPaymentModal: React.FC<SandboxPaymentModalProps> = ({
               Cổng Thanh Toán Chuyển Khoản QR (Tự Động Duyệt)
             </h3>
           </div>
-          <span className="text-[10px] sm:text-xs bg-emerald-500/80 px-2.5 py-0.5 rounded-full font-mono font-semibold text-white tracking-wider flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
-            PAYOS LIVE DETECT
-          </span>
+          {payosLink ? (
+            <span className="text-[10px] sm:text-xs bg-emerald-500/90 px-2.5 py-0.5 rounded-full font-mono font-semibold text-white tracking-wider flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+              PAYOS TỰ ĐỘNG DUYỆT
+            </span>
+          ) : (
+            <span className="text-[10px] sm:text-xs bg-white/20 px-2.5 py-0.5 rounded-full font-mono font-semibold text-white tracking-wider flex items-center gap-1">
+              VIETQR CHUYỂN KHOẢN
+            </span>
+          )}
         </div>
 
         {/* Modal Body - 2 Column Layout with Extra Large QR */}
@@ -345,11 +359,28 @@ export const SandboxPaymentModal: React.FC<SandboxPaymentModalProps> = ({
             </div>
 
             {/* Note */}
-            <div className="flex items-start gap-1.5 bg-emerald-50 p-2.5 rounded-lg text-emerald-900 border border-emerald-200/80 shadow-2xs">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-ping shrink-0 mt-1"></span>
-              <p className="text-[11px] leading-tight font-medium">
-                <strong>Hệ thống PayOS đang tự động lắng nghe Ngân hàng...</strong> Quét mã QR bằng App Ngân hàng bất kỳ, ngay khi chuyển tiền thành công, hệ thống sẽ <b>tự động duyệt & chuyển trang</b> mà không cần bấm nút.
-              </p>
+            <div
+              className={`flex items-start gap-2 p-2.5 rounded-lg border shadow-2xs ${
+                payosLink
+                  ? 'bg-emerald-50 text-emerald-900 border-emerald-200/80'
+                  : 'bg-amber-50 text-amber-900 border-amber-200/80'
+              }`}
+            >
+              {payosLink ? (
+                <>
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-ping shrink-0 mt-1"></span>
+                  <p className="text-[11px] leading-tight font-medium">
+                    <strong>Hệ thống PayOS đang tự động lắng nghe Ngân hàng...</strong> Quét mã QR bằng App Ngân hàng bất kỳ, ngay khi chuyển tiền thành công, hệ thống sẽ <b>tự động duyệt & chuyển sang trang cảm ơn</b> mà không cần bấm nút.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <p className="text-[11px] leading-tight font-medium">
+                    Quét mã QR hoặc chuyển khoản với đúng <b>Nội dung CK</b> ở trên. Sau khi chuyển tiền xong, vui lòng bấm nút <b>"Tôi đã chuyển khoản thành công"</b> bên dưới để hoàn tất đơn hàng và xem trang cảm ơn.
+                  </p>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -377,7 +408,7 @@ export const SandboxPaymentModal: React.FC<SandboxPaymentModalProps> = ({
             ) : (
               <>
                 <CheckCircle2 className="w-4 h-4" />
-                Xác nhận thành công
+                {payosLink ? 'Xác nhận thành công' : 'Tôi đã chuyển khoản thành công'}
               </>
             )}
           </button>

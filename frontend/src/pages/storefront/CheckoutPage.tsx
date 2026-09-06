@@ -223,8 +223,8 @@ export const CheckoutPage: React.FC = () => {
           onSuccess={() => {
             const id = activeSandboxOrder.id;
             setActiveSandboxOrder(null);
-            showSuccess('Thanh toán thành công!', 'Đơn hàng của bạn đã chuyển sang trạng thái Đang xử lý (PROCESSING).');
-            navigate(`/orders/${id}`);
+            showSuccess('Thanh toán thành công!', 'Cảm ơn bạn đã mua sắm tại Knot To Detail.');
+            navigate(`/order-success/${id}`);
           }}
           onCancel={() => {
             const id = activeSandboxOrder.id;

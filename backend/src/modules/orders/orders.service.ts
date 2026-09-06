@@ -424,6 +424,13 @@ export class OrdersService {
         await this.orderRepo.save(order);
       }
 
+      this.eventEmitter?.emit('payment.completed', {
+        orderId: order.id,
+        amount: order.total,
+        transactionId: `PAYMENT_${Date.now()}`,
+        provider: payment.method || 'BANK_TRANSFER',
+      });
+
       if (userId) {
         await this.auditLogsService.log(
           userId,
