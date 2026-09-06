@@ -198,40 +198,64 @@ export const SandboxPaymentModal: React.FC<SandboxPaymentModalProps> = ({
 
   const isVnpay = paymentMethod === 'VNPAY';
 
-  const handleSimulate = async (action: 'SUCCESS' | 'CANCEL') => {
+  const handleCheckPayment = async () => {
     setProcessing(true);
     try {
-      try {
-        await apiClient(`/api/orders/${orderId}/sandbox-payment`, {
-          method: 'POST',
-          body: JSON.stringify({ action }),
-        });
-      } catch {
-        const res = await fetch(`/api/orders/${orderId}/sandbox-payment`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...getAuthHeader(),
-          },
-          body: JSON.stringify({ action }),
-        });
+      // 1. Query PayOS directly to verify real bank transaction
+      const orderCode = payosLinkRef.current?.orderCode;
+      const payosUrl = orderCode
+        ? `/api/payments/payos/check-status/${orderId}?orderCode=${orderCode}`
+        : `/api/payments/payos/check-status/${orderId}`;
 
-        if (!res.ok) {
-          const errData = await res.json().catch(() => ({}));
-          throw new Error(errData.message || 'Xử lý thanh toán thất bại');
+      const payosRes = await fetch(payosUrl, { headers: getAuthHeader() });
+      if (payosRes.ok) {
+        const payosData = await payosRes.json();
+        if (payosData.isPaid) {
+          showSuccess(
+            'Thanh toán thành công!',
+            'Hệ thống đã nhận được tiền từ Ngân hàng và xác nhận đơn hàng.',
+          );
+          onSuccess();
+          return;
         }
       }
 
-      if (action === 'SUCCESS') {
-        onSuccess();
-      } else {
-        onCancel();
+      // 2. Query order status in DB (e.g. if webhook already processed it)
+      const res = await fetch(`/api/orders/${orderId}`, {
+        headers: getAuthHeader(),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const isPaid =
+          data.status === 'PROCESSING' ||
+          data.status === 'CONFIRMED' ||
+          data.status === 'COMPLETED' ||
+          data.payments?.some((p: any) => p.status === 'COMPLETED');
+
+        if (isPaid) {
+          showSuccess(
+            'Thanh toán thành công!',
+            'Hệ thống đã nhận được tiền từ Ngân hàng và xác nhận đơn hàng.',
+          );
+          onSuccess();
+          return;
+        }
       }
+
+      // STRICT REFUSAL: Bank has not confirmed money into the account
+      showError(
+        'Chưa nhận được thanh toán',
+        'Tài khoản ngân hàng chưa ghi nhận tiền cho đơn hàng này. Quý khách vui lòng hoàn tất chuyển khoản đúng số tiền và nội dung CK trên mã QR.',
+      );
     } catch (err: any) {
-      showError('Lỗi thanh toán', err.message || 'Không thể xử lý thanh toán');
+      showError('Lỗi kiểm tra', err.message || 'Không thể kiểm tra trạng thái thanh toán.');
     } finally {
       setProcessing(false);
     }
+  };
+
+  const handleCancel = () => {
+    onCancel();
   };
 
   const effectiveAmount = payosLink?.amount || totalAmount;
@@ -359,28 +383,11 @@ export const SandboxPaymentModal: React.FC<SandboxPaymentModalProps> = ({
             </div>
 
             {/* Note */}
-            <div
-              className={`flex items-start gap-2 p-2.5 rounded-lg border shadow-2xs ${
-                payosLink
-                  ? 'bg-emerald-50 text-emerald-900 border-emerald-200/80'
-                  : 'bg-amber-50 text-amber-900 border-amber-200/80'
-              }`}
-            >
-              {payosLink ? (
-                <>
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-ping shrink-0 mt-1"></span>
-                  <p className="text-[11px] leading-tight font-medium">
-                    <strong>Hệ thống PayOS đang tự động lắng nghe Ngân hàng...</strong> Quét mã QR bằng App Ngân hàng bất kỳ, ngay khi chuyển tiền thành công, hệ thống sẽ <b>tự động duyệt & chuyển sang trang cảm ơn</b> mà không cần bấm nút.
-                  </p>
-                </>
-              ) : (
-                <>
-                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                  <p className="text-[11px] leading-tight font-medium">
-                    Quét mã QR hoặc chuyển khoản với đúng <b>Nội dung CK</b> ở trên. Sau khi chuyển tiền xong, vui lòng bấm nút <b>"Tôi đã chuyển khoản thành công"</b> bên dưới để hoàn tất đơn hàng và xem trang cảm ơn.
-                  </p>
-                </>
-              )}
+            <div className="flex items-start gap-2 p-2.5 rounded-lg border shadow-2xs bg-emerald-50 text-emerald-900 border-emerald-200/80">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-ping shrink-0 mt-1"></span>
+              <p className="text-[11px] leading-tight font-medium">
+                <strong>Hệ thống đang tự động lắng nghe Ngân hàng...</strong> Quét mã QR bằng App Ngân hàng bất kỳ, ngay khi chuyển tiền thành công, hệ thống sẽ <b>tự động duyệt & chuyển sang trang cảm ơn</b> mà không cần bấm nút.
+              </p>
             </div>
           </div>
         </div>
@@ -389,46 +396,27 @@ export const SandboxPaymentModal: React.FC<SandboxPaymentModalProps> = ({
         <div className="p-3 bg-white border-t border-slate-100 flex flex-col sm:flex-row items-center gap-2.5 shrink-0">
           <button
             disabled={processing}
-            onClick={() => handleSimulate('CANCEL')}
+            onClick={handleCancel}
             className="w-full sm:w-auto py-2 px-4 text-xs font-semibold text-slate-700 bg-slate-100 border border-slate-200 rounded-xl hover:bg-slate-200 transition flex items-center justify-center gap-1.5"
           >
             <XCircle className="w-4 h-4 text-slate-500" />
             Hủy thanh toán
           </button>
 
-          {payosLink ? (
-            <div className="flex-1 w-full flex items-center justify-between gap-2 bg-emerald-50 border border-emerald-200/80 py-2 px-3.5 rounded-xl">
-              <div className="flex items-center gap-2 text-emerald-800 text-xs font-medium">
-                <Loader2 className="w-4 h-4 text-emerald-600 animate-spin shrink-0" />
-                <span>Đang tự động nhận diện thanh toán (không cần bấm nút)...</span>
-              </div>
-              <button
-                type="button"
-                disabled={processing}
-                onClick={() => handleSimulate('SUCCESS')}
-                className="text-[11px] text-emerald-700 hover:text-emerald-900 underline font-medium cursor-pointer shrink-0"
-              >
-                {processing ? 'Đang duyệt...' : 'Kiểm tra ngay'}
-              </button>
+          <div className="flex-1 w-full flex items-center justify-between gap-2 bg-emerald-50 border border-emerald-200/80 py-2 px-3.5 rounded-xl">
+            <div className="flex items-center gap-2 text-emerald-800 text-xs font-medium">
+              <Loader2 className="w-4 h-4 text-emerald-600 animate-spin shrink-0" />
+              <span>Đang tự động nhận diện thanh toán...</span>
             </div>
-          ) : (
             <button
+              type="button"
               disabled={processing}
-              onClick={() => handleSimulate('SUCCESS')}
-              className={`flex-1 w-full py-2 px-3 text-xs font-semibold text-white rounded-xl shadow-md transition flex items-center justify-center gap-1.5 ${
-                isVnpay ? 'bg-blue-700 hover:bg-blue-800' : 'bg-pink-600 hover:bg-pink-700'
-              }`}
+              onClick={handleCheckPayment}
+              className="text-[11px] text-emerald-700 hover:text-emerald-900 underline font-semibold cursor-pointer shrink-0 disabled:opacity-50"
             >
-              {processing ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <>
-                  <CheckCircle2 className="w-4 h-4" />
-                  Tôi đã chuyển khoản thành công
-                </>
-              )}
+              {processing ? 'Đang kiểm tra...' : 'Kiểm tra tiền vào'}
             </button>
-          )}
+          </div>
         </div>
       </div>
     </div>
