@@ -31,9 +31,24 @@ export class PaymentsService implements OnApplicationBootstrap {
     this.vnpUrl = this.configService.get<string>('VNP_URL', 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html');
     this.vnpReturnUrl = this.configService.get<string>('VNP_RETURN_URL', 'http://localhost:5173/orders');
 
-    const clientId = this.configService.get<string>('PAYOS_CLIENT_ID');
-    const apiKey = this.configService.get<string>('PAYOS_API_KEY');
-    const checksumKey = this.configService.get<string>('PAYOS_CHECKSUM_KEY');
+    const clientId = (
+      this.configService.get<string>('PAYOS_CLIENT_ID') ||
+      process.env.PAYOS_CLIENT_ID ||
+      '978b837a-0b96-4db1-9534-b679ed24f7d0'
+    )?.trim().replace(/^["']|["']$/g, '');
+
+    const apiKey = (
+      this.configService.get<string>('PAYOS_API_KEY') ||
+      process.env.PAYOS_API_KEY ||
+      '98c0a9fc-fbbd-4fcc-8688-cf18b3a03900'
+    )?.trim().replace(/^["']|["']$/g, '');
+
+    const checksumKey = (
+      this.configService.get<string>('PAYOS_CHECKSUM_KEY') ||
+      process.env.PAYOS_CHECKSUM_KEY ||
+      'b7485d4e2e184e2cfdd4be9833b87ef60db7dc622ab8c6c0e708cfa0000bc26f'
+    )?.trim().replace(/^["']|["']$/g, '');
+
     if (clientId && apiKey && checksumKey) {
       this.payOS = new PayOS({ clientId, apiKey, checksumKey });
     }

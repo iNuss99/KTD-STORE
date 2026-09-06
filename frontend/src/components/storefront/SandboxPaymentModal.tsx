@@ -180,7 +180,7 @@ export const SandboxPaymentModal: React.FC<SandboxPaymentModalProps> = ({
       }
     };
 
-    const intervalId = setInterval(checkStatus, 2500);
+    const intervalId = setInterval(checkStatus, 1500);
     return () => clearInterval(intervalId);
   }, [orderId]);
 
@@ -386,32 +386,49 @@ export const SandboxPaymentModal: React.FC<SandboxPaymentModalProps> = ({
         </div>
 
         {/* Footer Actions */}
-        <div className="p-3 bg-white border-t border-slate-100 flex items-center gap-3 shrink-0">
+        <div className="p-3 bg-white border-t border-slate-100 flex flex-col sm:flex-row items-center gap-2.5 shrink-0">
           <button
             disabled={processing}
             onClick={() => handleSimulate('CANCEL')}
-            className="flex-1 py-2 px-3 text-xs font-semibold text-slate-700 bg-slate-100 border border-slate-200 rounded-xl hover:bg-slate-200 transition flex items-center justify-center gap-1.5"
+            className="w-full sm:w-auto py-2 px-4 text-xs font-semibold text-slate-700 bg-slate-100 border border-slate-200 rounded-xl hover:bg-slate-200 transition flex items-center justify-center gap-1.5"
           >
             <XCircle className="w-4 h-4 text-slate-500" />
             Hủy thanh toán
           </button>
 
-          <button
-            disabled={processing}
-            onClick={() => handleSimulate('SUCCESS')}
-            className={`flex-1 py-2 px-3 text-xs font-semibold text-white rounded-xl shadow-md transition flex items-center justify-center gap-1.5 ${
-              isVnpay ? 'bg-blue-700 hover:bg-blue-800' : 'bg-pink-600 hover:bg-pink-700'
-            }`}
-          >
-            {processing ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <>
-                <CheckCircle2 className="w-4 h-4" />
-                {payosLink ? 'Xác nhận thành công' : 'Tôi đã chuyển khoản thành công'}
-              </>
-            )}
-          </button>
+          {payosLink ? (
+            <div className="flex-1 w-full flex items-center justify-between gap-2 bg-emerald-50 border border-emerald-200/80 py-2 px-3.5 rounded-xl">
+              <div className="flex items-center gap-2 text-emerald-800 text-xs font-medium">
+                <Loader2 className="w-4 h-4 text-emerald-600 animate-spin shrink-0" />
+                <span>Đang tự động nhận diện thanh toán (không cần bấm nút)...</span>
+              </div>
+              <button
+                type="button"
+                disabled={processing}
+                onClick={() => handleSimulate('SUCCESS')}
+                className="text-[11px] text-emerald-700 hover:text-emerald-900 underline font-medium cursor-pointer shrink-0"
+              >
+                {processing ? 'Đang duyệt...' : 'Kiểm tra ngay'}
+              </button>
+            </div>
+          ) : (
+            <button
+              disabled={processing}
+              onClick={() => handleSimulate('SUCCESS')}
+              className={`flex-1 w-full py-2 px-3 text-xs font-semibold text-white rounded-xl shadow-md transition flex items-center justify-center gap-1.5 ${
+                isVnpay ? 'bg-blue-700 hover:bg-blue-800' : 'bg-pink-600 hover:bg-pink-700'
+              }`}
+            >
+              {processing ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <>
+                  <CheckCircle2 className="w-4 h-4" />
+                  Tôi đã chuyển khoản thành công
+                </>
+              )}
+            </button>
+          )}
         </div>
       </div>
     </div>
