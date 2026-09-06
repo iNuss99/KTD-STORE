@@ -134,95 +134,58 @@ export const AdminSettingsPage: React.FC = () => {
       )}
 
       <form onSubmit={handleSave} className="space-y-6">
-        {/* Section 1: Thông tin Cửa hàng */}
+        {/* Section 1: Thông tin Cửa hàng (Cố định theo mã nguồn) */}
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-3 gap-2">
             <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
               <Store className="w-5 h-5 text-amber-600" />
               Thông tin Thương hiệu & Cửa hàng
             </h2>
-            {!isSuperAdmin && (
-              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 bg-slate-100 border border-slate-200 px-3 py-1 rounded-lg">
-                <Lock className="w-3.5 h-3.5 text-amber-600" />
-                Chỉ Super Admin mới có quyền chỉnh sửa (Vai trò hiện tại: <b className="text-slate-800">{role || 'CEO'}</b>)
-              </span>
-            )}
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 bg-slate-100 border border-slate-200 px-3 py-1 rounded-lg">
+              <Lock className="w-3.5 h-3.5 text-amber-600" />
+              Thông tin cố định hệ thống (Read-only)
+            </span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
-                <span>Tên Cửa Hàng / Thương Hiệu</span>
-                {!isSuperAdmin && <Lock className="w-3 h-3 text-slate-400" />}
-              </label>
-              <input
-                type="text"
-                disabled={!isSuperAdmin}
-                value={storeName}
-                onChange={(e) => setStoreName(e.target.value)}
-                className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-semibold transition ${
-                  !isSuperAdmin
-                    ? 'bg-slate-100 text-slate-500 border border-slate-200 cursor-not-allowed select-none'
-                    : 'bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500 text-slate-800'
-                }`}
-              />
+            <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-500">Tên Cửa Hàng / Thương Hiệu</span>
+                <Lock className="w-3 h-3 text-slate-400" />
+              </div>
+              <p className="text-xs font-extrabold text-slate-800">{storeName || 'Knot To Detail'}</p>
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
-                <span>Hotline Hỗ Trợ</span>
-                {!isSuperAdmin && <Lock className="w-3 h-3 text-slate-400" />}
-              </label>
-              <input
-                type="text"
-                disabled={!isSuperAdmin}
-                value={hotline}
-                onChange={(e) => setHotline(e.target.value)}
-                className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-semibold transition ${
-                  !isSuperAdmin
-                    ? 'bg-slate-100 text-slate-500 border border-slate-200 cursor-not-allowed select-none'
-                    : 'bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500 text-slate-800'
-                }`}
-              />
+            <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-500">Hotline Hỗ Trợ</span>
+                <Lock className="w-3 h-3 text-slate-400" />
+              </div>
+              <p className="text-xs font-mono font-extrabold text-slate-800">{hotline || '1900 8888'}</p>
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
-                <span>Email CSKH</span>
-                {!isSuperAdmin && <Lock className="w-3 h-3 text-slate-400" />}
-              </label>
-              <input
-                type="email"
-                disabled={!isSuperAdmin}
-                value={supportEmail}
-                onChange={(e) => setSupportEmail(e.target.value)}
-                className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-semibold transition ${
-                  !isSuperAdmin
-                    ? 'bg-slate-100 text-slate-500 border border-slate-200 cursor-not-allowed select-none'
-                    : 'bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500 text-slate-800'
-                }`}
-              />
+            <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-500">Email CSKH</span>
+                <Lock className="w-3 h-3 text-slate-400" />
+              </div>
+              <p className="text-xs font-extrabold text-slate-800">{supportEmail || 'support@knottodetail.vn'}</p>
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
-                <span>Đường dẫn Zalo Chat (hoặc SĐT)</span>
-                {!isSuperAdmin && <Lock className="w-3 h-3 text-slate-400" />}
-              </label>
-              <input
-                type="text"
-                disabled={!isSuperAdmin}
-                placeholder="Ví dụ: https://zalo.me/0931143830"
-                value={zaloUrl}
-                onChange={(e) => setZaloUrl(e.target.value)}
-                className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-semibold transition ${
-                  !isSuperAdmin
-                    ? 'bg-slate-100 text-slate-500 border border-slate-200 cursor-not-allowed select-none'
-                    : 'bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500 text-slate-800'
-                }`}
-              />
+            <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-500">Kênh Zalo Tư Vấn Khách Hàng</span>
+                <Lock className="w-3 h-3 text-slate-400" />
+              </div>
+              <p className="text-xs font-extrabold text-blue-600 flex items-center gap-1.5">
+                <span>0931 143 830</span>
+                <span className="text-[11px] text-slate-400 font-normal">({zaloUrl || 'https://zalo.me/0931143830'})</span>
+              </p>
             </div>
           </div>
+          <p className="text-[11px] text-slate-400 italic">
+            * Thông tin thương hiệu được cấu hình cố định theo cấu trúc website Knot To Detail để bảo đảm tính toàn vẹn nhận diện thương hiệu.
+          </p>
         </div>
 
         {/* Section: Cấu hình Tài khoản Ngân hàng & VietQR */}
