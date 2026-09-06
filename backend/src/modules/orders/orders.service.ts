@@ -498,8 +498,7 @@ export class OrdersService {
       order = await this.orderRepo
         .createQueryBuilder('order')
         .leftJoinAndSelect('order.payments', 'payments')
-        .leftJoinAndSelect('order.address', 'address')
-        .where('address.phone = :phone', { phone })
+        .where("order.shipping_snapshot->>'phone' = :phone", { phone })
         .orderBy('order.created_at', 'DESC')
         .getOne();
     }
@@ -526,6 +525,14 @@ export class OrdersService {
       order.status = OrderStatus.PROCESSING;
       await this.orderRepo.save(order);
     }
+
+    // Emit event for loyalty points, email confirmation, and realtime websocket
+    this.eventEmitter?.emit('payment.completed', {
+      orderId: order.id,
+      amount: order.total,
+      transactionId: payload?.referenceCode || payload?.id || 'SEPAY_WEBHOOK',
+      provider: 'SEPAY',
+    });
 
     try {
       await this.auditLogsService.log(
@@ -573,8 +580,7 @@ export class OrdersService {
         order = await this.orderRepo
           .createQueryBuilder('order')
           .leftJoinAndSelect('order.payments', 'payments')
-          .leftJoinAndSelect('order.address', 'address')
-          .where('address.phone = :phone', { phone })
+          .where("order.shipping_snapshot->>'phone' = :phone", { phone })
           .orderBy('order.created_at', 'DESC')
           .getOne();
       }
@@ -603,6 +609,14 @@ export class OrdersService {
         await this.orderRepo.save(order);
       }
 
+      // Emit event for loyalty points, email confirmation, and realtime websocket
+      this.eventEmitter?.emit('payment.completed', {
+        orderId: order.id,
+        amount: order.total,
+        transactionId: txn.tid || txn.id || 'CASSO_WEBHOOK',
+        provider: 'CASSO',
+      });
+
       try {
         await this.auditLogsService.log(
           order.user_id || 'SYSTEM',
@@ -623,30 +637,46 @@ export class OrdersService {
     const data = payload?.data || payload;
     const content = data?.description || data?.content || '';
     const transferAmount = Number(data?.amount || data?.transferAmount || 0);
-
-    const shortIdMatch = content.match(/KTD\s*([a-f0-9]{8})/i);
-    const phoneMatch = content.match(/KTD\s+.*?\s*(\d{9,11})/i);
+    const orderCode = data?.orderCode;
 
     let order: Order | null = null;
 
-    if (shortIdMatch) {
-      const shortId = shortIdMatch[1].toLowerCase();
+    // 1. Match by PayOS unique orderCode stored in order shipping_snapshot
+    if (orderCode) {
       order = await this.orderRepo
         .createQueryBuilder('order')
         .leftJoinAndSelect('order.payments', 'payments')
-        .where('order.id::text LIKE :shortId', { shortId: `${shortId}%` })
+        .where("order.shipping_snapshot->>'payos_order_code' = :orderCodeStr", {
+          orderCodeStr: String(orderCode),
+        })
         .getOne();
     }
 
-    if (!order && phoneMatch) {
-      const phone = phoneMatch[1];
-      order = await this.orderRepo
-        .createQueryBuilder('order')
-        .leftJoinAndSelect('order.payments', 'payments')
-        .leftJoinAndSelect('order.address', 'address')
-        .where('address.phone = :phone', { phone })
-        .orderBy('order.created_at', 'DESC')
-        .getOne();
+    // 2. Fallback: match by KTD shortId in description
+    if (!order) {
+      const shortIdMatch = content.match(/KTD\s*([a-f0-9]{8})/i);
+      if (shortIdMatch) {
+        const shortId = shortIdMatch[1].toLowerCase();
+        order = await this.orderRepo
+          .createQueryBuilder('order')
+          .leftJoinAndSelect('order.payments', 'payments')
+          .where('order.id::text LIKE :shortId', { shortId: `${shortId}%` })
+          .getOne();
+      }
+    }
+
+    // 3. Fallback: match by phone number in description
+    if (!order) {
+      const phoneMatch = content.match(/KTD\s+.*?\s*(\d{9,11})/i);
+      if (phoneMatch) {
+        const phone = phoneMatch[1];
+        order = await this.orderRepo
+          .createQueryBuilder('order')
+          .leftJoinAndSelect('order.payments', 'payments')
+          .where("order.shipping_snapshot->>'phone' = :phone", { phone })
+          .orderBy('order.created_at', 'DESC')
+          .getOne();
+      }
     }
 
     if (!order) {
@@ -671,6 +701,14 @@ export class OrdersService {
       order.status = OrderStatus.PROCESSING;
       await this.orderRepo.save(order);
     }
+
+    // Emit event for loyalty points, email confirmation, and realtime websocket
+    this.eventEmitter?.emit('payment.completed', {
+      orderId: order.id,
+      amount: order.total,
+      transactionId: String(orderCode || data?.reference || 'PAYOS_WEBHOOK'),
+      provider: 'PAYOS',
+    });
 
     try {
       await this.auditLogsService.log(

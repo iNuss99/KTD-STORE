@@ -43,6 +43,7 @@ export class Order {
     ward?: string;
     district?: string;
     province?: string;
+    payos_order_code?: number | string;
   };
 
   @Column({ type: 'text', nullable: true })

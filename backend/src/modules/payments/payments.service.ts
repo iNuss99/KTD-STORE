@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, OnApplicationBootstrap, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
@@ -10,7 +10,8 @@ import { Payment } from '../orders/entities/payment.entity';
 import { OrderStatus, PaymentStatus, PaymentMethod } from '../../common/enums/order.enum';
 
 @Injectable()
-export class PaymentsService {
+export class PaymentsService implements OnApplicationBootstrap {
+  private readonly logger = new Logger(PaymentsService.name);
   private vnpTmnCode: string;
   private vnpHashSecret: string;
   private vnpUrl: string;
@@ -35,6 +36,24 @@ export class PaymentsService {
     const checksumKey = this.configService.get<string>('PAYOS_CHECKSUM_KEY');
     if (clientId && apiKey && checksumKey) {
       this.payOS = new PayOS({ clientId, apiKey, checksumKey });
+    }
+  }
+
+  async onApplicationBootstrap() {
+    if (this.payOS) {
+      try {
+        const backendUrl = (
+          this.configService.get<string>('BACKEND_URL') ||
+          'https://ktd-store-backend.onrender.com'
+        ).replace(/\/+$/, '');
+        const webhookUrl = `${backendUrl}/api/webhooks/payos`;
+        await this.payOS.webhooks.confirm(webhookUrl);
+        this.logger.log(`[PayOS] Webhook registered & confirmed with PayOS at: ${webhookUrl}`);
+      } catch (err: any) {
+        this.logger.warn(`[PayOS] Webhook auto-confirmation notice: ${err?.message || err}`);
+      }
+    } else {
+      this.logger.warn('[PayOS] Cổng thanh toán PayOS chưa được kích hoạt do thiếu biến môi trường PAYOS_CLIENT_ID / PAYOS_API_KEY / PAYOS_CHECKSUM_KEY.');
     }
   }
 
@@ -154,18 +173,36 @@ export class PaymentsService {
     const orderCode = Number(String(Date.now()).slice(-6) + Math.floor(100 + Math.random() * 900));
     const description = `KTD ${orderId.slice(0, 8).toUpperCase()}`;
 
+    const frontendUrl = (
+      this.configService.get<string>('FRONTEND_URL') ||
+      'https://ktd-store.vercel.app'
+    ).replace(/\/+$/, '');
+
     const paymentLink = await this.payOS.paymentRequests.create({
       orderCode,
       amount: Math.round(Number(order.total)),
       description,
-      cancelUrl: `http://localhost:5173/orders/${orderId}`,
-      returnUrl: `http://localhost:5173/orders/${orderId}?payment_success=1`,
+      cancelUrl: `${frontendUrl}/orders/${orderId}`,
+      returnUrl: `${frontendUrl}/orders/${orderId}?payment_success=1`,
       items: order.items?.map((it) => ({
         name: it.product_name,
         quantity: it.quantity,
         price: Math.round(Number(it.price)),
       })) || [{ name: `Đơn hàng #${orderId.slice(0, 8)}`, quantity: 1, price: Math.round(Number(order.total)) }],
     });
+
+    // Save orderCode to order shipping_snapshot so webhook and status-check can match even if bank description alters
+    if (order.shipping_snapshot) {
+      order.shipping_snapshot.payos_order_code = orderCode;
+    } else {
+      order.shipping_snapshot = {
+        receiver_name: '',
+        phone: '',
+        address_line: '',
+        payos_order_code: orderCode,
+      };
+    }
+    await this.orderRepo.save(order);
 
     return {
       orderId,
@@ -201,11 +238,13 @@ export class PaymentsService {
       return { isPaid: true, status: 'PAID', orderId };
     }
 
-    if (this.payOS && orderCode) {
+    const targetOrderCode = orderCode || (order.shipping_snapshot as any)?.payos_order_code;
+
+    if (this.payOS && targetOrderCode) {
       try {
-        const info = await this.payOS.paymentRequests.get(orderCode);
+        const info = await this.payOS.paymentRequests.get(Number(targetOrderCode));
         if (info && info.status === 'PAID') {
-          await this.handlePaymentSuccess(orderId, String(orderCode), 'PAYOS');
+          await this.handlePaymentSuccess(orderId, String(targetOrderCode), 'PAYOS');
           return { isPaid: true, status: 'PAID', orderId };
         }
         return { isPaid: false, status: info?.status || 'PENDING', orderId };
