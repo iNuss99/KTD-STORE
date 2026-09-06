@@ -127,23 +127,23 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpenMobile, onClos
         `}
       >
         {/* Brand Logo */}
-        <div className="p-6 border-b border-slate-50 flex items-center justify-between">
-          <Link to="/admin/dashboard" onClick={handleNavClick} className="flex items-center gap-3">
+        <div className="px-4.5 py-5 border-b border-slate-100/80 flex items-center justify-between">
+          <Link to="/admin/dashboard" onClick={handleNavClick} className="flex items-center gap-2.5 min-w-0 w-full">
             <img
               src="/logo.png"
               alt="Knot To Detail Logo"
-              className="w-10 h-10 object-contain rounded-xl shadow-xs"
+              className="w-10 h-10 object-contain rounded-xl shadow-xs shrink-0"
             />
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-extrabold text-base text-slate-900 tracking-tight">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center justify-between gap-1.5">
+                <span className="font-extrabold text-[14px] text-slate-900 tracking-tight whitespace-nowrap">
                   Knot To Detail
                 </span>
-                <span className="px-2 py-0.5 text-[10px] font-bold bg-accent-light text-accent rounded-full border border-accent-border">
+                <span className="px-1.5 py-0.5 text-[9px] font-bold bg-accent-light text-accent rounded-full border border-accent-border shrink-0">
                   Admin
                 </span>
               </div>
-              <p className="text-[11px] font-medium text-slate-400">Control Center</p>
+              <p className="text-[11px] font-medium text-slate-400 mt-0.5 leading-none">Control Center</p>
             </div>
           </Link>
         </div>
