@@ -388,9 +388,20 @@ export class OrdersService {
 
     const savedPayment = await this.paymentRepo.save(payment);
 
+    if (order.status === OrderStatus.PENDING || order.status === OrderStatus.CONFIRMED) {
+      order.status = OrderStatus.PROCESSING;
+      await this.orderRepo.save(order);
+    }
+
+    this.eventEmitter?.emit('payment.completed', {
+      orderId: order.id,
+      amount: order.total,
+      transactionId: `MANUAL_${savedPayment.id}`,
+    });
+
     await this.auditLogsService.log(
       performedByUserId,
-      'CONFIRM_COD_PAYMENT',
+      'CONFIRM_PAYMENT',
       'Payment',
       savedPayment.id,
       { order_id: orderId, paid_at: savedPayment.paid_at },

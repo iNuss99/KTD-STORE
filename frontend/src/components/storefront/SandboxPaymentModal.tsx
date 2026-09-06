@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { CheckCircle2, XCircle, ShieldCheck, QrCode, AlertCircle, Loader2 } from 'lucide-react';
+import { CheckCircle2, XCircle, ShieldCheck, QrCode, AlertCircle, Loader2, Phone, MessageCircle } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { getAuthHeader } from '../../lib/auth-storage';
 import { apiClient } from '../../lib/apiClient';
@@ -21,8 +21,16 @@ export const SandboxPaymentModal: React.FC<SandboxPaymentModalProps> = ({
   onCancel,
 }) => {
   const [processing, setProcessing] = useState(false);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const { formatPrice } = useLanguage();
   const { showSuccess, showError, showWarning } = useToast();
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setElapsedSeconds((prev) => prev + 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const [bankCode, setBankCode] = useState('MB');
   const [bankName, setBankName] = useState('MBBank (Ngân hàng Quân Đội)');
@@ -392,6 +400,43 @@ export const SandboxPaymentModal: React.FC<SandboxPaymentModalProps> = ({
                 <strong>Hệ thống đang tự động lắng nghe Ngân hàng...</strong> Quét mã QR bằng App Ngân hàng bất kỳ, ngay khi chuyển tiền thành công, hệ thống sẽ <b>tự động duyệt & chuyển sang trang cảm ơn</b> mà không cần bấm nút.
               </p>
             </div>
+
+            {/* 60s Lag/Delay Fallback Banner */}
+            {elapsedSeconds >= 60 && (
+              <div className="p-3 bg-amber-50 border border-amber-300 rounded-xl space-y-2 animate-in fade-in slide-in-from-top duration-300 shadow-2xs">
+                <div className="flex items-start gap-2 text-amber-900">
+                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <div className="text-[11px] leading-snug">
+                    <span className="font-bold">Ngân hàng phản hồi chậm hơn thường lệ?</span>
+                    <p className="text-amber-800 text-[10.5px] mt-0.5">
+                      Nếu quý khách đã chuyển tiền thành công, xin đừng chuyển lại. Tiền của bạn hoàn toàn an toàn! Hệ thống vẫn đang tiếp tục dò tiền ngầm. Quý khách có thể liên hệ để shop hỗ trợ kiểm tra ngay:
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 pt-1">
+                  <a
+                    href="https://zalo.me/0931143830"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => {
+                      navigator.clipboard.writeText(`Đơn hàng #${orderId.slice(0, 8).toUpperCase()}`);
+                      showSuccess('Đã chép mã đơn', 'Đã sao chép mã đơn vào khay nhớ tạm để gửi Zalo.');
+                    }}
+                    className="flex-1 py-2 px-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[11px] font-semibold flex items-center justify-center gap-1.5 transition shadow-2xs"
+                  >
+                    <MessageCircle className="w-3.5 h-3.5" />
+                    <span>Nhắn Zalo hỗ trợ</span>
+                  </a>
+                  <a
+                    href="tel:0931143830"
+                    className="flex-1 py-2 px-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-semibold flex items-center justify-center gap-1.5 transition shadow-2xs"
+                  >
+                    <Phone className="w-3.5 h-3.5" />
+                    <span>Gọi 0931.143.830</span>
+                  </a>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -409,7 +454,7 @@ export const SandboxPaymentModal: React.FC<SandboxPaymentModalProps> = ({
           <div className="flex-1 w-full flex items-center justify-between gap-2 bg-emerald-50 border border-emerald-200/80 py-2 px-3.5 rounded-xl">
             <div className="flex items-center gap-2 text-emerald-800 text-xs font-medium">
               <Loader2 className="w-4 h-4 text-emerald-600 animate-spin shrink-0" />
-              <span>Đang tự động nhận diện thanh toán...</span>
+              <span>Đang tự động nhận diện thanh toán... ({elapsedSeconds}s)</span>
             </div>
             <button
               type="button"
