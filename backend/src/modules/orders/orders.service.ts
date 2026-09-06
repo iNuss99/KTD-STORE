@@ -690,6 +690,11 @@ export class OrdersService {
       return { success: true, message: 'PayOS webhook endpoint active (Test ping verified)' };
     }
 
+    // Security Check: Verify transferred amount meets order total
+    if (transferAmount > 0 && transferAmount < Math.round(Number(order.total))) {
+      return { success: false, message: `Số tiền chuyển khoản (${transferAmount}) nhỏ hơn tổng tiền đơn hàng (${order.total})` };
+    }
+
     let payment = order.payments && order.payments.length > 0 ? order.payments[0] : null;
 
     if (!payment) {
