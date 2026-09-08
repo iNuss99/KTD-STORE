@@ -212,6 +212,8 @@ Hệ thống được thiết kế với 4 cấp độ quyền hạn rõ ràng:
 
 ## 6. 🚀 Hướng Dẫn Khởi Chạy Nhanh (Quickstart)
 
+> 📖 **Hướng Dẫn Cài Đặt Chi Tiết Trên Máy Mới (Từ A - Z)**: Xem file [SETUP_GUIDE.md](SETUP_GUIDE.md) (hỗ trợ cả **chạy 1-click bằng Docker** và chạy thủ công bằng Node.js).
+
 ### Yêu cầu hệ thống:
 * **Node.js**: Phiên bản `18.x` hoặc `20.x` trở lên
 * **npm**: Phiên bản `9.x` trở lên

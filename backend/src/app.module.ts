@@ -120,6 +120,7 @@ import { LoyaltyModule } from './modules/loyalty/loyalty.module';
           ],
           // Task T1.1: Disabled synchronize for production safety. Migrations are used instead.
           synchronize: false,
+          migrationsRun: true,
           migrations: [InitialSchema1700000000000, AddColorToProductImages1700000000001],
           ssl: isSsl ? { rejectUnauthorized: false } : false,
           extra: {
