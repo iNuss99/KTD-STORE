@@ -21,6 +21,9 @@ export class Category {
   @OneToMany(() => Category, (category) => category.parent)
   children: Category[];
 
+  @OneToMany('Product', 'category')
+  products: any[];
+
   @Column({ nullable: true })
   image_url: string;
 

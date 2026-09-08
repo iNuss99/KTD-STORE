@@ -58,7 +58,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
   const badgeType = isOutOfStock ? 'out' : propBadge === 'sale' || oldPrice ? 'sale' : undefined;
 
-  const mainImage = product?.images?.[0]?.url || propImages?.[0] || null;
+  const sortedImages = React.useMemo(() => {
+    if (!product?.images || product.images.length === 0) return [];
+    return [...product.images].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+  }, [product?.images]);
+
+  const mainImage = sortedImages[0]?.url || propImages?.[0] || null;
 
   const toggleWishlist = async (e: React.MouseEvent) => {
     e.preventDefault();

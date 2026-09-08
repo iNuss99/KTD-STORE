@@ -1,6 +1,6 @@
 import { Injectable, OnApplicationBootstrap, NotFoundException, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { Product } from './entities/product.entity';
 import { ProductImage } from './entities/product-image.entity';
 import { ProductVariant } from './entities/product-variant.entity';
@@ -12,6 +12,8 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { CreateVariantDto } from './dto/create-variant.dto';
 import { FilterProductDto } from './dto/filter-product.dto';
+import { CreateColorDto } from './dto/create-color.dto';
+import { UpdateColorDto } from './dto/update-color.dto';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
 
 @Injectable()
@@ -289,7 +291,122 @@ export class ProductsService implements OnApplicationBootstrap {
   }
 
   async getColors() {
-    return this.colorRepo.find();
+    return this.colorRepo.find({
+      order: { name: 'ASC' },
+    });
+  }
+
+  generateColorCodeFromName(name: string): string {
+    const clean = name
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/đ/g, 'd')
+      .replace(/Đ/g, 'D')
+      .replace(/[^a-zA-Z0-9\s]/g, ' ')
+      .trim();
+    if (!clean) return 'CLR';
+    const words = clean.split(/\s+/).filter(Boolean);
+    if (words.length === 1) {
+      return words[0].slice(0, 4).toUpperCase();
+    }
+    if (words.length === 2) {
+      return (words[0][0] + words[1].slice(0, 2)).toUpperCase();
+    }
+    return words.map((w) => w[0]).join('').slice(0, 5).toUpperCase();
+  }
+
+  async createColor(dto: CreateColorDto) {
+    const name = dto.name.trim();
+    const hex_code = dto.hex_code.trim().toUpperCase();
+
+    const existingName = await this.colorRepo
+      .createQueryBuilder('color')
+      .where('LOWER(color.name) = LOWER(:name)', { name })
+      .getOne();
+
+    if (existingName) {
+      throw new BadRequestException(`Tên màu sắc "${name}" đã tồn tại.`);
+    }
+
+    let code = (dto.code || '').trim().toUpperCase();
+    if (!code) {
+      const baseCode = this.generateColorCodeFromName(name);
+      code = baseCode;
+      let counter = 2;
+      while (await this.colorRepo.findOne({ where: { code } })) {
+        code = `${baseCode}${counter}`;
+        counter++;
+      }
+    } else {
+      const existingCode = await this.colorRepo.findOne({ where: { code } });
+      if (existingCode) {
+        throw new BadRequestException(`Mã viết tắt SKU "${code}" đã tồn tại cho màu "${existingCode.name}".`);
+      }
+    }
+
+    const newColor = this.colorRepo.create({
+      name,
+      code,
+      hex_code,
+    });
+
+    return this.colorRepo.save(newColor);
+  }
+
+  async updateColor(id: string, dto: UpdateColorDto) {
+    const color = await this.colorRepo.findOne({ where: { id } });
+    if (!color) {
+      throw new NotFoundException(`Không tìm thấy màu sắc với ID: ${id}`);
+    }
+
+    if (dto.name) {
+      const name = dto.name.trim();
+      const duplicateName = await this.colorRepo
+        .createQueryBuilder('color')
+        .where('LOWER(color.name) = LOWER(:name) AND color.id != :id', { name, id })
+        .getOne();
+      if (duplicateName) {
+        throw new BadRequestException(`Tên màu sắc "${name}" đã tồn tại.`);
+      }
+      color.name = name;
+    }
+
+    if (dto.code) {
+      const code = dto.code.trim().toUpperCase();
+      const duplicateCode = await this.colorRepo
+        .createQueryBuilder('color')
+        .where('UPPER(color.code) = :code AND color.id != :id', { code, id })
+        .getOne();
+      if (duplicateCode) {
+        throw new BadRequestException(`Mã viết tắt SKU "${code}" đã tồn tại.`);
+      }
+      color.code = code;
+    }
+
+    if (dto.hex_code) {
+      color.hex_code = dto.hex_code.trim().toUpperCase();
+    }
+
+    return this.colorRepo.save(color);
+  }
+
+  async deleteColor(id: string) {
+    const color = await this.colorRepo.findOne({ where: { id } });
+    if (!color) {
+      throw new NotFoundException(`Không tìm thấy màu sắc với ID: ${id}`);
+    }
+
+    const variantCount = await this.variantRepo.count({ where: { color_id: id } });
+    if (variantCount > 0) {
+      throw new BadRequestException(
+        `Không thể xóa màu "${color.name}" vì đang được sử dụng bởi ${variantCount} biến thể sản phẩm. Vui lòng cập nhật hoặc xóa các biến thể trước.`,
+      );
+    }
+
+    await this.imageRepo.update({ color_id: id }, { color_id: null });
+    await this.colorRepo.remove(color);
+
+    return { success: true, message: `Đã xóa màu "${color.name}" thành công.` };
   }
 
   async findAll(filter: FilterProductDto) {
@@ -304,8 +421,13 @@ export class ProductsService implements OnApplicationBootstrap {
         .leftJoinAndSelect('product.images', 'images')
         .leftJoinAndSelect('product.variants', 'variants')
         .leftJoinAndSelect('variants.size', 'size')
-        .leftJoinAndSelect('variants.color', 'color')
-        .where('product.is_active = :isActive', { isActive: true });
+        .leftJoinAndSelect('variants.color', 'color');
+
+      if (filter.all === 'true') {
+        query.where('1=1');
+      } else {
+        query.where('product.is_active = :isActive', { isActive: true });
+      }
 
       if (filter.category_id) {
         query.andWhere('product.category_id = :categoryId', { categoryId: filter.category_id });
@@ -351,6 +473,9 @@ export class ProductsService implements OnApplicationBootstrap {
 
       const formattedItems = items.map((product) => ({
         ...product,
+        images: product.images
+          ? [...product.images].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+          : [],
         variants: product.variants?.map((v) => ({
           ...v,
           effective_price: this.calculateEffectivePrice(product.base_price, v.price_override),
@@ -395,16 +520,21 @@ export class ProductsService implements OnApplicationBootstrap {
       .orderBy('product.name', 'ASC')
       .getMany();
 
-    return products.map((p) => ({
-      id: p.id,
-      name: p.name,
-      slug: p.slug,
-      code: p.code,
-      base_price: Number(p.base_price),
-      brand_name: p.brand?.name || null,
-      category_name: p.category?.name || null,
-      image_url: p.images?.[0]?.url || null,
-    }));
+    return products.map((p) => {
+      const sortedImgs = p.images
+        ? [...p.images].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+        : [];
+      return {
+        id: p.id,
+        name: p.name,
+        slug: p.slug,
+        code: p.code,
+        base_price: Number(p.base_price),
+        brand_name: p.brand?.name || null,
+        category_name: p.category?.name || null,
+        image_url: sortedImgs[0]?.url || null,
+      };
+    });
   }
 
   async findOne(idOrSlug: string) {
@@ -426,6 +556,9 @@ export class ProductsService implements OnApplicationBootstrap {
 
     return {
       ...product,
+      images: product.images
+        ? [...product.images].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+        : [],
       variants: product.variants?.map((v) => ({
         ...v,
         effective_price: this.calculateEffectivePrice(product.base_price, v.price_override),
@@ -485,8 +618,9 @@ export class ProductsService implements OnApplicationBootstrap {
 
     // Save product variants with generated SKU
     if (dto.variants && dto.variants.length > 0) {
+      const brandCode = brand?.code || 'GEN';
       for (const vDto of dto.variants) {
-        await this.addVariant(savedProduct.id, vDto, brand.code, savedProduct.code);
+        await this.addVariant(savedProduct.id, vDto, brandCode, savedProduct.code);
       }
     }
 
@@ -606,6 +740,7 @@ export class ProductsService implements OnApplicationBootstrap {
               },
               product.brand?.code,
               product.code,
+              performedByUserId,
             );
           } else {
             if (vItem.stock_quantity !== undefined) existing.stock_quantity = vItem.stock_quantity;
@@ -679,22 +814,192 @@ export class ProductsService implements OnApplicationBootstrap {
     return savedVariant;
   }
 
+  async removeVariant(productId: string, variantId: string, performedByUserId?: string) {
+    const variant = await this.variantRepo.findOne({
+      where: { id: variantId, product_id: productId },
+      relations: ['size', 'color'],
+    });
+
+    if (!variant) {
+      throw new NotFoundException('Biến thể không tồn tại trong sản phẩm này');
+    }
+
+    await this.variantRepo.remove(variant);
+
+    if (performedByUserId) {
+      await this.auditLogsService.log(
+        performedByUserId,
+        'DELETE_PRODUCT_VARIANT',
+        'ProductVariant',
+        variantId,
+        {
+          product_id: productId,
+          sku: variant.sku,
+          size: variant.size?.name,
+          color: variant.color?.name,
+        },
+      );
+    }
+
+    return { message: `Đã xóa biến thể ${variant.sku} thành công`, id: variantId };
+  }
+
   async remove(id: string, performedByUserId?: string) {
     const product = await this.findOne(id);
-    // Soft delete rule (spec.md 2.2): set is_active = false
-    product.is_active = false;
-    await this.productRepo.save(product);
+    const variantIds = product.variants?.map((v) => v.id) || [];
+
+    // Xóa cứng vĩnh viễn khỏi Database trong một transaction an toàn
+    await this.productRepo.manager.transaction(async (em) => {
+      if (variantIds.length > 0) {
+        await em
+          .createQueryBuilder()
+          .update('order_items')
+          .set({ variant_id: null })
+          .where('variant_id IN (:...variantIds)', { variantIds })
+          .execute();
+
+        await em
+          .createQueryBuilder()
+          .delete()
+          .from('cart_items')
+          .where('variant_id IN (:...variantIds)', { variantIds })
+          .execute();
+      }
+
+      await em
+        .createQueryBuilder()
+        .delete()
+        .from('wishlist_items')
+        .where('product_id = :id', { id: product.id })
+        .execute();
+
+      await em
+        .createQueryBuilder()
+        .delete()
+        .from('reviews')
+        .where('product_id = :id', { id: product.id })
+        .execute();
+
+      await em
+        .createQueryBuilder()
+        .delete()
+        .from(ProductImage)
+        .where('product_id = :id', { id: product.id })
+        .execute();
+
+      await em
+        .createQueryBuilder()
+        .delete()
+        .from(ProductVariant)
+        .where('product_id = :id', { id: product.id })
+        .execute();
+
+      await em
+        .createQueryBuilder()
+        .delete()
+        .from(Product)
+        .where('id = :id', { id: product.id })
+        .execute();
+    });
 
     if (performedByUserId) {
       await this.auditLogsService.log(
         performedByUserId,
         'DELETE_PRODUCT',
         'Product',
-        id,
-        { name: product.name },
+        product.id,
+        { name: product.name, code: product.code, type: 'HARD_DELETE' },
       );
     }
 
-    return { message: 'Đã vô hiệu hóa sản phẩm thành công (Soft delete)' };
+    return {
+      success: true,
+      deleted: true,
+      message: `Đã xóa vĩnh viễn sản phẩm "${product.name}" khỏi cơ sở dữ liệu.`,
+    };
+  }
+
+  async removeBatch(ids: string[], performedByUserId?: string) {
+    if (!ids || ids.length === 0) return { success: true, count: 0, message: 'Không có sản phẩm nào được chọn' };
+
+    const products = await this.productRepo.find({
+      where: { id: In(ids) },
+      relations: ['variants'],
+    });
+
+    const allVariantIds: string[] = [];
+    products.forEach((p) => {
+      p.variants?.forEach((v) => allVariantIds.push(v.id));
+    });
+
+    await this.productRepo.manager.transaction(async (em) => {
+      if (allVariantIds.length > 0) {
+        await em
+          .createQueryBuilder()
+          .update('order_items')
+          .set({ variant_id: null })
+          .where('variant_id IN (:...allVariantIds)', { allVariantIds })
+          .execute();
+
+        await em
+          .createQueryBuilder()
+          .delete()
+          .from('cart_items')
+          .where('variant_id IN (:...allVariantIds)', { allVariantIds })
+          .execute();
+      }
+
+      await em
+        .createQueryBuilder()
+        .delete()
+        .from('wishlist_items')
+        .where('product_id IN (:...ids)', { ids })
+        .execute();
+
+      await em
+        .createQueryBuilder()
+        .delete()
+        .from('reviews')
+        .where('product_id IN (:...ids)', { ids })
+        .execute();
+
+      await em
+        .createQueryBuilder()
+        .delete()
+        .from(ProductImage)
+        .where('product_id IN (:...ids)', { ids })
+        .execute();
+
+      await em
+        .createQueryBuilder()
+        .delete()
+        .from(ProductVariant)
+        .where('product_id IN (:...ids)', { ids })
+        .execute();
+
+      await em
+        .createQueryBuilder()
+        .delete()
+        .from(Product)
+        .where('id IN (:...ids)', { ids })
+        .execute();
+    });
+
+    if (performedByUserId) {
+      await this.auditLogsService.log(
+        performedByUserId,
+        'BATCH_DELETE_PRODUCTS',
+        'Product',
+        ids.join(','),
+        { count: products.length, ids },
+      );
+    }
+
+    return {
+      success: true,
+      deleted: true,
+      count: products.length,
+      message: `Đã xóa vĩnh viễn ${products.length} sản phẩm khỏi cơ sở dữ liệu.`,
+    };
   }
 }

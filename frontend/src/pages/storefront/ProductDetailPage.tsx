@@ -77,16 +77,18 @@ export const ProductDetailPage: React.FC = () => {
   // Filter images based on selected color
   const displayImages = useMemo(() => {
     if (!product?.images || product.images.length === 0) return [];
-    if (!selectedColorId) return product.images;
+    const sorted = [...product.images].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
 
-    const colorSpecific = product.images.filter((img) => img.color_id === selectedColorId);
-    const shared = product.images.filter((img) => !img.color_id);
+    if (!selectedColorId) return sorted;
+
+    const colorSpecific = sorted.filter((img) => img.color_id === selectedColorId);
+    const shared = sorted.filter((img) => !img.color_id);
 
     if (colorSpecific.length > 0) {
       return [...colorSpecific, ...shared];
     }
 
-    return product.images;
+    return sorted;
   }, [product?.images, selectedColorId]);
 
   useEffect(() => {
@@ -101,19 +103,21 @@ export const ProductDetailPage: React.FC = () => {
   const handleColorChange = (colorId: string | null) => {
     setSelectedColorId(colorId);
     if (!product?.images || product.images.length === 0) return;
+    const sorted = [...product.images].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
     if (colorId) {
-      const matched = product.images.find((img) => img.color_id === colorId);
+      const matched = sorted.find((img) => img.color_id === colorId);
       if (matched) {
         setSelectedImage(matched.url);
         return;
       }
     }
-    setSelectedImage(product.images[0].url);
+    setSelectedImage(sorted[0].url);
   };
 
   useEffect(() => {
     if (product?.images && product.images.length > 0 && !selectedImage) {
-      setSelectedImage(product.images[0].url);
+      const sorted = [...product.images].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+      setSelectedImage(sorted[0].url);
     }
     if (product) {
       try {
@@ -600,9 +604,12 @@ export const ProductDetailPage: React.FC = () => {
                       currency: 'VND',
                     }).format(rel.base_price || 0);
 
+                    const sortedRelImages = rel.images
+                      ? [...rel.images].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+                      : [];
                     const relThumb =
-                      rel.images && rel.images.length > 0
-                        ? rel.images[0].url
+                      sortedRelImages.length > 0
+                        ? sortedRelImages[0].url
                         : 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=400&q=80';
 
                     return (

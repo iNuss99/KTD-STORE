@@ -4,6 +4,8 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { CreateVariantDto } from './dto/create-variant.dto';
 import { FilterProductDto } from './dto/filter-product.dto';
+import { CreateColorDto } from './dto/create-color.dto';
+import { UpdateColorDto } from './dto/update-color.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import { Permissions } from '../../common/decorators/permissions.decorator';
@@ -31,6 +33,27 @@ export class ProductsController {
   @Get('colors')
   getColors() {
     return this.productsService.getColors();
+  }
+
+  @Post('colors')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('PRODUCT_MANAGE')
+  createColor(@Body() dto: CreateColorDto) {
+    return this.productsService.createColor(dto);
+  }
+
+  @Patch('colors/:id')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('PRODUCT_MANAGE')
+  updateColor(@Param('id') id: string, @Body() dto: UpdateColorDto) {
+    return this.productsService.updateColor(id, dto);
+  }
+
+  @Delete('colors/:id')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('PRODUCT_MANAGE')
+  deleteColor(@Param('id') id: string) {
+    return this.productsService.deleteColor(id);
   }
 
   @Post('seed-mock')
@@ -75,6 +98,27 @@ export class ProductsController {
     @GetUser('id') performedByUserId: string,
   ) {
     return this.productsService.addVariant(id, dto, undefined, undefined, performedByUserId);
+  }
+
+  @Delete(':id/variants/:variantId')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('PRODUCT_MANAGE')
+  removeVariant(
+    @Param('id') productId: string,
+    @Param('variantId') variantId: string,
+    @GetUser('id') performedByUserId: string,
+  ) {
+    return this.productsService.removeVariant(productId, variantId, performedByUserId);
+  }
+
+  @Post('batch-delete')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('PRODUCT_MANAGE')
+  removeBatch(
+    @Body('ids') ids: string[],
+    @GetUser('id') performedByUserId: string,
+  ) {
+    return this.productsService.removeBatch(ids, performedByUserId);
   }
 
   @Delete(':id')

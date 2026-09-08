@@ -359,25 +359,31 @@ export const CheckoutPage: React.FC = () => {
               </h3>
 
               <div className="max-h-60 overflow-y-auto space-y-3 pr-1">
-                {items.map((item) => (
-                  <div key={item.id} className="flex items-center gap-3 text-xs">
-                    <div className="w-10 h-12 bg-warm-white border border-chalk shrink-0 overflow-hidden">
-                      <ProductImage
-                        src={item.variant?.product?.images?.[0]?.url || null}
-                        alt={item.variant?.product?.name}
-                        category={item.variant?.product?.category?.name}
-                        aspectRatio="portrait"
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-serif text-xs text-ink truncate">{item.variant?.product?.name}</div>
+                {items.map((item) => {
+                  const sortedImgs = item.variant?.product?.images
+                    ? [...item.variant.product.images].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+                    : [];
+                  const mainUrl = sortedImgs[0]?.url || null;
+                  return (
+                    <div key={item.id} className="flex items-center gap-3 text-xs">
+                      <div className="w-10 h-12 bg-warm-white border border-chalk shrink-0 overflow-hidden">
+                        <ProductImage
+                          src={mainUrl}
+                          alt={item.variant?.product?.name}
+                          category={item.variant?.product?.category?.name}
+                          aspectRatio="portrait"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-serif text-xs text-ink truncate">{item.variant?.product?.name}</div>
                       <div className="font-mono text-[10px] text-smoke">{item.variant?.size?.code || item.variant?.size?.name} / {item.variant?.color?.name} × {item.quantity}</div>
                     </div>
-                    <div className="font-mono text-xs font-semibold text-ink">
-                      {formatPrice((item.effective_price || 0) * item.quantity)}
+                      <div className="font-mono text-xs font-semibold text-ink">
+                        {formatPrice((item.effective_price || 0) * item.quantity)}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               <div className="pt-3 border-t border-chalk space-y-2 font-mono text-xs">

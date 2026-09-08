@@ -13,11 +13,20 @@ import {
   GripVertical,
   Plus,
   Edit,
+  Palette,
+  FolderTree,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Brand, Category, Size, Color, Product } from '../../types';
 import { getAdminAuthHeader } from '../../lib/auth-storage';
 import { useToast } from '../../context/ToastContext';
+import {
+  QuickAddColorModal,
+  AdminColorManagerModal,
+  ConfirmDeleteColorModal,
+  QuickAddCategoryModal,
+  AdminCategoryManagerModal,
+} from '../../components';
 
 export const AdminCatalogPage: React.FC = () => {
   const { showSuccess, showError } = useToast();
@@ -39,9 +48,16 @@ export const AdminCatalogPage: React.FC = () => {
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [loadingProducts, setLoadingProducts] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
 
   // Modals
   const [showProductModal, setShowProductModal] = useState(false);
+  const [showColorManagerModal, setShowColorManagerModal] = useState(false);
+  const [showQuickAddColorModal, setShowQuickAddColorModal] = useState(false);
+  const [showCategoryManagerModal, setShowCategoryManagerModal] = useState(false);
+  const [showQuickAddCategoryModal, setShowQuickAddCategoryModal] = useState(false);
+  const [colorToDelete, setColorToDelete] = useState<Color | null>(null);
+  const [isDeletingColor, setIsDeletingColor] = useState(false);
   const [productForm, setProductForm] = useState<{
     name: string;
     description: string;
@@ -143,7 +159,7 @@ export const AdminCatalogPage: React.FC = () => {
     try {
       setLoadingProducts(true);
       const headers = getAdminAuthHeader();
-      const res = await fetch('/api/products', { headers });
+      const res = await fetch('/api/products?all=true&limit=100', { headers });
       if (res.ok) {
         const pRes = await res.json();
         setProducts(pRes?.data || []);
@@ -160,10 +176,10 @@ export const AdminCatalogPage: React.FC = () => {
       setLoadingProducts(true);
       const headers = getAdminAuthHeader();
       const [cRes, sRes, clRes, pRes] = await Promise.all([
-        fetch('/api/categories', { headers }).then((r) => r.json()),
+        fetch('/api/categories?all=true', { headers }).then((r) => r.json()),
         fetch('/api/products/sizes', { headers }).then((r) => r.json()),
         fetch('/api/products/colors', { headers }).then((r) => r.json()),
-        fetch('/api/products', { headers }).then((r) => r.json()),
+        fetch('/api/products?all=true&limit=100', { headers }).then((r) => r.json()),
       ]);
 
       setCategories(Array.isArray(cRes) ? cRes : []);
@@ -342,14 +358,45 @@ export const AdminCatalogPage: React.FC = () => {
     }
   };
 
+  const handleDeleteColorQuick = (color: Color) => {
+    setColorToDelete(color);
+  };
+
+  const handleConfirmDeleteColor = async () => {
+    if (!colorToDelete) return;
+    setIsDeletingColor(true);
+    try {
+      const res = await fetch(`/api/products/colors/${colorToDelete.id}`, {
+        method: 'DELETE',
+        headers: getAdminAuthHeader(),
+      });
+      if (res.ok) {
+        setColors((prev) => prev.filter((c) => c.id !== colorToDelete.id));
+        setProductForm((prev) => ({
+          ...prev,
+          color_ids: prev.color_ids.filter((id) => id !== colorToDelete.id),
+        }));
+        showSuccess('Đã xóa màu', `Màu "${colorToDelete.name}" đã được gỡ bỏ khỏi hệ thống.`);
+        setColorToDelete(null);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        showError('Không thể xóa màu', err.message || 'Màu này đang được sử dụng trong các biến thể');
+      }
+    } catch (err: any) {
+      showError('Lỗi mạng', err.message || 'Không thể kết nối đến máy chủ');
+    } finally {
+      setIsDeletingColor(false);
+    }
+  };
+
+  const displayedProducts = products.filter((p) => {
+    if (statusFilter === 'ACTIVE') return p.is_active;
+    if (statusFilter === 'INACTIVE') return !p.is_active;
+    return true;
+  });
+
   const handleQuickDelete = async (id: string, name: string) => {
     if (deletingId === id) return;
-    const prevProducts = [...products];
-    const prevSelected = [...selectedProductIds];
-
-    // Optimistic UI: Gỡ sản phẩm khỏi danh sách ngay lập tức
-    setProducts((prev) => prev.filter((p) => p.id !== id));
-    setSelectedProductIds((prev) => prev.filter((pId) => pId !== id));
     setDeletingId(id);
 
     try {
@@ -357,17 +404,25 @@ export const AdminCatalogPage: React.FC = () => {
         method: 'DELETE',
         headers: getAdminAuthHeader(),
       });
+      const data = await res.json().catch(() => ({}));
+
       if (res.ok) {
-        showSuccess('Đã xóa', `Đã xóa sản phẩm "${name}"`);
+        if (data.deleted) {
+          // Xóa vĩnh viễn khỏi DB
+          setProducts((prev) => prev.filter((p) => p.id !== id));
+          setSelectedProductIds((prev) => prev.filter((pId) => pId !== id));
+          showSuccess('Đã xóa vĩnh viễn', data.message || `Đã xóa vĩnh viễn sản phẩm "${name}" khỏi cơ sở dữ liệu.`);
+        } else {
+          // Sản phẩm đã có trong đơn hàng -> chuyển sang vô hiệu hóa
+          setProducts((prev) =>
+            prev.map((p) => (p.id === id ? { ...p, is_active: false } : p))
+          );
+          showSuccess('Đã vô hiệu hóa', data.message || `Sản phẩm "${name}" đã chuyển sang trạng thái vô hiệu hóa.`);
+        }
       } else {
-        const err = await res.json().catch(() => ({}));
-        setProducts(prevProducts);
-        setSelectedProductIds(prevSelected);
-        showError('Lỗi xóa sản phẩm', err.message || 'Không thể xóa sản phẩm này');
+        showError('Lỗi xóa sản phẩm', data.message || 'Không thể xóa sản phẩm này');
       }
     } catch (err) {
-      setProducts(prevProducts);
-      setSelectedProductIds(prevSelected);
       showError('Lỗi mạng', 'Không thể kết nối đến máy chủ khi xóa');
     } finally {
       setDeletingId(null);
@@ -375,10 +430,10 @@ export const AdminCatalogPage: React.FC = () => {
   };
 
   const handleSelectAll = () => {
-    if (selectedProductIds.length === products.length && products.length > 0) {
+    if (displayedProducts.length > 0 && selectedProductIds.length === displayedProducts.length) {
       setSelectedProductIds([]);
     } else {
-      setSelectedProductIds(products.map((p) => p.id));
+      setSelectedProductIds(displayedProducts.map((p) => p.id));
     }
   };
 
@@ -391,43 +446,31 @@ export const AdminCatalogPage: React.FC = () => {
   const handleBulkDelete = async () => {
     if (selectedProductIds.length === 0 || isBulkDeleting) return;
     const idsToDelete = [...selectedProductIds];
-    const prevProducts = [...products];
-
-    // Optimistic UI: Gỡ tất cả sản phẩm được chọn khỏi bảng ngay lập tức
-    setProducts((prev) => prev.filter((p) => !idsToDelete.includes(p.id)));
-    setSelectedProductIds([]);
     setIsBulkDeleting(true);
 
     try {
-      const headers = getAdminAuthHeader();
-      const results = await Promise.allSettled(
-        idsToDelete.map((id) =>
-          fetch(`/api/products/${id}`, {
-            method: 'DELETE',
-            headers,
-          }).then((res) => {
-            if (!res.ok) throw new Error(`Lỗi xóa sản phẩm ${id}`);
-            return id;
-          })
-        )
-      );
+      const headers = {
+        'Content-Type': 'application/json',
+        ...getAdminAuthHeader(),
+      };
+      const res = await fetch('/api/products/batch-delete', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ ids: idsToDelete }),
+      });
+      const data = await res.json().catch(() => ({}));
 
-      const fulfilled = results.filter((r) => r.status === 'fulfilled').length;
-      const rejected = results.filter((r) => r.status === 'rejected').length;
-
-      if (rejected === 0) {
-        showSuccess('Xóa hàng loạt thành công', `Đã xóa ${fulfilled} sản phẩm`);
+      if (res.ok) {
+        showSuccess('Xóa hàng loạt thành công', data.message || `Đã xóa vĩnh viễn ${idsToDelete.length} sản phẩm.`);
+        setProducts((prev) => prev.filter((p) => !idsToDelete.includes(p.id)));
+        setSelectedProductIds([]);
       } else {
-        showError(
-          'Một số sản phẩm chưa xóa được',
-          `Đã xóa thành công ${fulfilled}/${idsToDelete.length} sản phẩm`
-        );
-        await refreshProducts();
+        showError('Không thể xóa hàng loạt', data.message || 'Lỗi khi xóa các sản phẩm đã chọn');
       }
+      await refreshProducts();
     } catch (err) {
-      setProducts(prevProducts);
-      setSelectedProductIds(idsToDelete);
       showError('Lỗi mạng', 'Không thể hoàn tất xóa hàng loạt');
+      await refreshProducts();
     } finally {
       setIsBulkDeleting(false);
     }
@@ -447,6 +490,24 @@ export const AdminCatalogPage: React.FC = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setShowCategoryManagerModal(true)}
+              className="px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl border border-gray-200 shadow-2xs hover:border-slate-300 transition flex items-center gap-2"
+              title="Quản lý và thêm/xóa danh mục sản phẩm toàn hệ thống"
+            >
+              <FolderTree className="w-4 h-4 text-sky-600" />
+              <span>Quản lý danh mục ({categories.length})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowColorManagerModal(true)}
+              className="px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl border border-gray-200 shadow-2xs hover:border-slate-300 transition flex items-center gap-2"
+              title="Quản lý danh mục màu sắc sản phẩm toàn hệ thống"
+            >
+              <Palette className="w-4 h-4 text-sky-600" />
+              <span>Bảng màu sắc ({colors.length})</span>
+            </button>
             <button
               onClick={() => setShowProductModal(true)}
               className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-md hover:shadow-lg transition flex items-center gap-2"
@@ -483,11 +544,43 @@ export const AdminCatalogPage: React.FC = () => {
         {/* Existing Products List */}
         <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <h3 className="font-bold text-slate-900">Danh sách sản phẩm hiện có</h3>
-              <span className="text-xs bg-gray-100 text-gray-600 font-semibold px-2 py-0.5 rounded-full">
-                {products.length} sản phẩm
-              </span>
+            <div className="flex flex-wrap items-center gap-3">
+              <h3 className="font-bold text-slate-900">Danh sách sản phẩm</h3>
+              <div className="inline-flex bg-slate-100 p-1 rounded-xl gap-1 text-xs font-semibold">
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter('ALL')}
+                  className={`px-3 py-1 rounded-lg transition-colors ${
+                    statusFilter === 'ALL'
+                      ? 'bg-white text-slate-900 shadow-xs font-bold'
+                      : 'text-slate-500 hover:text-slate-900'
+                  }`}
+                >
+                  Tất cả ({products.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter('ACTIVE')}
+                  className={`px-3 py-1 rounded-lg transition-colors ${
+                    statusFilter === 'ACTIVE'
+                      ? 'bg-white text-emerald-700 shadow-xs font-bold'
+                      : 'text-slate-500 hover:text-slate-900'
+                  }`}
+                >
+                  Đang bán ({products.filter((p) => p.is_active).length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter('INACTIVE')}
+                  className={`px-3 py-1 rounded-lg transition-colors ${
+                    statusFilter === 'INACTIVE'
+                      ? 'bg-white text-rose-700 shadow-xs font-bold'
+                      : 'text-slate-500 hover:text-slate-900'
+                  }`}
+                >
+                  Đã vô hiệu hóa ({products.filter((p) => !p.is_active).length})
+                </button>
+              </div>
               {loadingProducts && <Loader2 className="w-4 h-4 animate-spin text-sky-600" />}
             </div>
 
@@ -527,7 +620,7 @@ export const AdminCatalogPage: React.FC = () => {
                   <th className="p-3 w-10 text-center">
                     <input
                       type="checkbox"
-                      checked={products.length > 0 && selectedProductIds.length === products.length}
+                      checked={displayedProducts.length > 0 && selectedProductIds.length === displayedProducts.length}
                       onChange={handleSelectAll}
                       className="w-4 h-4 rounded text-sky-600 focus:ring-sky-500 cursor-pointer"
                       title="Chọn tất cả"
@@ -543,7 +636,7 @@ export const AdminCatalogPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {products.length === 0 ? (
+                {displayedProducts.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="p-8 text-center text-gray-400">
                       {loadingProducts ? (
@@ -552,12 +645,12 @@ export const AdminCatalogPage: React.FC = () => {
                           <span>Đang tải danh sách sản phẩm...</span>
                         </div>
                       ) : (
-                        'Chưa có sản phẩm nào trong hệ thống.'
+                        'Không có sản phẩm nào phù hợp với bộ lọc hiện tại.'
                       )}
                     </td>
                   </tr>
                 ) : (
-                  products.map((p) => (
+                  displayedProducts.map((p) => (
                     <tr
                       key={p.id}
                       className={`hover:bg-gray-50 transition-colors ${
@@ -622,7 +715,7 @@ export const AdminCatalogPage: React.FC = () => {
       {/* MODALS */}
       {showProductModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-3xl w-full max-w-3xl shadow-2xl relative animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh] overflow-hidden border border-gray-100">
+          <div className="bg-white rounded-3xl w-full max-w-4xl shadow-2xl relative animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh] overflow-hidden border border-gray-100">
             {/* STICKY HEADER */}
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-white shrink-0">
               <h3 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
@@ -719,70 +812,94 @@ export const AdminCatalogPage: React.FC = () => {
 
                     {/* Image grid with drag-to-reorder and color assignment */}
                     {productForm.images.length > 0 && (
-                      <div className="mt-3 space-y-1">
-                        <p className="text-[10px] text-gray-400 font-medium uppercase">Kéo thả để sắp xếp — Gán màu cho từng ảnh (tùy chọn)</p>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                          {productForm.images.map((imgItem, idx) => (
-                            <div
-                              key={idx}
-                              draggable
-                              onDragStart={() => handleDragStart(idx)}
-                              onDragOver={e => handleDragOver(e, idx)}
-                              onDragEnd={handleDragEnd}
-                              className={`relative group rounded-xl overflow-hidden border-2 cursor-grab active:cursor-grabbing transition-all bg-white flex flex-col ${
-                                dragIndex === idx
-                                  ? 'border-sky-400 shadow-lg scale-105 opacity-70'
-                                  : idx === 0
-                                  ? 'border-amber-400'
-                                  : 'border-gray-200 hover:border-gray-300'
-                              }`}
-                            >
-                              <div className="aspect-square bg-gray-100 relative">
-                                <img
-                                  src={imgItem.url}
-                                  alt={`Ảnh ${idx + 1}`}
-                                  className="w-full h-full object-cover"
-                                  onError={e => (e.currentTarget.src = 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><text y=%2218%22 font-size=%2216%22>🖼️</text></svg>')}
-                                />
-                                {/* Thumbnail badge */}
-                                {idx === 0 && (
-                                  <div className="absolute top-0.5 left-0.5 bg-amber-400 rounded-md px-1 py-0.5 flex items-center gap-0.5 shadow-xs">
-                                    <Star className="w-2 h-2 text-white fill-white" />
-                                    <span className="text-[8px] text-white font-bold">ĐD</span>
+                      <div className="mt-3 space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                            Kéo thả để sắp xếp — Gán màu cho từng ảnh
+                          </p>
+                          <span className="text-[10px] text-gray-400 font-medium">
+                            {productForm.images.length} ảnh
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 items-start">
+                          {productForm.images.map((imgItem, idx) => {
+                            const selectedColor = colors.find((c) => c.id === imgItem.color_id);
+                            return (
+                              <div
+                                key={idx}
+                                draggable
+                                onDragStart={() => handleDragStart(idx)}
+                                onDragOver={(e) => handleDragOver(e, idx)}
+                                onDragEnd={handleDragEnd}
+                                className={`relative group rounded-xl overflow-hidden border-2 cursor-grab active:cursor-grabbing transition-all bg-white flex flex-col h-fit shadow-2xs ${
+                                  dragIndex === idx
+                                    ? 'border-sky-400 shadow-md scale-105 opacity-70 z-10'
+                                    : idx === 0
+                                    ? 'border-amber-400 ring-1 ring-amber-400/30'
+                                    : 'border-gray-200 hover:border-gray-300'
+                                }`}
+                              >
+                                <div className="relative aspect-square w-full bg-gray-50 overflow-hidden shrink-0">
+                                  <img
+                                    src={imgItem.url}
+                                    alt={`Ảnh ${idx + 1}`}
+                                    className="absolute inset-0 w-full h-full object-cover"
+                                    onError={(e) =>
+                                      (e.currentTarget.src =
+                                        'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><text y=%2218%22 font-size=%2216%22>🖼️</text></svg>')
+                                    }
+                                  />
+                                  {/* Thumbnail badge */}
+                                  {idx === 0 && (
+                                    <div className="absolute top-1.5 left-1.5 bg-amber-500 text-white rounded-md px-1.5 py-0.5 flex items-center gap-1 shadow-xs z-10 pointer-events-none">
+                                      <Star className="w-2.5 h-2.5 fill-white text-white" />
+                                      <span className="text-[8px] font-bold">ĐD</span>
+                                    </div>
+                                  )}
+                                  {/* Drag handle */}
+                                  <div className="absolute bottom-1.5 left-1.5 opacity-0 group-hover:opacity-100 transition p-1 bg-black/40 rounded text-white pointer-events-none">
+                                    <GripVertical className="w-3 h-3 text-white drop-shadow-xs" />
                                   </div>
-                                )}
-                                {/* Drag handle */}
-                                <div className="absolute top-0.5 right-0.5 opacity-0 group-hover:opacity-100 transition">
-                                  <GripVertical className="w-3 h-3 text-white drop-shadow" />
+                                  {/* Remove button at top-right */}
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleRemoveImage(idx);
+                                    }}
+                                    className="absolute top-1.5 right-1.5 w-6 h-6 bg-rose-500 hover:bg-rose-600 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center shadow-sm z-10 cursor-pointer"
+                                    title="Xóa ảnh này"
+                                  >
+                                    <X className="w-3.5 h-3.5" />
+                                  </button>
                                 </div>
-                                {/* Remove button */}
-                                <button
-                                  type="button"
-                                  onClick={() => handleRemoveImage(idx)}
-                                  className="absolute bottom-0.5 right-0.5 w-5 h-5 bg-rose-500 hover:bg-rose-600 text-white rounded-md opacity-0 group-hover:opacity-100 transition flex items-center justify-center shadow"
-                                >
-                                  <X className="w-3 h-3" />
-                                </button>
-                              </div>
 
-                              {/* Color dropdown */}
-                              <div className="p-1 bg-gray-50 border-t border-gray-100">
-                                <select
-                                  value={imgItem.color_id || ''}
-                                  onChange={e => handleImageColorChange(idx, e.target.value)}
-                                  className="w-full text-[10px] py-1 px-1 rounded border border-gray-200 bg-white text-gray-700 outline-none focus:ring-1 focus:ring-sky-500 cursor-pointer"
-                                  title="Chọn màu tương ứng cho ảnh"
-                                >
-                                  <option value="">Ảnh dùng chung</option>
-                                  {colors.map(c => (
-                                    <option key={c.id} value={c.id}>
-                                      Màu: {c.name}
-                                    </option>
-                                  ))}
-                                </select>
+                                {/* Color dropdown footer */}
+                                <div className="p-1.5 bg-slate-50/90 border-t border-gray-100 flex items-center gap-1.5">
+                                  <span
+                                    className="w-2.5 h-2.5 rounded-full border border-gray-300 shrink-0 shadow-2xs"
+                                    style={{
+                                      backgroundColor: selectedColor?.hex_code || '#cbd5e1',
+                                    }}
+                                    title={selectedColor ? selectedColor.name : 'Dùng chung'}
+                                  />
+                                  <select
+                                    value={imgItem.color_id || ''}
+                                    onChange={(e) => handleImageColorChange(idx, e.target.value)}
+                                    className="w-full text-[11px] font-medium py-1 px-1 rounded-md border border-gray-200 bg-white text-slate-700 outline-none focus:ring-1 focus:ring-sky-500 cursor-pointer truncate"
+                                    title={selectedColor ? `Màu: ${selectedColor.name}` : 'Ảnh dùng chung cho các màu'}
+                                  >
+                                    <option value="">Dùng chung</option>
+                                    {colors.map((c) => (
+                                      <option key={c.id} value={c.id}>
+                                        {c.name}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
                               </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </div>
                     )}
@@ -807,7 +924,27 @@ export const AdminCatalogPage: React.FC = () => {
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Danh mục (*)</label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-xs font-bold text-gray-500 uppercase block">Danh mục (*)</label>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => setShowQuickAddCategoryModal(true)}
+                            className="text-[11px] font-bold text-sky-600 hover:text-sky-700 hover:bg-sky-50 px-2 py-0.5 rounded-md transition flex items-center gap-1"
+                            title="Thêm nhanh danh mục mới"
+                          >
+                            <Plus className="w-3 h-3" /> Thêm
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setShowCategoryManagerModal(true)}
+                            className="text-[11px] font-bold text-slate-600 hover:text-slate-800 hover:bg-gray-100 px-2 py-0.5 rounded-md transition flex items-center gap-1"
+                            title="Quản lý / Xóa danh mục"
+                          >
+                            <FolderTree className="w-3 h-3 text-sky-600" /> Quản lý
+                          </button>
+                        </div>
+                      </div>
                       <select
                         value={productForm.category_id}
                         onChange={(e) => setProductForm({ ...productForm, category_id: e.target.value })}
@@ -866,25 +1003,77 @@ export const AdminCatalogPage: React.FC = () => {
                     </div>
 
                     <div>
-                      <label className="text-[10px] font-bold text-gray-500 uppercase block mb-1.5">Chọn Màu sắc</label>
-                      <div className="flex flex-wrap gap-1.5">
-                        {colors.map((c) => (
-                          <button
-                            key={c.id}
-                            type="button"
-                            onClick={() => {
-                              setProductForm(prev => ({
-                                ...prev,
-                                color_ids: prev.color_ids.includes(c.id) ? prev.color_ids.filter(id => id !== c.id) : [...prev.color_ids, c.id]
-                              }));
-                            }}
-                            className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition-colors ${
-                              productForm.color_ids.includes(c.id) ? 'bg-sky-600 text-white border-sky-600' : 'bg-white text-slate-600 border-gray-200 hover:border-sky-400'
-                            }`}
-                          >
-                            {c.name}
-                          </button>
-                        ))}
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                          Chọn Màu sắc
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setShowColorManagerModal(true)}
+                          className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 hover:text-sky-600 transition-colors"
+                          title="Mở bảng quản lý để xem, sửa hoặc xóa màu"
+                        >
+                          <Palette className="w-3 h-3 text-sky-500" />
+                          <span>Quản lý bảng màu</span>
+                        </button>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {colors.map((c) => {
+                          const isSelected = productForm.color_ids.includes(c.id);
+                          return (
+                            <div key={c.id} className="group relative inline-flex items-center">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setProductForm((prev) => ({
+                                    ...prev,
+                                    color_ids: prev.color_ids.includes(c.id)
+                                      ? prev.color_ids.filter((id) => id !== c.id)
+                                      : [...prev.color_ids, c.id],
+                                  }));
+                                }}
+                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all ${
+                                  isSelected
+                                    ? 'bg-sky-600 text-white border-sky-600 shadow-2xs'
+                                    : 'bg-white text-slate-700 border-gray-200 hover:border-slate-300'
+                                }`}
+                              >
+                                <span
+                                  className={`w-2 h-2 rounded-full shrink-0 border ${
+                                    isSelected ? 'border-white/60' : 'border-slate-300'
+                                  }`}
+                                  style={{ backgroundColor: c.hex_code || '#94A3B8' }}
+                                />
+                                <span>{c.name}</span>
+                              </button>
+
+                              {/* Quick delete button on hover */}
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteColorQuick(c);
+                                }}
+                                className="opacity-0 group-hover:opacity-100 hover:scale-110 -ml-2 mr-0.5 p-0.5 rounded-full bg-white text-rose-500 hover:text-rose-700 border border-gray-200 shadow-2xs transition-all z-10"
+                                title={`Xóa màu "${c.name}" (${c.code}) khỏi hệ thống`}
+                              >
+                                <X className="w-2.5 h-2.5" />
+                              </button>
+                            </div>
+                          );
+                        })}
+
+                        {/* Thêm màu mới pill */}
+                        <button
+                          type="button"
+                          onClick={() => setShowQuickAddColorModal(true)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-sky-600 bg-sky-50/70 hover:bg-sky-100/80 border border-dashed border-sky-300 transition-colors"
+                          title="Thêm màu sắc mới vào hệ thống"
+                        >
+                          <Plus className="w-3 h-3" />
+                          <span>Thêm màu</span>
+                        </button>
                       </div>
                     </div>
 
@@ -972,6 +1161,77 @@ export const AdminCatalogPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Quick Add Color Modal */}
+      <QuickAddColorModal
+        isOpen={showQuickAddColorModal}
+        onClose={() => setShowQuickAddColorModal(false)}
+        onSuccess={(newColor) => {
+          setColors((prev) => {
+            if (prev.some((c) => c.id === newColor.id)) return prev;
+            return [...prev, newColor].sort((a, b) => a.name.localeCompare(b.name));
+          });
+          setProductForm((prev) => ({
+            ...prev,
+            color_ids: prev.color_ids.includes(newColor.id)
+              ? prev.color_ids
+              : [...prev.color_ids, newColor.id],
+          }));
+        }}
+      />
+
+      {/* Admin Color Manager Modal */}
+      <AdminColorManagerModal
+        isOpen={showColorManagerModal}
+        onClose={() => setShowColorManagerModal(false)}
+        colors={colors}
+        onColorsChange={(updatedColors) => {
+          setColors(updatedColors);
+          const validIds = new Set(updatedColors.map((c) => c.id));
+          setProductForm((prev) => ({
+            ...prev,
+            color_ids: prev.color_ids.filter((id) => validIds.has(id)),
+          }));
+        }}
+      />
+
+      {/* Confirm Delete Color Modal */}
+      <ConfirmDeleteColorModal
+        isOpen={Boolean(colorToDelete)}
+        color={colorToDelete}
+        isLoading={isDeletingColor}
+        onClose={() => {
+          if (!isDeletingColor) setColorToDelete(null);
+        }}
+        onConfirm={handleConfirmDeleteColor}
+      />
+
+      {/* Quick Add Category Modal */}
+      <QuickAddCategoryModal
+        isOpen={showQuickAddCategoryModal}
+        onClose={() => setShowQuickAddCategoryModal(false)}
+        onSuccess={(newCat) => {
+          setCategories((prev) => {
+            if (prev.some((c) => c.id === newCat.id)) return prev;
+            return [...prev, newCat].sort((a, b) => a.name.localeCompare(b.name));
+          });
+          setProductForm((prev) => ({ ...prev, category_id: newCat.id }));
+        }}
+        parentCategories={categories}
+      />
+
+      {/* Admin Category Manager Modal */}
+      <AdminCategoryManagerModal
+        isOpen={showCategoryManagerModal}
+        onClose={() => setShowCategoryManagerModal(false)}
+        categories={categories}
+        onCategoriesChange={(updatedCategories) => {
+          setCategories(updatedCategories);
+          if (!updatedCategories.some((c) => c.id === productForm.category_id)) {
+            setProductForm((prev) => ({ ...prev, category_id: '' }));
+          }
+        }}
+      />
     </div>
   );
 };

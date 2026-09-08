@@ -2,9 +2,11 @@ export interface Category {
   id: string;
   name: string;
   slug: string;
+  description?: string;
   parent_id?: string;
   children?: Category[];
   is_active: boolean;
+  products_count?: number;
 }
 
 export interface Brand {

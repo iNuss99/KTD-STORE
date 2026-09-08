@@ -7,7 +7,7 @@ interface ProductItem {
   id: string;
   name: string;
   base_price: number;
-  images?: { url: string }[];
+  images?: { url: string; sort_order?: number }[];
 }
 
 interface Message {
@@ -170,7 +170,11 @@ export const AIChatWidget: React.FC = () => {
                       >
                         <div className="w-full h-20 bg-slate-100 rounded-lg overflow-hidden mb-1.5">
                           <img
-                            src={p.images?.[0]?.url || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&q=80'}
+                            src={
+                              (p.images && p.images.length > 0
+                                ? [...p.images].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))[0]?.url
+                                : null) || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&q=80'
+                            }
                             alt={p.name}
                             className="w-full h-full object-cover group-hover:scale-105 transition"
                           />

@@ -45,4 +45,8 @@ export class FilterProductDto {
   @IsNumber()
   @Min(1)
   limit?: number = 12;
+
+  @IsOptional()
+  @IsString()
+  all?: string;
 }

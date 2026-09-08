@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft,
   Save,
@@ -16,14 +17,23 @@ import {
   CheckCircle2,
   AlertCircle,
   ExternalLink,
+  FolderTree,
 } from 'lucide-react';
 import { Product, Category, Size, Color, Brand, ProductVariant } from '../../types';
 import { getAdminAuthHeader } from '../../lib/auth-storage';
 import { useToast } from '../../context/ToastContext';
+import {
+  QuickAddColorModal,
+  AdminColorManagerModal,
+  ConfirmDeleteVariantModal,
+  QuickAddCategoryModal,
+  AdminCategoryManagerModal,
+} from '../../components';
 
 export const AdminProductEditPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { showSuccess, showError } = useToast();
 
   const [loading, setLoading] = useState(true);
@@ -32,6 +42,10 @@ export const AdminProductEditPage: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [sizes, setSizes] = useState<Size[]>([]);
   const [colors, setColors] = useState<Color[]>([]);
+  const [showQuickAddColor, setShowQuickAddColor] = useState(false);
+  const [showColorManager, setShowColorManager] = useState(false);
+  const [showQuickAddCategory, setShowQuickAddCategory] = useState(false);
+  const [showCategoryManager, setShowCategoryManager] = useState(false);
 
   // Product form state
   const [formData, setFormData] = useState<{
@@ -75,6 +89,10 @@ export const AdminProductEditPage: React.FC = () => {
     color_id: '',
     stock_quantity: 50,
   });
+
+  // Delete variant state
+  const [variantToDelete, setVariantToDelete] = useState<ProductVariant | null>(null);
+  const [isDeletingVariant, setIsDeletingVariant] = useState(false);
 
   // Image input & drag state
   const [urlInput, setUrlInput] = useState('');
@@ -230,6 +248,37 @@ export const AdminProductEditPage: React.FC = () => {
     );
   };
 
+  const handleDeleteVariant = (v: ProductVariant) => {
+    setVariantToDelete(v);
+  };
+
+  const handleConfirmDeleteVariant = async () => {
+    if (!variantToDelete || !id) return;
+    setIsDeletingVariant(true);
+    try {
+      const headers = getAdminAuthHeader();
+      const res = await fetch(`/api/products/${id}/variants/${variantToDelete.id}`, {
+        method: 'DELETE',
+        headers,
+      });
+
+      if (res.ok) {
+        setVariants((prev) => prev.filter((v) => v.id !== variantToDelete.id));
+        queryClient.invalidateQueries({ queryKey: ['products'] });
+        queryClient.invalidateQueries({ queryKey: ['product', id] });
+        showSuccess('Thành công', `Đã xóa biến thể ${variantToDelete.sku}!`);
+        setVariantToDelete(null);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        showError('Không thể xóa biến thể', err.message || 'Lỗi khi xóa biến thể');
+      }
+    } catch (err: any) {
+      showError('Lỗi mạng', err.message || 'Không thể kết nối đến máy chủ');
+    } finally {
+      setIsDeletingVariant(false);
+    }
+  };
+
   const handleAddNewVariant = async () => {
     if (!newVariant.size_id || !newVariant.color_id) {
       showError('Thiếu thông tin', 'Vui lòng chọn cả Size và Màu để thêm biến thể');
@@ -258,6 +307,12 @@ export const AdminProductEditPage: React.FC = () => {
 
       if (res.ok) {
         showSuccess('Thành công', 'Đã thêm biến thể mới!');
+        // Reset form thêm biến thể mới
+        setNewVariant({ size_id: '', color_id: '', stock_quantity: 50, price_override: undefined });
+        // Làm mới cache React Query
+        queryClient.invalidateQueries({ queryKey: ['products'] });
+        queryClient.invalidateQueries({ queryKey: ['product', id] });
+
         // Reload product details to get full relations for new variant
         const reloadRes = await fetch(`/api/products/${id}`, { headers });
         if (reloadRes.ok) {
@@ -280,6 +335,34 @@ export const AdminProductEditPage: React.FC = () => {
     setSaving(true);
     try {
       const headers = getAdminAuthHeader();
+
+      // Tự động kiểm tra nếu có biến thể đang chọn dở ở ô "THÊM BIẾN THỂ MỚI" thì tự gộp vào để lưu luôn
+      const hasPendingNewVariant =
+        Boolean(newVariant.size_id && newVariant.color_id) &&
+        !variants.some(
+          (v) => v.size_id === newVariant.size_id && v.color_id === newVariant.color_id
+        );
+
+      const allVariantsPayload = [
+        ...variants.map((v) => ({
+          id: v.id,
+          stock_quantity: Number(v.stock_quantity),
+          price_override: v.price_override ? Number(v.price_override) : undefined,
+          is_active: v.is_active,
+        })),
+        ...(hasPendingNewVariant
+          ? [
+              {
+                size_id: newVariant.size_id,
+                color_id: newVariant.color_id,
+                stock_quantity: Number(newVariant.stock_quantity) || 50,
+                price_override: newVariant.price_override ? Number(newVariant.price_override) : undefined,
+                is_active: true,
+              },
+            ]
+          : []),
+      ];
+
       const payload = {
         name: formData.name,
         code: formData.code,
@@ -294,12 +377,7 @@ export const AdminProductEditPage: React.FC = () => {
           sort_order: idx,
           alt_text: img.alt_text,
         })),
-        variants: variants.map((v) => ({
-          id: v.id,
-          stock_quantity: Number(v.stock_quantity),
-          price_override: v.price_override ? Number(v.price_override) : undefined,
-          is_active: v.is_active,
-        })),
+        variants: allVariantsPayload,
       };
 
       const res = await fetch(`/api/products/${id}`, {
@@ -310,7 +388,13 @@ export const AdminProductEditPage: React.FC = () => {
 
       if (res.ok) {
         const updated = await res.json();
-        showSuccess('Cập nhật thành công', `Đã lưu thông tin cho sản phẩm "${formData.name}"`);
+        // Invalidate React Query cache trên toàn ứng dụng
+        queryClient.invalidateQueries({ queryKey: ['products'] });
+        queryClient.invalidateQueries({ queryKey: ['product', id] });
+        if (formData.slug) {
+          queryClient.invalidateQueries({ queryKey: ['product', formData.slug] });
+        }
+
         if (updated.images) {
           setImages(
             updated.images.map((img: any, idx: number) => ({
@@ -325,6 +409,15 @@ export const AdminProductEditPage: React.FC = () => {
         if (updated.variants) {
           setVariants(updated.variants);
         }
+        // Reset form biến thể mới
+        setNewVariant({ size_id: '', color_id: '', stock_quantity: 50, price_override: undefined });
+
+        showSuccess('Cập nhật thành công', `Đã lưu sản phẩm "${formData.name}"! Đang chuyển về danh mục...`);
+
+        // Tự động chuyển về trang danh mục sản phẩm theo yêu cầu người dùng
+        setTimeout(() => {
+          navigate('/admin/catalog');
+        }, 800);
       } else {
         const err = await res.json();
         showError('Lỗi lưu sản phẩm', err.message || 'Không thể cập nhật sản phẩm');
@@ -414,7 +507,28 @@ export const AdminProductEditPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Danh mục (*)</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-bold text-gray-500 uppercase">Danh mục (*)</label>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setShowCategoryManager(true)}
+                    className="text-xs font-medium text-slate-500 hover:text-sky-600 inline-flex items-center gap-1 transition-colors cursor-pointer"
+                    title="Quản lý danh sách danh mục (xem, sửa, xóa)"
+                  >
+                    <FolderTree className="w-3.5 h-3.5 text-sky-500" /> Quản lý danh mục
+                  </button>
+                  <span className="text-gray-300">|</span>
+                  <button
+                    type="button"
+                    onClick={() => setShowQuickAddCategory(true)}
+                    className="text-xs font-medium text-sky-600 hover:text-sky-700 inline-flex items-center gap-1 transition-colors cursor-pointer"
+                    title="Thêm nhanh danh mục mới"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Thêm
+                  </button>
+                </div>
+              </div>
               <select
                 value={formData.category_id}
                 onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
@@ -500,7 +614,25 @@ export const AdminProductEditPage: React.FC = () => {
             <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
               <Palette className="w-4 h-4 text-sky-600" /> Quản lý hình ảnh & Gán màu sắc
             </h2>
-            <span className="text-xs text-gray-400 font-mono">{images.length} hình ảnh</span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowColorManager(true)}
+                className="text-xs font-medium text-slate-500 hover:text-sky-600 inline-flex items-center gap-1 transition-colors"
+                title="Mở bảng quản lý để xem, sửa hoặc xóa màu"
+              >
+                <Palette className="w-3.5 h-3.5 text-sky-500" /> Quản lý bảng màu
+              </button>
+              <span className="text-gray-300">|</span>
+              <button
+                type="button"
+                onClick={() => setShowQuickAddColor(true)}
+                className="text-xs font-medium text-sky-600 hover:text-sky-700 inline-flex items-center gap-1 transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" /> Thêm màu
+              </button>
+              <span className="text-xs text-gray-400 font-mono ml-1">{images.length} hình ảnh</span>
+            </div>
           </div>
 
           <p className="text-xs text-gray-500">
@@ -574,7 +706,7 @@ export const AdminProductEditPage: React.FC = () => {
               <p className="text-[10px] text-gray-400 font-medium uppercase">
                 Kéo thả để sắp xếp — Ảnh đầu tiên (ĐD) làm ảnh đại diện sản phẩm
               </p>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 items-start">
                 {images.map((img, idx) => (
                   <div
                     key={idx}
@@ -582,7 +714,7 @@ export const AdminProductEditPage: React.FC = () => {
                     onDragStart={() => handleDragStart(idx)}
                     onDragOver={(e) => handleDragOver(e, idx)}
                     onDragEnd={handleDragEnd}
-                    className={`relative group rounded-xl overflow-hidden border-2 cursor-grab active:cursor-grabbing transition-all bg-white flex flex-col ${
+                    className={`relative group rounded-xl overflow-hidden border-2 cursor-grab active:cursor-grabbing transition-all bg-white flex flex-col h-fit ${
                       dragIndex === idx
                         ? 'border-sky-400 shadow-lg scale-105 opacity-70'
                         : idx === 0
@@ -590,51 +722,50 @@ export const AdminProductEditPage: React.FC = () => {
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
-                    <div className="aspect-square bg-gray-100 relative">
+                    <div className="relative aspect-square w-full bg-gray-100 overflow-hidden shrink-0">
                       <img
                         src={img.url}
                         alt={`Ảnh ${idx + 1}`}
-                        className="w-full h-full object-cover"
+                        className="absolute inset-0 w-full h-full object-cover"
                         onError={(e) => {
                           (e.currentTarget as HTMLImageElement).src =
                             'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><text y=%2218%22 font-size=%2216%22>🖼️</text></svg>';
                         }}
                       />
                       {idx === 0 && (
-                        <div className="absolute top-1 left-1 bg-amber-400 rounded-md px-1.5 py-0.5 flex items-center gap-1 shadow-xs">
+                        <div className="absolute top-1 left-1 bg-amber-400 rounded-md px-1.5 py-0.5 flex items-center gap-1 shadow-xs z-10 pointer-events-none">
                           <Star className="w-2.5 h-2.5 text-white fill-white" />
                           <span className="text-[9px] text-white font-bold">Đại diện</span>
                         </div>
                       )}
-                      <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition">
+                      <div className="absolute bottom-1 left-1 opacity-0 group-hover:opacity-100 transition p-1 bg-black/40 rounded text-white pointer-events-none z-10">
                         <GripVertical className="w-3.5 h-3.5 text-white drop-shadow" />
                       </div>
                       <button
                         type="button"
                         onClick={() => handleRemoveImage(idx)}
-                        className="absolute bottom-1 right-1 w-6 h-6 bg-rose-500 hover:bg-rose-600 text-white rounded-md opacity-0 group-hover:opacity-100 transition flex items-center justify-center shadow"
+                        className="absolute top-1 right-1 w-6 h-6 bg-rose-500 hover:bg-rose-600 text-white rounded-md opacity-0 group-hover:opacity-100 transition flex items-center justify-center shadow-xs z-10 cursor-pointer"
+                        title="Xóa ảnh này"
                       >
                         <X className="w-3.5 h-3.5" />
                       </button>
                     </div>
 
                     {/* Color selection dropdown for this image */}
-                    <div className="p-2 bg-gray-50 border-t border-gray-100 space-y-1">
-                      <label className="text-[10px] font-bold text-gray-500 uppercase block">Gán màu sắc:</label>
-                      <div className="flex items-center gap-1">
-                        {img.color_id && (
-                          <div
-                            className="w-3 h-3 rounded-full border border-gray-300 shrink-0"
-                            style={{
-                              backgroundColor:
-                                colors.find((c) => c.id === img.color_id)?.hex_code || '#cbd5e1',
-                            }}
-                          />
-                        )}
+                    <div className="p-2 bg-gray-50 border-t border-gray-100 space-y-1 w-full shrink-0">
+                      <label className="text-[10px] font-bold text-gray-500 uppercase block tracking-wide">Gán màu sắc:</label>
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className="w-3 h-3 rounded-full border border-gray-300 shrink-0 shadow-2xs"
+                          style={{
+                            backgroundColor:
+                              colors.find((c) => c.id === img.color_id)?.hex_code || '#cbd5e1',
+                          }}
+                        />
                         <select
                           value={img.color_id || ''}
                           onChange={(e) => handleImageColorChange(idx, e.target.value)}
-                          className="w-full text-xs py-1 px-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 outline-none focus:ring-1 focus:ring-sky-500 cursor-pointer"
+                          className="w-full text-xs py-1 px-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 outline-none focus:ring-1 focus:ring-sky-500 cursor-pointer truncate"
                         >
                           <option value="">Ảnh dùng chung</option>
                           {colors.map((c) => (
@@ -677,6 +808,7 @@ export const AdminProductEditPage: React.FC = () => {
                     <th className="p-3 w-32">Kho (SL)</th>
                     <th className="p-3 w-40">Giá riêng (VNĐ)</th>
                     <th className="p-3 text-center w-24">Trạng thái</th>
+                    <th className="p-3 text-center w-16">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 font-medium text-slate-700">
@@ -733,6 +865,16 @@ export const AdminProductEditPage: React.FC = () => {
                           {v.is_active ? 'Bán' : 'Tắt'}
                         </button>
                       </td>
+                      <td className="p-3 text-center">
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteVariant(v)}
+                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition inline-flex items-center justify-center cursor-pointer"
+                          title={`Xóa biến thể ${v.sku}`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -765,7 +907,27 @@ export const AdminProductEditPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="text-[10px] font-bold text-gray-500 uppercase block mb-1">Chọn Màu</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase">Chọn Màu</label>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setShowColorManager(true)}
+                      className="text-[10px] font-medium text-slate-500 hover:text-sky-600 inline-flex items-center gap-0.5"
+                      title="Mở bảng quản lý để xem, sửa hoặc xóa màu"
+                    >
+                      <Palette className="w-2.5 h-2.5 text-sky-500" /> Bảng màu
+                    </button>
+                    <span className="text-gray-300 text-[10px]">|</span>
+                    <button
+                      type="button"
+                      onClick={() => setShowQuickAddColor(true)}
+                      className="text-[10px] font-medium text-sky-600 hover:text-sky-700 inline-flex items-center gap-0.5"
+                    >
+                      <Plus className="w-2.5 h-2.5" /> Thêm
+                    </button>
+                  </div>
+                </div>
                 <select
                   value={newVariant.color_id}
                   onChange={(e) => setNewVariant({ ...newVariant, color_id: e.target.value })}
@@ -774,7 +936,7 @@ export const AdminProductEditPage: React.FC = () => {
                   <option value="">-- Chọn Màu --</option>
                   {colors.map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.name}
+                      {c.name} ({c.code})
                     </option>
                   ))}
                 </select>
@@ -812,7 +974,7 @@ export const AdminProductEditPage: React.FC = () => {
             to="/admin/catalog"
             className="px-4 py-2 border border-gray-200 hover:bg-gray-50 text-slate-700 text-xs font-bold rounded-xl transition"
           >
-            Hủy & Quay lại
+            Quay lại danh mục
           </Link>
           <button
             type="submit"
@@ -824,6 +986,62 @@ export const AdminProductEditPage: React.FC = () => {
           </button>
         </div>
       </form>
+
+      {/* Quick Add Color Modal */}
+      <QuickAddColorModal
+        isOpen={showQuickAddColor}
+        onClose={() => setShowQuickAddColor(false)}
+        onSuccess={(newColor) => {
+          setColors((prev) => {
+            if (prev.some((c) => c.id === newColor.id)) return prev;
+            return [...prev, newColor].sort((a, b) => a.name.localeCompare(b.name));
+          });
+          setNewVariant((prev) => ({ ...prev, color_id: newColor.id }));
+        }}
+      />
+
+      {/* Admin Color Manager Modal */}
+      <AdminColorManagerModal
+        isOpen={showColorManager}
+        onClose={() => setShowColorManager(false)}
+        colors={colors}
+        onColorsChange={(updatedColors) => {
+          setColors(updatedColors);
+        }}
+      />
+
+      {/* Confirm Delete Variant Modal */}
+      <ConfirmDeleteVariantModal
+        isOpen={Boolean(variantToDelete)}
+        variant={variantToDelete}
+        onClose={() => setVariantToDelete(null)}
+        onConfirm={handleConfirmDeleteVariant}
+        isLoading={isDeletingVariant}
+      />
+
+      {/* Quick Add Category Modal */}
+      <QuickAddCategoryModal
+        isOpen={showQuickAddCategory}
+        onClose={() => setShowQuickAddCategory(false)}
+        onSuccess={(newCat) => {
+          setCategories((prev) => [...prev, newCat].sort((a, b) => a.name.localeCompare(b.name)));
+          setFormData((prev) => ({ ...prev, category_id: newCat.id }));
+        }}
+        parentCategories={categories}
+      />
+
+      {/* Admin Category Manager Modal */}
+      <AdminCategoryManagerModal
+        isOpen={showCategoryManager}
+        onClose={() => setShowCategoryManager(false)}
+        categories={categories}
+        onCategoriesChange={(updatedCategories) => {
+          setCategories(updatedCategories);
+          if (!updatedCategories.some((c) => c.id === formData.category_id)) {
+            setFormData((prev) => ({ ...prev, category_id: '' }));
+          }
+        }}
+      />
     </div>
   );
 };

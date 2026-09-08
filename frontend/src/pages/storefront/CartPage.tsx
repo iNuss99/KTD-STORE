@@ -183,10 +183,10 @@ export const CartPage: React.FC = () => {
               {itemsWithStockError.map((item) => {
                 const variant = item.variant;
                 const product = variant?.product;
-                const image =
-                  product?.images && product.images.length > 0
-                    ? product.images[0].url
-                    : 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&q=80';
+                const sortedImages = product?.images
+                  ? [...product.images].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+                  : [];
+                const mainImageUrl = sortedImages[0]?.url || null;
 
                 const price = item.effective_price || variant?.effective_price || product?.base_price || 0;
                 const formattedItemPrice = formatVND(price);
@@ -201,7 +201,7 @@ export const CartPage: React.FC = () => {
                     {/* Thumbnail */}
                     <div className="w-20 h-24 bg-bg-alt border border-line rounded-xl overflow-hidden shrink-0 relative">
                       <ProductImage
-                        src={product?.images?.[0]?.url || null}
+                        src={mainImageUrl}
                         alt={product?.name}
                         category={product?.category?.name}
                         aspectRatio="portrait"

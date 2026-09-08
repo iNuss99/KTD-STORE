@@ -5,9 +5,9 @@ export class CreateCategoryDto {
   @IsString()
   name: string;
 
-  @IsNotEmpty({ message: 'Slug danh mục không được để trống' })
+  @IsOptional()
   @IsString()
-  slug: string;
+  slug?: string;
 
   @IsOptional()
   @IsUUID('4', { message: 'ID danh mục cha không hợp lệ' })

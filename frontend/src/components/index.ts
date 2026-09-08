@@ -28,6 +28,13 @@ export * from './storefront/SandboxPaymentModal';
 
 // Admin Components
 export * from './admin/OrderStatusBadge';
+export * from './admin/QuickAddColorModal';
+export * from './admin/AdminColorManagerModal';
+export * from './admin/ConfirmDeleteColorModal';
+export * from './admin/ConfirmDeleteVariantModal';
+export * from './admin/QuickAddCategoryModal';
+export * from './admin/AdminCategoryManagerModal';
+export * from './admin/ConfirmDeleteCategoryModal';
 
 // Widgets
 export * from './widgets/AIChatWidget';

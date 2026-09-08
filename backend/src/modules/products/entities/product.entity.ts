@@ -29,12 +29,12 @@ export class Product {
   @JoinColumn({ name: 'brand_id' })
   brand?: Brand | null;
 
-  @Column()
-  category_id: string;
+  @Column({ nullable: true })
+  category_id?: string | null;
 
-  @ManyToOne(() => Category)
+  @ManyToOne(() => Category, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'category_id' })
-  category: Category;
+  category?: Category | null;
 
   @Column({ type: 'decimal', precision: 12, scale: 2 })
   base_price: number;
