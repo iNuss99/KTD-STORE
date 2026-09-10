@@ -34,7 +34,6 @@ docs/
 *.md
 **/*.md
 !README.md
-!SETUP_GUIDE.md
 
 
 # ===========================
