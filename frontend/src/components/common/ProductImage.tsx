@@ -41,7 +41,7 @@ function getSmartFallbackImage(category?: string, alt?: string): string {
 
 export const ProductImage: React.FC<ProductImageProps> = ({
   src,
-  alt = 'KTD Store Menswear',
+  alt = 'KTDL Store',
   className = '',
   aspectRatio = 'portrait',
   category = 'Collection',

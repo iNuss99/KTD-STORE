@@ -1,6 +1,6 @@
 import React from 'react';
 import { Category, Brand, Size, Color } from '../../types';
-import { SlidersHorizontal, RotateCcw, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { SlidersHorizontal, RotateCcw, ArrowUpDown, ArrowUp, ArrowDown, Check } from 'lucide-react';
 
 export interface FilterSidebarProps {
   categories: Category[];
@@ -13,6 +13,7 @@ export interface FilterSidebarProps {
   selectedColor?: string;
   minPrice?: number;
   maxPrice?: number;
+  priceBounds?: { min: number; max: number };
   sortOrder?: 'default' | 'price-asc' | 'price-desc';
   onSortChange?: (sort: 'default' | 'price-asc' | 'price-desc') => void;
   onFilterChange: (filters: {
@@ -26,13 +27,205 @@ export interface FilterSidebarProps {
   onReset: () => void;
 }
 
-const PRICE_PRESETS = [
-  { label: 'Tất cả mức giá', min: undefined, max: undefined },
-  { label: 'Dưới 300.000₫', min: undefined, max: 300000 },
-  { label: '300.000₫ - 500.000₫', min: 300000, max: 500000 },
-  { label: '500.000₫ - 1.000.000₫', min: 500000, max: 1000000 },
-  { label: 'Trên 1.000.000₫', min: 1000000, max: undefined },
-];
+const vndFormatter = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' });
+const formatVND = (amount: number) => vndFormatter.format(amount);
+
+const formatInputVND = (val: number) => {
+  return `${new Intl.NumberFormat('vi-VN').format(val)} đ`;
+};
+
+const parseInputVND = (str: string) => {
+  const digits = str.replace(/\D/g, '');
+  return digits ? parseInt(digits, 10) : 0;
+};
+
+interface DualRangeSliderProps {
+  min: number;
+  max: number;
+  step?: number;
+  valueMin?: number;
+  valueMax?: number;
+  onChange: (min: number, max: number) => void;
+  onResetPrice: () => void;
+}
+
+const DualRangeSlider: React.FC<DualRangeSliderProps> = ({
+  min,
+  max,
+  step = 50000,
+  valueMin,
+  valueMax,
+  onChange,
+  onResetPrice,
+}) => {
+  const currentMin = valueMin !== undefined ? valueMin : min;
+  const currentMax = valueMax !== undefined ? valueMax : max;
+
+  const [localMin, setLocalMin] = React.useState(currentMin);
+  const [localMax, setLocalMax] = React.useState(currentMax);
+  const [minInputStr, setMinInputStr] = React.useState(formatInputVND(currentMin));
+  const [maxInputStr, setMaxInputStr] = React.useState(formatInputVND(currentMax));
+
+  React.useEffect(() => {
+    setLocalMin(currentMin);
+    setMinInputStr(formatInputVND(currentMin));
+  }, [currentMin]);
+
+  React.useEffect(() => {
+    setLocalMax(currentMax);
+    setMaxInputStr(formatInputVND(currentMax));
+  }, [currentMax]);
+
+  const minPercent = max > min ? Math.max(0, Math.min(100, ((localMin - min) / (max - min)) * 100)) : 0;
+  const maxPercent = max > min ? Math.max(0, Math.min(100, ((localMax - min) / (max - min)) * 100)) : 100;
+
+  const handleMinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = Math.min(Number(e.target.value), localMax - step);
+    setLocalMin(val);
+    setMinInputStr(formatInputVND(val));
+  };
+
+  const handleMaxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = Math.max(Number(e.target.value), localMin + step);
+    setLocalMax(val);
+    setMaxInputStr(formatInputVND(val));
+  };
+
+  const handleMinInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setMinInputStr(e.target.value);
+  };
+
+  const handleMaxInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setMaxInputStr(e.target.value);
+  };
+
+  const handleMinInputBlur = () => {
+    const rawVal = parseInputVND(minInputStr);
+    const clamped = Math.max(min, Math.min(rawVal, localMax - step));
+    setLocalMin(clamped);
+    setMinInputStr(formatInputVND(clamped));
+  };
+
+  const handleMaxInputBlur = () => {
+    const rawVal = parseInputVND(maxInputStr);
+    const clamped = Math.min(max, Math.max(rawVal, localMin + step));
+    setLocalMax(clamped);
+    setMaxInputStr(formatInputVND(clamped));
+  };
+
+  const handleApply = () => {
+    const rawMin = parseInputVND(minInputStr);
+    const rawMax = parseInputVND(maxInputStr);
+    const safeMin = Math.max(min, Math.min(rawMin, max - step));
+    const safeMax = Math.min(max, Math.max(rawMax, safeMin + step));
+    setLocalMin(safeMin);
+    setLocalMax(safeMax);
+    setMinInputStr(formatInputVND(safeMin));
+    setMaxInputStr(formatInputVND(safeMax));
+    onChange(safeMin, safeMax);
+  };
+
+  const isCustomPrice = valueMin !== undefined || valueMax !== undefined;
+
+  return (
+    <div className="space-y-4">
+      {/* Dual Slider Bar */}
+      <div className="relative h-6 flex items-center pt-2">
+        {/* Track Base */}
+        <div className="absolute w-full h-1.5 bg-[#E2E8F0] rounded-full" />
+
+        {/* Selected Price Range Track */}
+        <div
+          className="absolute h-1.5 bg-[#C8A96E] rounded-full pointer-events-none transition-all duration-75"
+          style={{
+            left: `${minPercent}%`,
+            width: `${Math.max(0, maxPercent - minPercent)}%`,
+          }}
+        />
+
+        {/* Min Range Slider */}
+        <input
+          type="range"
+          min={min}
+          max={max}
+          step={step}
+          value={localMin}
+          onChange={handleMinChange}
+          aria-label="Mức giá tối thiểu"
+          className="absolute w-full h-1.5 appearance-none bg-transparent pointer-events-none z-20 
+            [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-[3px] [&::-webkit-slider-thumb]:border-[#C8A96E] [&::-webkit-slider-thumb]:shadow-[0_2px_6px_rgba(200,169,110,0.35)] [&::-webkit-slider-thumb]:cursor-grab active:[&::-webkit-slider-thumb]:cursor-grabbing
+            [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-[3px] [&::-moz-range-thumb]:border-[#C8A96E] [&::-moz-range-thumb]:shadow-[0_2px_6px_rgba(200,169,110,0.35)] [&::-moz-range-thumb]:cursor-grab active:[&::-moz-range-thumb]:cursor-grabbing"
+        />
+
+        {/* Max Range Slider */}
+        <input
+          type="range"
+          min={min}
+          max={max}
+          step={step}
+          value={localMax}
+          onChange={handleMaxChange}
+          aria-label="Mức giá tối đa"
+          className="absolute w-full h-1.5 appearance-none bg-transparent pointer-events-none z-20 
+            [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-[3px] [&::-webkit-slider-thumb]:border-[#C8A96E] [&::-webkit-slider-thumb]:shadow-[0_2px_6px_rgba(200,169,110,0.35)] [&::-webkit-slider-thumb]:cursor-grab active:[&::-webkit-slider-thumb]:cursor-grabbing
+            [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-[3px] [&::-moz-range-thumb]:border-[#C8A96E] [&::-moz-range-thumb]:shadow-[0_2px_6px_rgba(200,169,110,0.35)] [&::-moz-range-thumb]:cursor-grab active:[&::-moz-range-thumb]:cursor-grabbing"
+        />
+      </div>
+
+      {/* Two Input Boxes */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex-1 rounded-xl border border-slate-200 bg-white px-2.5 py-2 shadow-xs focus-within:border-[#C8A96E] focus-within:ring-1 focus-within:ring-[#C8A96E]/20 transition-all">
+          <input
+            type="text"
+            value={minInputStr}
+            onChange={handleMinInputChange}
+            onBlur={handleMinInputBlur}
+            onKeyDown={(e) => e.key === 'Enter' && handleApply()}
+            className="w-full text-center text-xs sm:text-sm font-semibold text-ink bg-transparent outline-none font-sans"
+            placeholder="0 đ"
+            aria-label="Giá tối thiểu"
+          />
+        </div>
+        <span className="text-slate-400 font-medium shrink-0">—</span>
+        <div className="flex-1 rounded-xl border border-slate-200 bg-white px-2.5 py-2 shadow-xs focus-within:border-[#C8A96E] focus-within:ring-1 focus-within:ring-[#C8A96E]/20 transition-all">
+          <input
+            type="text"
+            value={maxInputStr}
+            onChange={handleMaxInputChange}
+            onBlur={handleMaxInputBlur}
+            onKeyDown={(e) => e.key === 'Enter' && handleApply()}
+            className="w-full text-center text-xs sm:text-sm font-semibold text-ink bg-transparent outline-none font-sans"
+            placeholder="0 đ"
+            aria-label="Giá tối đa"
+          />
+        </div>
+      </div>
+
+      {/* Apply Button */}
+      <button
+        type="button"
+        onClick={handleApply}
+        className="w-full py-2.5 bg-[#C8A96E] hover:bg-[#B39358] active:bg-[#9F8048] text-white text-xs sm:text-sm font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-xs"
+      >
+        <Check className="w-4 h-4 stroke-[2.5]" />
+        <span>Áp dụng lọc</span>
+      </button>
+
+      {/* Reset Price Option */}
+      {isCustomPrice && (
+        <div className="flex justify-center pt-0.5">
+          <button
+            type="button"
+            onClick={onResetPrice}
+            className="text-[11px] font-mono text-[#6E6E6E] hover:text-[#C8A96E] transition-colors hover:underline"
+          >
+            Khôi phục khoảng giá mặc định
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const MAX_CATEGORY_DEPTH = 3;
 
@@ -101,6 +294,7 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
   selectedColor,
   minPrice,
   maxPrice,
+  priceBounds,
   sortOrder = 'default',
   onSortChange,
   onFilterChange,
@@ -248,36 +442,30 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
         </div>
       )}
 
-      {/* Price Range Filter Presets */}
+      {/* Price Range Dual Slider */}
       <div className="pt-4 border-t border-line">
-        <h4 className="font-display text-sm font-semibold text-ink mb-3">Mức giá phổ biến</h4>
-        <div className="flex flex-col gap-1.5">
-          {PRICE_PRESETS.map((preset, idx) => {
-            const isSelected =
-              (preset.min === undefined && preset.max === undefined && minPrice === undefined && maxPrice === undefined) ||
-              (preset.min === minPrice && preset.max === maxPrice);
-
-            return (
-              <button
-                key={idx}
-                type="button"
-                onClick={() =>
-                  onFilterChange({
-                    min_price: preset.min,
-                    max_price: preset.max,
-                  })
-                }
-                className={`text-left text-xs px-3 py-2 border rounded-xl transition-all ${
-                  isSelected
-                    ? 'border-accent bg-accent text-white font-semibold shadow-xs'
-                    : 'border-line text-ink hover:border-ink bg-card font-medium'
-                }`}
-              >
-                {preset.label}
-              </button>
-            );
-          })}
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="font-display text-sm sm:text-base font-bold text-ink">Khoảng Giá</h4>
         </div>
+        <DualRangeSlider
+          min={priceBounds?.min ?? 0}
+          max={priceBounds?.max ?? 2000000}
+          step={50000}
+          valueMin={minPrice}
+          valueMax={maxPrice}
+          onChange={(min, max) =>
+            onFilterChange({
+              min_price: min,
+              max_price: max,
+            })
+          }
+          onResetPrice={() =>
+            onFilterChange({
+              min_price: undefined,
+              max_price: undefined,
+            })
+          }
+        />
       </div>
     </aside>
   );

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, AlertCircle, Plus, ShieldCheck, Lock, Unlock, Loader2, Trash2, UserPlus, X } from 'lucide-react';
+import { Users, AlertCircle, Plus, ShieldCheck, Lock, Unlock, Loader2, Trash2, UserPlus, X, Pencil, Save } from 'lucide-react';
 import { PermissionGuard } from '../../components/guards/PermissionGuard';
 import { useAuth } from '../../hooks/useAuth';
 import { getAdminAuthHeader } from '../../lib/auth-storage';
@@ -31,6 +31,72 @@ export const AdminStaffPage: React.FC = () => {
     phone: '',
     role: 'STAFF',
   });
+
+  // Edit Staff Modal State
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [editLoading, setEditLoading] = useState(false);
+  const [editError, setEditError] = useState('');
+  const [editForm, setEditForm] = useState({
+    full_name: '',
+    phone: '',
+    role: 'STAFF',
+    password: '',
+  });
+
+  const openEditModal = (user: User) => {
+    setEditingUser(user);
+    setEditError('');
+    setEditForm({
+      full_name: user.full_name || '',
+      phone: user.phone || '',
+      role: user.role || 'STAFF',
+      password: '',
+    });
+  };
+
+  const handleUpdateStaff = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUser) return;
+    setEditLoading(true);
+    setEditError('');
+
+    try {
+      const payload: any = {
+        full_name: editForm.full_name.trim(),
+        phone: editForm.phone.trim() || undefined,
+        role: editForm.role,
+      };
+      if (editForm.password.trim()) {
+        if (editForm.password.trim().length < 6) {
+          setEditError('Mật khẩu mới phải có ít nhất 6 ký tự');
+          setEditLoading(false);
+          return;
+        }
+        payload.password = editForm.password.trim();
+      }
+
+      const res = await fetch(`/api/users/${editingUser.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAdminAuthHeader(),
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (res.ok) {
+        setEditingUser(null);
+        fetchStaff();
+      } else {
+        const data = await res.json();
+        setEditError(data.message || 'Không thể cập nhật thông tin nhân sự.');
+      }
+    } catch {
+      setEditError('Lỗi kết nối máy chủ');
+    } finally {
+      setEditLoading(false);
+    }
+  };
 
   const generateRandomPassword = () => {
     const chars = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#';
@@ -272,6 +338,13 @@ export const AdminStaffPage: React.FC = () => {
                     </td>
                     <td className="py-4 px-6 flex items-center justify-end gap-2">
                       <button 
+                        onClick={() => openEditModal(user)}
+                        className="p-2 bg-slate-100 text-slate-700 hover:bg-slate-200 hover:text-slate-900 rounded-lg transition cursor-pointer"
+                        title="Chỉnh sửa thông tin"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button 
                         onClick={() => openLockModal(user)}
                         className={`p-2 rounded-lg transition ${
                           user.is_locked ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100' : 'bg-amber-50 text-amber-600 hover:bg-amber-100'
@@ -428,6 +501,136 @@ export const AdminStaffPage: React.FC = () => {
                 >
                   {createLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                   Tạo tài khoản
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Staff Modal */}
+      {editingUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-3xl shadow-xl max-w-lg w-full p-6 border border-slate-100 select-none">
+            <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-amber-50 text-amber-600 rounded-2xl">
+                  <Pencil className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-extrabold text-slate-900">Chỉnh sửa nhân sự</h3>
+                  <p className="text-xs text-slate-500 font-medium">Cập nhật hồ sơ hoặc đặt lại mật khẩu cho nhân sự.</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingUser(null)}
+                className="p-2 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {editError && (
+              <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-xl text-xs font-semibold flex items-center gap-2 border border-red-100">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                {editError}
+              </div>
+            )}
+
+            <form onSubmit={handleUpdateStaff} className="space-y-4">
+              {/* Email (Read-only reference) */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Email đăng nhập</label>
+                <input
+                  type="email"
+                  disabled
+                  value={editingUser.email}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm bg-slate-100/80 text-slate-500 font-medium cursor-not-allowed"
+                />
+              </div>
+
+              {/* Full Name */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Họ và tên nhân sự *</label>
+                <input
+                  type="text"
+                  required
+                  value={editForm.full_name}
+                  onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
+                  placeholder="Ví dụ: Nguyễn Văn A"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-medium"
+                />
+              </div>
+
+              {/* Phone & Role */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Số điện thoại</label>
+                  <input
+                    type="tel"
+                    placeholder="0912345678"
+                    value={editForm.phone}
+                    onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-medium"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Vai trò / Chức vụ *</label>
+                  <select
+                    value={editForm.role}
+                    onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-medium bg-white"
+                  >
+                    <option value="STAFF">STAFF (Nhân viên)</option>
+                    <option value="MANAGER">MANAGER (Quản lý)</option>
+                    {isSuperAdmin && <option value="CEO">CEO (Giám đốc)</option>}
+                    {isSuperAdmin && <option value="SUPER_ADMIN">SUPER ADMIN</option>}
+                  </select>
+                </div>
+              </div>
+
+              {/* Reset Password */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-bold text-slate-700">Đặt lại mật khẩu mới (tùy chọn)</label>
+                  <button
+                    type="button"
+                    onClick={() => setEditForm({ ...editForm, password: generateRandomPassword() })}
+                    className="text-[11px] text-amber-600 hover:text-amber-700 font-bold hover:underline cursor-pointer"
+                  >
+                    Tạo ngẫu nhiên
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  placeholder="Để trống nếu không muốn đổi mật khẩu"
+                  value={editForm.password}
+                  onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-medium font-mono"
+                />
+                <p className="text-[11px] text-slate-500 mt-1">
+                  Chỉ điền vào trường này khi bạn muốn cấp lại mật khẩu đăng nhập mới cho nhân sự.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 mt-6">
+                <button
+                  type="button"
+                  disabled={editLoading}
+                  onClick={() => setEditingUser(null)}
+                  className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition cursor-pointer disabled:opacity-50"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={editLoading}
+                  className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 transition flex items-center gap-2 cursor-pointer shadow-md disabled:opacity-50"
+                >
+                  {editLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  Lưu thay đổi
                 </button>
               </div>
             </form>

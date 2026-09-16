@@ -2,6 +2,8 @@ import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards } from '@n
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import { Permissions } from '../../common/decorators/permissions.decorator';
@@ -11,6 +13,27 @@ import { GetUser } from '../../common/decorators/get-user.decorator';
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
+
+  @Get('me')
+  async getMyProfile(@GetUser('id') userId: string) {
+    return this.usersService.getProfile(userId);
+  }
+
+  @Patch('me')
+  async updateMyProfile(
+    @GetUser('id') userId: string,
+    @Body() dto: UpdateProfileDto,
+  ) {
+    return this.usersService.updateProfile(userId, dto);
+  }
+
+  @Post('me/change-password')
+  async changeMyPassword(
+    @GetUser('id') userId: string,
+    @Body() dto: ChangePasswordDto,
+  ) {
+    return this.usersService.changePassword(userId, dto);
+  }
 
   @Get()
   @Permissions('MANAGER_VIEW')

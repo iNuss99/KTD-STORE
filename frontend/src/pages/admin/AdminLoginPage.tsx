@@ -288,9 +288,8 @@ export const AdminLoginPage: React.FC = () => {
       <div className="crm-light-root">
         <div className="crm-light-card">
           <div className="crm-light-header">
-            <img src="/logo.png" alt="KTD Logo" className="crm-light-logo" />
-            <h1 className="crm-light-title">Knot To Detail CRM</h1>
-            <p className="crm-light-subtitle">Hệ thống quản trị & vận hành nội bộ</p>
+            <h1 className="crm-light-title font-brand text-2xl tracking-wider">KTDL CRM</h1>
+            <p className="crm-light-subtitle">Hệ thống quản trị &amp; vận hành nội bộ</p>
           </div>
 
           <form onSubmit={handleLogin}>

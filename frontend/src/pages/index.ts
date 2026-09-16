@@ -10,6 +10,7 @@ export * from './storefront/MyOrdersPage';
 export * from './storefront/WishlistPage';
 export * from './storefront/AddressManagementPage';
 export * from './storefront/CustomerLoginPage';
+export * from './storefront/AboutPage';
 
 // Admin Pages
 export * from './admin/AdminDashboardPage';
@@ -21,3 +22,4 @@ export * from './admin/AdminStaffPage';
 export * from './admin/AdminAuditLogsPage';
 export * from './admin/AdminSettingsPage';
 export * from './admin/AdminLoginPage';
+export * from './admin/AdminProfilePage';

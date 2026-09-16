@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -14,6 +14,7 @@ import {
   Package,
 } from 'lucide-react';
 import { useAuth, Role } from '../../hooks/useAuth';
+import { getAdminName, getAdminAvatar } from '../../lib/auth-storage';
 
 interface NavItem {
   name: string;
@@ -32,6 +33,22 @@ interface AdminSidebarProps {
 export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpenMobile, onCloseMobile }) => {
   const location = useLocation();
   const { isSuperAdmin, role } = useAuth();
+  const [userName, setUserName] = useState<string>('Admin');
+  const [userAvatar, setUserAvatar] = useState<string | null>(null);
+
+  useEffect(() => {
+    const updateUserData = () => {
+      const storedName = getAdminName() || localStorage.getItem('user_name');
+      if (storedName) {
+        setUserName(storedName);
+      }
+      const storedAvatar = getAdminAvatar();
+      setUserAvatar(storedAvatar);
+    };
+    updateUserData();
+    window.addEventListener('admin-auth-change', updateUserData);
+    return () => window.removeEventListener('admin-auth-change', updateUserData);
+  }, []);
 
   // Strict Matrix 1.3 Role Mapping from spec.md & README.md
   const mainNavItems: NavItem[] = [
@@ -127,24 +144,23 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpenMobile, onClos
         `}
       >
         {/* Brand Logo */}
-        <div className="px-4.5 py-5 border-b border-slate-100/80 flex items-center justify-between">
-          <Link to="/admin/dashboard" onClick={handleNavClick} className="flex items-center gap-2.5 min-w-0 w-full">
-            <img
-              src="/logo.png"
-              alt="Knot To Detail Logo"
-              className="w-10 h-10 object-contain rounded-xl shadow-xs shrink-0"
-            />
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center justify-between gap-1.5">
-                <span className="font-extrabold text-[14px] text-slate-900 tracking-tight whitespace-nowrap">
-                  Knot To Detail
-                </span>
-                <span className="px-1.5 py-0.5 text-[9px] font-bold bg-accent-light text-accent rounded-full border border-accent-border shrink-0">
-                  Admin
-                </span>
-              </div>
-              <p className="text-[11px] font-medium text-slate-400 mt-0.5 leading-none">Control Center</p>
+        <div className="px-4 py-5 border-b border-slate-100/80 flex items-center justify-center">
+          <Link
+            to="/admin/dashboard"
+            onClick={handleNavClick}
+            className="flex flex-col items-center justify-center text-center w-full group"
+          >
+            <div className="flex items-center justify-center gap-2">
+              <span className="font-brand text-[17px] text-slate-900 tracking-wider whitespace-nowrap group-hover:text-accent transition-colors">
+                KTDL
+              </span>
+              <span className="px-1.5 py-0.5 text-[9px] font-bold bg-accent-light text-accent rounded-full border border-accent-border shrink-0">
+                Admin
+              </span>
             </div>
+            <p className="text-[11px] font-medium text-slate-400 mt-1 leading-none tracking-wide">
+              Control Center
+            </p>
           </Link>
         </div>
 
@@ -244,18 +260,33 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpenMobile, onClos
         </div>
 
         {/* Sidebar Footer */}
-        <div className="p-4 border-t border-slate-100 bg-slate-50/50">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-accent text-white flex items-center justify-center font-bold text-xs shadow-xs">
-              {role ? role.charAt(0) : 'A'}
-            </div>
+        <div className="p-3.5 border-t border-slate-100 bg-slate-50/60">
+          <Link
+            to="/admin/profile"
+            onClick={handleNavClick}
+            className="flex items-center gap-3 p-1.5 -m-1.5 rounded-xl hover:bg-slate-100 transition group"
+            title="Xem hồ sơ cá nhân"
+          >
+            {userAvatar ? (
+              <img
+                src={userAvatar}
+                alt={userName}
+                className="w-8 h-8 rounded-full object-cover border border-slate-200 shadow-xs shrink-0"
+              />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0">
+                {(userName || role || 'A').charAt(0).toUpperCase()}
+              </div>
+            )}
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold text-slate-800 truncate">{role || 'ADMIN'}</p>
+              <p className="text-xs font-bold text-slate-800 truncate group-hover:text-amber-700 transition-colors">
+                {userName || role || 'ADMIN'}
+              </p>
               <p className="text-[10px] text-emerald-600 font-semibold flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span> Online
               </p>
             </div>
-          </div>
+          </Link>
         </div>
       </aside>
     </>

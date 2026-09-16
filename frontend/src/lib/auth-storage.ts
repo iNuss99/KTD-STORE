@@ -17,6 +17,7 @@ const ADMIN_USER_ID_KEY = 'admin_user_id';
 const ADMIN_USER_KEY = 'admin_user';
 const ADMIN_USER_ROLE_KEY = 'admin_user_role';
 const ADMIN_USER_NAME_KEY = 'admin_user_name';
+const ADMIN_USER_AVATAR_KEY = 'admin_user_avatar';
 
 const CUSTOMER_STORAGE_KEYS = [
   CUSTOMER_TOKEN_KEY,
@@ -41,6 +42,7 @@ const ADMIN_STORAGE_KEYS = [
   ADMIN_USER_KEY,
   ADMIN_USER_ROLE_KEY,
   ADMIN_USER_NAME_KEY,
+  ADMIN_USER_AVATAR_KEY,
   'view_as_role',
 ];
 
@@ -327,13 +329,69 @@ export function getAdminName(): string | null {
   }
 }
 
-export function getAdminUser(): any | null {
+export function getAdminAvatar(): string | null {
   try {
     if (typeof localStorage === 'undefined') return null;
+    const avatar = localStorage.getItem(ADMIN_USER_AVATAR_KEY);
+    if (avatar) return avatar;
     const userStr = localStorage.getItem(ADMIN_USER_KEY);
-    return userStr ? JSON.parse(userStr) : null;
+    if (userStr) {
+      const u = JSON.parse(userStr);
+      return u.avatar_url || null;
+    }
+    return null;
   } catch {
     return null;
+  }
+}
+
+export function setAdminAvatar(avatarUrl: string | null): void {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      if (avatarUrl) {
+        localStorage.setItem(ADMIN_USER_AVATAR_KEY, avatarUrl);
+      } else {
+        localStorage.removeItem(ADMIN_USER_AVATAR_KEY);
+      }
+      const userStr = localStorage.getItem(ADMIN_USER_KEY);
+      if (userStr) {
+        const u = JSON.parse(userStr);
+        u.avatar_url = avatarUrl;
+        localStorage.setItem(ADMIN_USER_KEY, JSON.stringify(u));
+      }
+    }
+    dispatchAuthEvents();
+  } catch (e) {
+    console.error('Error saving admin avatar:', e);
+  }
+}
+
+export function updateAdminProfileData(partialUser: {
+  full_name?: string;
+  phone?: string | null;
+  avatar_url?: string | null;
+}): void {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const userStr = localStorage.getItem(ADMIN_USER_KEY);
+      let u = userStr ? JSON.parse(userStr) : {};
+      u = { ...u, ...partialUser };
+      localStorage.setItem(ADMIN_USER_KEY, JSON.stringify(u));
+
+      if (partialUser.full_name) {
+        localStorage.setItem(ADMIN_USER_NAME_KEY, partialUser.full_name);
+      }
+      if (partialUser.avatar_url !== undefined) {
+        if (partialUser.avatar_url) {
+          localStorage.setItem(ADMIN_USER_AVATAR_KEY, partialUser.avatar_url);
+        } else {
+          localStorage.removeItem(ADMIN_USER_AVATAR_KEY);
+        }
+      }
+    }
+    dispatchAuthEvents();
+  } catch (e) {
+    console.error('Error updating admin profile data:', e);
   }
 }
 
@@ -345,7 +403,7 @@ export function getAdminUser(): any | null {
 export function setAdminActiveSession(data: {
   accessToken: string;
   refreshToken?: string;
-  user: { id: string; role?: string; full_name?: string; email?: string; phone?: string };
+  user: { id: string; role?: string; full_name?: string; email?: string; phone?: string; avatar_url?: string };
 }): void {
   try {
     if (typeof localStorage !== 'undefined') {
@@ -364,6 +422,9 @@ export function setAdminActiveSession(data: {
           ADMIN_USER_NAME_KEY,
           data.user.full_name || data.user.email?.split('@')[0] || 'Admin'
         );
+        if (data.user.avatar_url) {
+          localStorage.setItem(ADMIN_USER_AVATAR_KEY, data.user.avatar_url);
+        }
       }
     }
     dispatchAuthEvents();

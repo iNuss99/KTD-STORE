@@ -7,6 +7,10 @@ export class FilterProductDto {
   category_id?: string;
 
   @IsOptional()
+  @IsString()
+  category?: string;
+
+  @IsOptional()
   @IsUUID('4')
   brand_id?: string;
 

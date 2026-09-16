@@ -431,6 +431,13 @@ export class ProductsService implements OnApplicationBootstrap {
 
       if (filter.category_id) {
         query.andWhere('product.category_id = :categoryId', { categoryId: filter.category_id });
+      } else if (filter.category) {
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(filter.category);
+        if (isUuid) {
+          query.andWhere('product.category_id = :catParam', { catParam: filter.category });
+        } else {
+          query.andWhere('category.slug = :catSlug', { catSlug: filter.category });
+        }
       }
 
       if (filter.brand_id) {

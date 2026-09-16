@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <strong>Giải pháp thương mại điện tử chuyên nghiệp dành cho thời trang nam cao cấp (Menswear Atelier).</strong><br>
+  <strong>Giải pháp thương mại điện tử chuyên nghiệp dành cho thời trang nam cao cấp (Menswear KTDL).</strong><br>
   Tích hợp đầy đủ cổng bán lẻ trực tuyến (Storefront) và hệ thống quản trị quan hệ khách hàng & vận hành doanh nghiệp (Admin CRM / ERP thu nhỏ).
 </p>
 

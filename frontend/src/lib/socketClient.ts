@@ -39,7 +39,13 @@ export function getSocket(token?: string): Socket {
     });
   } else if (token) {
     // Update auth token on existing socket if needed
-    (socket.auth as Record<string, string>).token = token;
+    const currentToken = (socket.auth as Record<string, string>)?.token;
+    if (currentToken !== token) {
+      (socket.auth as Record<string, string>).token = token;
+      if (socket.connected) {
+        socket.disconnect().connect();
+      }
+    }
   }
 
   return socket;

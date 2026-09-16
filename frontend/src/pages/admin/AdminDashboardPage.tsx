@@ -236,7 +236,7 @@ export const AdminDashboardPage: React.FC = () => {
               Báo cáo &amp; Dashboard Quản trị CRM
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 mt-1">
-              Tổng quan chỉ số kinh doanh, doanh thu, tồn kho và hiệu suất bán hàng Knot To Detail.
+              Tổng quan chỉ số kinh doanh, doanh thu, tồn kho và hiệu suất bán hàng KTDL.
             </p>
           </div>
 

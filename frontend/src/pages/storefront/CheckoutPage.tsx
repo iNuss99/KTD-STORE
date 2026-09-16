@@ -189,7 +189,7 @@ export const CheckoutPage: React.FC = () => {
               method: paymentMethod,
             });
           } else {
-            showSuccess('Đặt hàng thành công!', 'Cảm ơn bạn đã mua sắm tại Knot To Detail.');
+            showSuccess('Đặt hàng thành công!', 'Cảm ơn bạn đã mua sắm tại KTDL.');
             navigate(`/order-success/${order.id}`);
           }
         },
@@ -225,7 +225,7 @@ export const CheckoutPage: React.FC = () => {
           onSuccess={() => {
             const id = activeSandboxOrder.id;
             setActiveSandboxOrder(null);
-            showSuccess('Thanh toán thành công!', 'Cảm ơn bạn đã mua sắm tại Knot To Detail.');
+            showSuccess('Thanh toán thành công!', 'Cảm ơn bạn đã mua sắm tại KTDL.');
             navigate(`/order-success/${id}`);
           }}
           onCancel={() => {

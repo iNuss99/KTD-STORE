@@ -28,7 +28,7 @@ export const SizeGuideModal: React.FC<SizeGuideModalProps> = ({ isOpen, onClose 
           </div>
           <div>
             <h3 className="font-display text-lg sm:text-xl font-bold text-ink">Bảng Hướng Dẫn Chọn Size Áo Nam Chuẩn</h3>
-            <p className="text-xs text-ink-soft mt-0.5">Quy chuẩn thông số cho dòng Áo Sơ Mi, Polo, T-Shirt & Áo Khoác tại Knot To Detail</p>
+            <p className="text-xs text-ink-soft mt-0.5">Quy chuẩn thông số cho dòng Áo Sơ Mi, Polo, T-Shirt & Áo Khoác tại KTDL</p>
           </div>
         </div>
 
@@ -101,7 +101,7 @@ export const SizeGuideModal: React.FC<SizeGuideModalProps> = ({ isOpen, onClose 
           <ul className="list-disc list-inside space-y-1 pl-1">
             <li><strong>Áo Sơ Mi Slimfit:</strong> Nếu chọn phom ôm vừa vặn, hãy chọn chuẩn size theo vòng ngực.</li>
             <li><strong>Áo T-Shirt & Polo Oversize:</strong> Nếu thích mặc rộng rãi giấu bụng hoặc phong cách Streetwear, có thể tăng 1 size.</li>
-            <li>Knot To Detail hỗ trợ đổi size áo tận nhà hoàn toàn miễn phí trong vòng 30 ngày.</li>
+            <li>KTDL hỗ trợ đổi size áo tận nhà hoàn toàn miễn phí trong vòng 30 ngày.</li>
           </ul>
         </div>
 

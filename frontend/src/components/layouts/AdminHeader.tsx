@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { LogOut, ChevronDown, ShieldCheck, Eye, Store, Menu } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { LogOut, ChevronDown, ShieldCheck, Eye, Store, Menu, User } from 'lucide-react';
 import { NotificationBell } from '../widgets/NotificationBell';
 import { useAuth, Role } from '../../hooks/useAuth';
-import { clearAdminAuth, getAdminName } from '../../lib/auth-storage';
+import { clearAdminAuth, getAdminName, getAdminAvatar } from '../../lib/auth-storage';
 
 interface AdminHeaderProps {
   onToggleMobileSidebar?: () => void;
@@ -13,18 +13,21 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onToggleMobileSidebar 
   const navigate = useNavigate();
   const { role, actualRole, simulatedRole, setSimulatedRole } = useAuth();
   const [userName, setUserName] = useState<string>('Admin');
+  const [userAvatar, setUserAvatar] = useState<string | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
 
   useEffect(() => {
-    const updateName = () => {
+    const updateUserData = () => {
       const storedName = getAdminName() || localStorage.getItem('user_name');
       if (storedName) {
         setUserName(storedName);
       }
+      const storedAvatar = getAdminAvatar();
+      setUserAvatar(storedAvatar);
     };
-    updateName();
-    window.addEventListener('admin-auth-change', updateName);
-    return () => window.removeEventListener('admin-auth-change', updateName);
+    updateUserData();
+    window.addEventListener('admin-auth-change', updateUserData);
+    return () => window.removeEventListener('admin-auth-change', updateUserData);
   }, []);
 
   const handleLogout = () => {
@@ -51,7 +54,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onToggleMobileSidebar 
             Welcome {userName}! <span className="animate-bounce inline-block">👋</span>
           </h1>
           <p className="text-[11px] text-slate-400 font-medium hidden sm:block">
-            Bảng điều khiển hệ thống Knot To Detail Quản trị
+            Bảng điều khiển hệ thống KTDL Quản trị
           </p>
         </div>
       </div>
@@ -99,9 +102,17 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onToggleMobileSidebar 
             onClick={() => setShowUserMenu(!showUserMenu)}
             className="flex items-center gap-1.5 sm:gap-2.5 p-1 sm:p-1.5 hover:bg-slate-50 rounded-2xl transition border border-transparent hover:border-slate-200"
           >
-            <div className="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center font-extrabold text-xs shadow-sm shrink-0">
-              {userName.charAt(0).toUpperCase()}
-            </div>
+            {userAvatar ? (
+              <img
+                src={userAvatar}
+                alt={userName}
+                className="w-8 h-8 rounded-full object-cover border border-slate-200 shadow-sm shrink-0"
+              />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center font-extrabold text-xs shadow-sm shrink-0">
+                {userName.charAt(0).toUpperCase()}
+              </div>
+            )}
             <div className="text-left hidden md:block">
               <p className="text-xs font-bold text-slate-800 leading-tight">{userName}</p>
               <p className="text-[10px] font-semibold text-sky-600 flex items-center gap-0.5">
@@ -122,9 +133,16 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onToggleMobileSidebar 
                   </p>
                 )}
               </div>
+              <Link
+                to="/admin/profile"
+                onClick={() => setShowUserMenu(false)}
+                className="w-full flex items-center gap-2 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-amber-50/60 hover:text-amber-700 transition text-left"
+              >
+                <User className="w-4 h-4 text-amber-600" /> Hồ sơ cá nhân
+              </Link>
               <button
                 onClick={handleLogout}
-                className="w-full flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-rose-600 hover:bg-rose-50 transition text-left"
+                className="w-full flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-rose-600 hover:bg-rose-50 transition text-left border-t border-slate-100/80 mt-1"
               >
                 <LogOut className="w-4 h-4 text-rose-500" /> Đăng xuất hệ thống
               </button>

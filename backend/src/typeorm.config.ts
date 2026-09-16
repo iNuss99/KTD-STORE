@@ -31,6 +31,7 @@ import { SystemConfig } from './modules/system-configs/entities/system-config.en
 import { LoyaltyPoint } from './modules/loyalty/entities/loyalty-point.entity';
 import { InitialSchema1700000000000 } from './migrations/1700000000000-InitialSchema';
 import { AddColorToProductImages1700000000001 } from './migrations/1700000000001-AddColorToProductImages';
+import { AddAvatarUrlToUsers1700000000002 } from './migrations/1700000000002-AddAvatarUrlToUsers';
 
 config();
 
@@ -75,7 +76,11 @@ export default new DataSource({
     SystemConfig,
     LoyaltyPoint,
   ],
-  migrations: [InitialSchema1700000000000, AddColorToProductImages1700000000001],
+  migrations: [
+    InitialSchema1700000000000,
+    AddColorToProductImages1700000000001,
+    AddAvatarUrlToUsers1700000000002,
+  ],
   synchronize: false,
   ssl: isSsl ? { rejectUnauthorized: false } : false,
   extra: {

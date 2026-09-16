@@ -2,6 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: 'Beyonders';
+  src: url('/fonts/Beyonders.otf') format('opentype'),
+       url('/fonts/Beyonders.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+.font-brand {
+  font-family: 'Beyonders', sans-serif;
+}
+
 @layer base {
   :root {
     --canvas: #F5F2EE;
@@ -33,13 +46,12 @@
     min-height: 100vh;
     background-color: var(--canvas);
     color: var(--ink);
-    font-family: 'Lexend', sans-serif;
+    font-family: 'Be Vietnam Pro', sans-serif;
     overflow-x: hidden;
   }
 
-  h1, h2, h3, .font-editorial {
+  h1, h2, h3, h4, h5, h6, .font-editorial {
     font-family: 'Be Vietnam Pro', sans-serif;
-    font-weight: 700;
   }
 
   /* Custom Editorial Scrollbar */

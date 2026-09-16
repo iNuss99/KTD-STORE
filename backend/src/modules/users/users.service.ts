@@ -7,6 +7,8 @@ import { User } from './entities/user.entity';
 import { UserRole } from '../../common/enums/role.enum';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
 
 @Injectable()
@@ -51,19 +53,101 @@ export class UsersService implements OnApplicationBootstrap {
 
   async findAll() {
     return this.userRepo.find({
-      select: ['id', 'email', 'full_name', 'role', 'phone', 'is_locked', 'created_at'],
+      select: ['id', 'email', 'full_name', 'role', 'phone', 'avatar_url', 'is_locked', 'created_at'],
     });
   }
 
   async findOne(id: string) {
     const user = await this.userRepo.findOne({
       where: { id },
-      select: ['id', 'email', 'full_name', 'role', 'phone', 'is_locked', 'created_at'],
+      select: ['id', 'email', 'full_name', 'role', 'phone', 'avatar_url', 'is_locked', 'created_at'],
     });
     if (!user) {
       throw new NotFoundException('Tài khoản không tồn tại');
     }
     return user;
+  }
+
+  async getProfile(userId: string) {
+    const user = await this.userRepo.findOne({
+      where: { id: userId },
+      select: ['id', 'email', 'full_name', 'role', 'phone', 'avatar_url', 'is_locked', 'created_at'],
+    });
+    if (!user) {
+      throw new NotFoundException('Tài khoản không tồn tại');
+    }
+    return user;
+  }
+
+  async updateProfile(userId: string, dto: UpdateProfileDto) {
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('Tài khoản không tồn tại');
+    }
+
+    if (dto.full_name !== undefined) {
+      user.full_name = dto.full_name.trim();
+    }
+    if (dto.phone !== undefined) {
+      user.phone = dto.phone ? dto.phone.trim() : null;
+    }
+    if (dto.avatar_url !== undefined) {
+      user.avatar_url = dto.avatar_url ? dto.avatar_url.trim() : null;
+    }
+
+    const saved = await this.userRepo.save(user);
+
+    await this.auditLogsService.log(
+      userId,
+      'UPDATE_PROFILE',
+      'User',
+      userId,
+      { full_name: user.full_name, phone: user.phone, has_avatar: !!user.avatar_url },
+    );
+
+    return {
+      id: saved.id,
+      email: saved.email,
+      full_name: saved.full_name,
+      role: saved.role,
+      phone: saved.phone,
+      avatar_url: saved.avatar_url,
+      created_at: saved.created_at,
+    };
+  }
+
+  async changePassword(userId: string, dto: ChangePasswordDto) {
+    if (dto.newPassword !== dto.confirmPassword) {
+      throw new BadRequestException('Mật khẩu mới và xác nhận mật khẩu không khớp');
+    }
+
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('Tài khoản không tồn tại');
+    }
+
+    const isCurrentValid = await bcrypt.compare(dto.currentPassword, user.password_hash);
+    if (!isCurrentValid) {
+      throw new BadRequestException('Mật khẩu hiện tại không chính xác');
+    }
+
+    const isSamePassword = await bcrypt.compare(dto.newPassword, user.password_hash);
+    if (isSamePassword) {
+      throw new BadRequestException('Mật khẩu mới không được trùng với mật khẩu hiện tại');
+    }
+
+    user.password_hash = await bcrypt.hash(dto.newPassword, 10);
+    await this.userRepo.save(user);
+
+    await this.auditLogsService.log(
+      userId,
+      'CHANGE_PASSWORD',
+      'User',
+      userId,
+      { email: user.email },
+    );
+
+    return { message: 'Đổi mật khẩu thành công' };
   }
 
   async createUser(dto: CreateUserDto, performedByUserId: string) {

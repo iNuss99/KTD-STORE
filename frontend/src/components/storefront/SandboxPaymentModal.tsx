@@ -35,7 +35,7 @@ export const SandboxPaymentModal: React.FC<SandboxPaymentModalProps> = ({
   const [bankCode, setBankCode] = useState('MB');
   const [bankName, setBankName] = useState('MBBank (Ngân hàng Quân Đội)');
   const [bankAccountNo, setBankAccountNo] = useState('999988888');
-  const [bankAccountName, setBankAccountName] = useState('KNOT TO DETAIL');
+  const [bankAccountName, setBankAccountName] = useState('KTDL');
 
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');

@@ -42,7 +42,7 @@ export const SiteFooter: React.FC = () => {
               <ShieldCheck className="w-5 h-5 stroke-[1.5]" />
             </div>
             <div>
-              <h4 className="font-editorial font-bold text-lg text-[#1A1A1A] mb-1">Cam kết Atelier</h4>
+              <h4 className="font-editorial font-bold text-lg text-[#1A1A1A] mb-1">Cam kết KTDL</h4>
               <p className="text-xs text-[#6E6E6E] leading-relaxed">100% chất liệu vải tuyển chọn chuẩn phom</p>
             </div>
           </div>
@@ -61,11 +61,8 @@ export const SiteFooter: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-12 pb-12 border-b border-[#1A1A1A]/10">
           {/* Brand Col */}
           <div className="md:col-span-5 space-y-4">
-            <Link to="/" className="flex items-center gap-3">
-              <div className="w-7 h-7 rounded-full border border-[#C8A96E] bg-white flex items-center justify-center text-[#C8A96E] font-editorial font-bold text-base">
-                K
-              </div>
-              <span className="font-editorial font-bold text-2xl text-[#1A1A1A] tracking-tight">KNOT TO DETAIL</span>
+            <Link to="/" className="flex items-center">
+              <span className="font-brand text-2xl text-[#1A1A1A] tracking-wider">KTDL</span>
             </Link>
             <p className="text-xs text-[#6E6E6E] leading-relaxed max-w-sm">
               Studio chuyên các dòng áo nam cao cấp phong cách tối giản editorial. Tập trung vào cắt may tinh tế, chất liệu tự nhiên và tôn vinh vóc dáng.
@@ -104,7 +101,7 @@ export const SiteFooter: React.FC = () => {
                 ))
               ) : (
                 <>
-                  <li><Link to="/products?category=ao-so-mi" className="hover:text-[#C8A96E] transition">Áo Sơ Mi Atelier</Link></li>
+                  <li><Link to="/products?category=ao-so-mi" className="hover:text-[#C8A96E] transition">Áo Sơ Mi KTDL</Link></li>
                   <li><Link to="/products?category=ao-polo" className="hover:text-[#C8A96E] transition">Áo Polo Cotton</Link></li>
                   <li><Link to="/products?category=ao-tshirt" className="hover:text-[#C8A96E] transition">Áo T-Shirt Premium</Link></li>
                   <li><Link to="/products?category=ao-khoac" className="hover:text-[#C8A96E] transition">Áo Khoác Heritage</Link></li>
@@ -122,31 +119,31 @@ export const SiteFooter: React.FC = () => {
           <div className="md:col-span-2 space-y-3">
             <h4 className="font-mono text-xs font-semibold text-[#1A1A1A] uppercase tracking-[0.2em]">HỖ TRỢ</h4>
             <ul className="space-y-2 text-xs text-[#6E6E6E] font-sans">
+              <li><Link to="/about" className="hover:text-[#C8A96E] transition">Về KTDL</Link></li>
+              <li><Link to="/about#privacy" className="hover:text-[#C8A96E] transition">Chính sách bảo mật</Link></li>
               <li><Link to="/my-orders" className="hover:text-[#C8A96E] transition">Kiểm tra đơn hàng</Link></li>
               <li><Link to="/addresses" className="hover:text-[#C8A96E] transition">Sổ địa chỉ giao hàng</Link></li>
               <li><Link to="/wishlist" className="hover:text-[#C8A96E] transition">Sản phẩm đã lưu</Link></li>
-              <li><span className="hover:text-[#C8A96E] cursor-pointer">Bảng hướng dẫn chọn size</span></li>
-              <li><span className="hover:text-[#C8A96E] cursor-pointer">Chính sách đổi trả 30 ngày</span></li>
             </ul>
           </div>
 
           {/* Contact */}
           <div className="md:col-span-3 space-y-3">
-            <h4 className="font-mono text-xs font-semibold text-[#1A1A1A] uppercase tracking-[0.2em]">LIÊN HỆ ATELIER</h4>
+            <h4 className="font-mono text-xs font-semibold text-[#1A1A1A] uppercase tracking-[0.2em]">LIÊN HỆ KTDL</h4>
             <p className="text-xs text-[#6E6E6E] leading-relaxed">
               Showroom: 123 Đường Thời Trang, Quận 1, TP. Hồ Chí Minh
             </p>
             <p className="text-xs font-mono text-[#1A1A1A]">Hotline: 1900 8888</p>
-            <p className="text-xs font-mono text-[#1A1A1A]">Email: concierge@knottodetail.com</p>
+            <p className="text-xs font-mono text-[#1A1A1A]">Email: concierge@ktdl.com</p>
           </div>
         </div>
 
         {/* Bottom Bar */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-[10px] font-mono text-[#6E6E6E] uppercase tracking-wider">
-          <p>© 2026 KNOT TO DETAIL ATELIER. ALL RIGHTS RESERVED.</p>
+          <p>© 2026 KTDL. ALL RIGHTS RESERVED.</p>
           <div className="flex gap-6">
-            <span className="hover:text-[#1A1A1A] cursor-pointer">ĐIỀU KHỎAN DỊCH VỤ</span>
-            <span className="hover:text-[#1A1A1A] cursor-pointer">CHÍNH SÁCH BẢO MẬT</span>
+            <Link to="/about" className="hover:text-[#1A1A1A] transition-colors">VỀ CHÚNG TÔI</Link>
+            <Link to="/about#privacy" className="hover:text-[#1A1A1A] transition-colors">CHÍNH SÁCH BẢO MẬT</Link>
           </div>
         </div>
       </div>

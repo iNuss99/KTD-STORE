@@ -17,7 +17,7 @@ export class NotificationsService {
   async handleOrderCreatedEvent(payload: { orderId: string; total: number; customerName?: string }) {
     const content = `Đơn hàng mới #${payload.orderId.substring(0, 8)} đã được khởi tạo (${payload.total.toLocaleString('vi-VN')}đ).`;
     
-    // Create notifications for MANAGER and SUPER_ADMIN
+    // Create notifications for all administrative roles
     const notif = this.notificationRepository.create({
       target_role: 'MANAGER',
       type: 'ORDER_CREATED',
@@ -28,6 +28,7 @@ export class NotificationsService {
     this.notificationsGateway.sendToRole('MANAGER', 'notification', saved);
     this.notificationsGateway.sendToRole('SUPER_ADMIN', 'notification', saved);
     this.notificationsGateway.sendToRole('CEO', 'notification', saved);
+    this.notificationsGateway.sendToRole('STAFF', 'notification', saved);
   }
 
   @OnEvent('stock.low')
@@ -43,6 +44,8 @@ export class NotificationsService {
 
     this.notificationsGateway.sendToRole('MANAGER', 'notification', saved);
     this.notificationsGateway.sendToRole('SUPER_ADMIN', 'notification', saved);
+    this.notificationsGateway.sendToRole('CEO', 'notification', saved);
+    this.notificationsGateway.sendToRole('STAFF', 'notification', saved);
   }
 
   @OnEvent('return.requested')
@@ -58,6 +61,8 @@ export class NotificationsService {
 
     this.notificationsGateway.sendToRole('MANAGER', 'notification', saved);
     this.notificationsGateway.sendToRole('SUPER_ADMIN', 'notification', saved);
+    this.notificationsGateway.sendToRole('CEO', 'notification', saved);
+    this.notificationsGateway.sendToRole('STAFF', 'notification', saved);
   }
 
   @OnEvent('return.updated')
@@ -75,12 +80,22 @@ export class NotificationsService {
   }
 
   async getUserNotifications(userId: string, role: string) {
+    const adminRoles = ['SUPER_ADMIN', 'CEO', 'MANAGER', 'STAFF'];
+    const isAdmin = adminRoles.includes(role);
+
     const query = this.notificationRepository
       .createQueryBuilder('n')
-      .where('n.user_id = :userId', { userId })
-      .orWhere('n.target_role = :role', { role })
-      .orderBy('n.created_at', 'DESC')
-      .take(50);
+      .where('n.user_id = :userId', { userId });
+
+    if (isAdmin) {
+      query.orWhere('n.target_role IN (:...roles)', {
+        roles: ['MANAGER', 'SUPER_ADMIN', 'CEO', 'STAFF', 'ADMIN', role],
+      });
+    } else {
+      query.orWhere('n.target_role = :role', { role });
+    }
+
+    query.orderBy('n.created_at', 'DESC').take(50);
 
     const notifications = await query.getMany();
     const unreadCount = notifications.filter((n) => !n.is_read).length;
@@ -98,12 +113,24 @@ export class NotificationsService {
   }
 
   async markAllAsRead(userId: string, role: string) {
-    await this.notificationRepository
+    const adminRoles = ['SUPER_ADMIN', 'CEO', 'MANAGER', 'STAFF'];
+    const isAdmin = adminRoles.includes(role);
+
+    const qb = this.notificationRepository
       .createQueryBuilder()
       .update(Notification)
       .set({ is_read: true })
-      .where('user_id = :userId OR target_role = :role', { userId, role })
-      .execute();
+      .where('user_id = :userId', { userId });
+
+    if (isAdmin) {
+      qb.orWhere('target_role IN (:...roles)', {
+        roles: ['MANAGER', 'SUPER_ADMIN', 'CEO', 'STAFF', 'ADMIN', role],
+      });
+    } else {
+      qb.orWhere('target_role = :role', { role });
+    }
+
+    await qb.execute();
 
     return { message: 'Đã đánh dấu tất cả là đã đọc' };
   }

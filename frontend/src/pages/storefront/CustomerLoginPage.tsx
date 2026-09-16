@@ -531,14 +531,13 @@ export const CustomerLoginPage: React.FC = () => {
             }`}
           >
             <div className="pane-brand-header">
-              <img src="/logo.png" alt="KTD Logo" className="pane-logo" />
-              <div className="pane-brand-name">Knot To <span>Detail</span></div>
+              <div className="pane-brand-name font-brand text-2xl tracking-wider text-[#1A1A1A]">KTDL</div>
             </div>
 
             <div className="mb-2">
               <h2 className="form-header-title">Đăng Nhập</h2>
               <p className="form-header-sub">
-                Chào mừng bạn trở lại với Knot To Detail.
+                Chào mừng bạn trở lại với KTDL.
               </p>
             </div>
 
@@ -620,14 +619,13 @@ export const CustomerLoginPage: React.FC = () => {
             }`}
           >
             <div className="pane-brand-header">
-              <img src="/logo.png" alt="KTD Logo" className="pane-logo" />
-              <div className="pane-brand-name">Knot To <span>Detail</span></div>
+              <div className="pane-brand-name font-brand text-2xl tracking-wider text-[#1A1A1A]">KTDL</div>
             </div>
 
             <div className="mb-2">
               <h2 className="form-header-title">Tạo Tài Khoản</h2>
               <p className="form-header-sub">
-                Trải nghiệm mua sắm thời trang nam cao cấp cùng KTD.
+                Trải nghiệm mua sắm thời trang nam cao cấp cùng KTDL.
               </p>
             </div>
 

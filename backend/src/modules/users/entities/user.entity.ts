@@ -26,6 +26,9 @@ export class User {
   @Column({ nullable: true })
   phone: string;
 
+  @Column({ type: 'text', nullable: true })
+  avatar_url: string;
+
   @Column({ default: false })
   is_locked: boolean;
 

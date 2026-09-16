@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X, Loader2, ArrowRight } from 'lucide-react';
 import { apiClient } from '../../lib/apiClient';
 
@@ -22,13 +23,16 @@ interface SearchAutocompleteProps {
   onSearchSubmitted?: () => void;
   className?: string;
   placeholder?: string;
+  expandable?: boolean;
 }
 
 export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
   onSearchSubmitted,
   className = '',
-  placeholder = 'Tìm kiếm áo polo, sơ mi, quần jean...',
+  placeholder = 'Tìm kiếm sản phẩm...',
+  expandable = false,
 }) => {
+  const [isExpanded, setIsExpanded] = useState(!expandable);
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState<SuggestionItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -68,14 +72,18 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
     const handleClickOutside = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setIsOpen(false);
+        if (expandable) {
+          setIsExpanded(false);
+        }
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [expandable]);
 
   const handleSelectProduct = (product: SuggestionItem) => {
     setIsOpen(false);
+    if (expandable) setIsExpanded(false);
     setQuery('');
     if (onSearchSubmitted) onSearchSubmitted();
     navigate(`/products/${product.slug || product.id}`);
@@ -84,6 +92,7 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
   const handleSubmitSearch = (searchTerm: string) => {
     if (!searchTerm.trim()) return;
     setIsOpen(false);
+    if (expandable) setIsExpanded(false);
     if (onSearchSubmitted) onSearchSubmitted();
     navigate(`/products?search=${encodeURIComponent(searchTerm.trim())}`);
   };
@@ -104,48 +113,95 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
       }
     } else if (e.key === 'Escape') {
       setIsOpen(false);
+      if (expandable) {
+        setIsExpanded(false);
+      }
     }
   };
 
-
-
   return (
     <div className={`relative ${className}`} ref={containerRef}>
-      <div className="relative flex items-center">
-        <Search className="w-4 h-4 text-slate-400 absolute left-3.5 pointer-events-none" />
-        <input
-          ref={inputRef}
-          type="text"
-          value={query}
-          onChange={(e) => {
-            setQuery(e.target.value);
-            setSelectedIndex(-1);
-          }}
-          onFocus={() => query.trim().length >= 2 && setIsOpen(true)}
-          onKeyDown={handleKeyDown}
-          placeholder={placeholder}
-          className="w-full pl-10 pr-9 py-2 bg-slate-50 hover:bg-slate-100/80 focus:bg-white text-slate-800 text-xs sm:text-sm font-medium border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 rounded-full transition-all outline-none"
-        />
-        {isLoading ? (
-          <Loader2 className="w-3.5 h-3.5 text-slate-400 animate-spin absolute right-3" />
-        ) : query ? (
-          <button
+      <AnimatePresence initial={false} mode="wait">
+        {expandable && !isExpanded ? (
+          <motion.button
+            key="search-trigger-btn"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            transition={{ duration: 0.15 }}
             type="button"
             onClick={() => {
-              setQuery('');
-              setSuggestions([]);
-              inputRef.current?.focus();
+              setIsExpanded(true);
+              setTimeout(() => inputRef.current?.focus(), 50);
             }}
-            className="p-1 text-slate-400 hover:text-slate-600 absolute right-2.5 rounded-full"
+            className="p-2 text-[#1A1A1A] hover:text-[#C8A96E] transition-colors rounded-full flex items-center justify-center"
+            aria-label="Mở tìm kiếm"
+            title="Tìm kiếm"
           >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        ) : null}
-      </div>
+            <Search className="w-4 h-4 sm:w-5 sm:h-5" />
+          </motion.button>
+        ) : (
+          <motion.div
+            key="search-input-wrapper"
+            initial={expandable ? { width: 40, opacity: 0 } : undefined}
+            animate={expandable ? { width: '100%', opacity: 1 } : undefined}
+            exit={expandable ? { width: 40, opacity: 0 } : undefined}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+            className={`relative flex items-center ${
+              expandable ? 'w-[210px] xs:w-[240px] sm:w-[270px]' : 'w-full'
+            }`}
+          >
+            <Search className="w-4 h-4 text-[#6E6E6E] absolute left-3 pointer-events-none" />
+            <input
+              ref={inputRef}
+              type="text"
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setSelectedIndex(-1);
+              }}
+              onFocus={() => query.trim().length >= 2 && setIsOpen(true)}
+              onKeyDown={handleKeyDown}
+              placeholder={placeholder}
+              className="w-full pl-9 pr-8 py-1.5 sm:py-2 bg-white text-[#1A1A1A] text-xs sm:text-sm font-sans border border-[#1A1A1A]/20 focus:border-[#C8A96E] focus:ring-1 focus:ring-[#C8A96E]/20 rounded-full transition-all outline-none shadow-xs"
+            />
+            {isLoading ? (
+              <Loader2 className="w-3.5 h-3.5 text-[#6E6E6E] animate-spin absolute right-2.5" />
+            ) : query ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setQuery('');
+                  setSuggestions([]);
+                  inputRef.current?.focus();
+                }}
+                className="p-1 text-[#6E6E6E] hover:text-[#1A1A1A] absolute right-2 rounded-full"
+                aria-label="Xóa nội dung"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            ) : expandable ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsExpanded(false);
+                  setIsOpen(false);
+                }}
+                className="p-1 text-[#6E6E6E] hover:text-[#1A1A1A] absolute right-2 rounded-full"
+                aria-label="Đóng tìm kiếm"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            ) : null}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Suggestions Dropdown */}
       {isOpen && query.trim().length >= 2 && (
-        <div className="absolute left-0 right-0 top-full mt-2 bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+        <div className={`absolute top-full mt-2 bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-150 ${
+          expandable ? 'right-0 w-[280px] sm:w-[340px]' : 'left-0 right-0'
+        }`}>
           <div className="p-2 border-b border-slate-50 flex items-center justify-between text-[11px] font-semibold text-slate-400 px-3">
             <span>Gợi ý sản phẩm ({suggestions.length})</span>
             <span className="text-[10px]">Nhấn Enter để tìm</span>
@@ -162,7 +218,7 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
                   key={item.id}
                   onClick={() => handleSelectProduct(item)}
                   className={`flex items-center gap-3 p-2.5 sm:p-3 cursor-pointer transition ${
-                    selectedIndex === idx ? 'bg-indigo-50/70 text-indigo-900' : 'hover:bg-slate-50 text-slate-800'
+                    selectedIndex === idx ? 'bg-[#FAF8F5] text-[#1A1A1A]' : 'hover:bg-[#FAF8F5] text-[#1A1A1A]'
                   }`}
                 >
                   <img
@@ -181,7 +237,7 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
                     </div>
                   </div>
                   <div className="text-right shrink-0">
-                    <span className="text-xs font-extrabold text-indigo-600">{formatVND(item.base_price)}</span>
+                    <span className="text-xs font-bold font-mono text-[#C8A96E]">{formatVND(item.base_price)}</span>
                   </div>
                 </div>
               ))}
@@ -193,7 +249,7 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
             <button
               type="button"
               onClick={() => handleSubmitSearch(query)}
-              className="w-full flex items-center justify-center gap-2 py-2 px-3 bg-white hover:bg-indigo-50 text-indigo-600 hover:text-indigo-700 text-xs font-bold rounded-xl border border-slate-200 transition shadow-xs"
+              className="w-full flex items-center justify-center gap-2 py-2 px-3 bg-white hover:bg-[#FAF8F5] text-[#1A1A1A] hover:text-[#C8A96E] text-xs font-bold rounded-xl border border-slate-200 transition shadow-xs"
             >
               <span>Xem tất cả kết quả cho "{query}"</span>
               <ArrowRight className="w-3.5 h-3.5" />

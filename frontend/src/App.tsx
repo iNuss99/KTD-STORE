@@ -19,6 +19,7 @@ const OrderDetailPage = lazy(() => import('./pages/storefront/OrderDetailPage').
 const WishlistPage = lazy(() => import('./pages/storefront/WishlistPage').then((m) => ({ default: m.WishlistPage })));
 const AddressManagementPage = lazy(() => import('./pages/storefront/AddressManagementPage').then((m) => ({ default: m.AddressManagementPage })));
 const CustomerLoginPage = lazy(() => import('./pages/storefront/CustomerLoginPage').then((m) => ({ default: m.CustomerLoginPage })));
+const AboutPage = lazy(() => import('./pages/storefront/AboutPage').then((m) => ({ default: m.AboutPage })));
 
 // Admin Pages (Code-split with React.lazy)
 const AdminLoginPage = lazy(() => import('./pages/admin/AdminLoginPage').then((m) => ({ default: m.AdminLoginPage })));
@@ -31,6 +32,7 @@ const AdminDiscountsPage = lazy(() => import('./pages/admin/AdminDiscountsPage')
 const AdminReturnsPage = lazy(() => import('./pages/admin/AdminReturnsPage').then((m) => ({ default: m.AdminReturnsPage })));
 const AdminAuditLogsPage = lazy(() => import('./pages/admin/AdminAuditLogsPage').then((m) => ({ default: m.AdminAuditLogsPage })));
 const AdminSettingsPage = lazy(() => import('./pages/admin/AdminSettingsPage').then((m) => ({ default: m.AdminSettingsPage })));
+const AdminProfilePage = lazy(() => import('./pages/admin/AdminProfilePage').then((m) => ({ default: m.AdminProfilePage })));
 
 const PageLoader: React.FC = () => (
   <div className="min-h-[50vh] flex flex-col items-center justify-center p-8">
@@ -59,6 +61,7 @@ export const App: React.FC = () => {
                 <Route path="/orders/:id" element={<OrderDetailPage />} />
                 <Route path="/wishlist" element={<WishlistPage />} />
                 <Route path="/addresses" element={<AddressManagementPage />} />
+                <Route path="/about" element={<AboutPage />} />
               </Route>
 
               {/* Standalone Customer Routes */}
@@ -80,6 +83,7 @@ export const App: React.FC = () => {
                 <Route path="returns" element={<AdminReturnsPage />} />
                 <Route path="audit-logs" element={<AdminAuditLogsPage />} />
                 <Route path="settings" element={<AdminSettingsPage />} />
+                <Route path="profile" element={<AdminProfilePage />} />
               </Route>
             </Routes>
           </Suspense>

@@ -9,9 +9,9 @@ export const AdminSettingsPage: React.FC = () => {
   const queryClient = useQueryClient();
   const { showSuccess, showError } = useToast();
   const { isSuperAdmin, role } = useAuth();
-  const [storeName, setStoreName] = useState('Knot To Detail');
+  const [storeName, setStoreName] = useState('KTDL');
   const [hotline, setHotline] = useState('1900 8888');
-  const [supportEmail, setSupportEmail] = useState('support@knottodetail.vn');
+  const [supportEmail, setSupportEmail] = useState('support@ktdl.vn');
   const [zaloUrl, setZaloUrl] = useState('https://zalo.me/0931143830');
   const [lowStockThreshold, setLowStockThreshold] = useState(5);
   const [shippingFee, setShippingFee] = useState(30000);
@@ -22,7 +22,7 @@ export const AdminSettingsPage: React.FC = () => {
   const [bankCode, setBankCode] = useState('MB');
   const [bankName, setBankName] = useState('MBBank (Ngân hàng Quân Đội)');
   const [bankAccountNo, setBankAccountNo] = useState('999988888');
-  const [bankAccountName, setBankAccountName] = useState('KNOT TO DETAIL');
+  const [bankAccountName, setBankAccountName] = useState('KTDL');
 
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -107,7 +107,7 @@ export const AdminSettingsPage: React.FC = () => {
             Cấu hình & Thiết lập Hệ thống
           </h1>
           <p className="text-sm text-slate-500 mt-1">
-            Quản lý thông tin cửa hàng, chính sách bán hàng, hạn mức tồn kho và giao diện quản trị Knot To Detail.
+            Quản lý thông tin cửa hàng, chính sách bán hàng, hạn mức tồn kho và giao diện quản trị KTDL.
           </p>
         </div>
 
@@ -153,7 +153,7 @@ export const AdminSettingsPage: React.FC = () => {
                 <span className="text-xs font-bold text-slate-500">Tên Cửa Hàng / Thương Hiệu</span>
                 <Lock className="w-3 h-3 text-slate-400" />
               </div>
-              <p className="text-xs font-extrabold text-slate-800">{storeName || 'Knot To Detail'}</p>
+              <p className="text-xs font-extrabold text-slate-800">{storeName || 'KTDL'}</p>
             </div>
 
             <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1">
@@ -169,7 +169,7 @@ export const AdminSettingsPage: React.FC = () => {
                 <span className="text-xs font-bold text-slate-500">Email CSKH</span>
                 <Lock className="w-3 h-3 text-slate-400" />
               </div>
-              <p className="text-xs font-extrabold text-slate-800">{supportEmail || 'support@knottodetail.vn'}</p>
+              <p className="text-xs font-extrabold text-slate-800">{supportEmail || 'support@ktdl.vn'}</p>
             </div>
 
             <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1">
@@ -184,7 +184,7 @@ export const AdminSettingsPage: React.FC = () => {
             </div>
           </div>
           <p className="text-[11px] text-slate-400 italic">
-            * Thông tin thương hiệu được cấu hình cố định theo cấu trúc website Knot To Detail để bảo đảm tính toàn vẹn nhận diện thương hiệu.
+            * Thông tin thương hiệu được cấu hình cố định theo cấu trúc website KTDL để bảo đảm tính toàn vẹn nhận diện thương hiệu.
           </p>
         </div>
 
@@ -321,7 +321,7 @@ export const AdminSettingsPage: React.FC = () => {
             <div className="flex items-center justify-between p-4 bg-amber-50/60 border border-amber-200/80 rounded-2xl">
               <div>
                 <p className="text-xs font-bold text-amber-950">Màu chủ đạo Giao diện CRM</p>
-                <p className="text-[11px] text-amber-800">Đã đồng bộ với Logo Knot To Detail (Warm Gold Amber #F59E0B)</p>
+                <p className="text-[11px] text-amber-800">Đã đồng bộ với Nhận diện KTDL (Warm Gold Amber #F59E0B)</p>
               </div>
               <div className="w-6 h-6 rounded-full bg-amber-500 border-2 border-white shadow-xs"></div>
             </div>

@@ -28,7 +28,7 @@ export const AIChatWidget: React.FC = () => {
     {
       id: 'welcome',
       sender: 'ai',
-      text: 'Xin chào anh! Em là Trợ lý AI Stylist của Knot To Detail — Studio chuyên các dòng Áo Nam cao cấp. Anh đang tìm phom dáng áo (Sơ mi, Polo, T-Shirt, Blazer) hay cần tư vấn size áo ạ?',
+      text: 'Xin chào anh! Em là Trợ lý AI Stylist của KTDL — Studio chuyên các dòng Áo Nam cao cấp. Anh đang tìm phom dáng áo (Sơ mi, Polo, T-Shirt, Blazer) hay cần tư vấn size áo ạ?',
     },
   ]);
 

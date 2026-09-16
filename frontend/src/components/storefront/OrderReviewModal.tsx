@@ -123,7 +123,7 @@ export const OrderReviewModal: React.FC<OrderReviewModalProps> = ({
           <div className="py-8 text-center space-y-2">
             <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto animate-bounce" />
             <h4 className="text-sm font-bold text-ink">Gửi đánh giá thành công!</h4>
-            <p className="text-xs text-ink-soft">Cảm ơn bạn đã đóng góp ý kiến cho Knot To Detail.</p>
+            <p className="text-xs text-ink-soft">Cảm ơn bạn đã đóng góp ý kiến cho KTDL.</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">

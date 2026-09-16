@@ -123,18 +123,10 @@ export const SiteHeader: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center h-16 sm:h-20 gap-4">
           {/* Brand Logo */}
-          <Link to="/" className="flex items-center gap-3 group shrink-0" title="KTD Store">
-            <div className="w-8 h-8 rounded-full border border-[#C8A96E] bg-white flex items-center justify-center text-[#C8A96E] font-editorial font-bold text-lg group-hover:scale-105 transition-transform">
-              K
-            </div>
-            <div className="flex flex-col">
-              <span className="font-editorial font-bold text-lg sm:text-2xl text-[#1A1A1A] tracking-tight leading-none group-hover:text-[#C8A96E] transition-colors">
-                KNOT TO DETAIL
-              </span>
-              <span className="font-mono text-[9px] text-[#6E6E6E] font-medium uppercase tracking-[0.25em] mt-0.5">
-                MENSWEAR & ATELIER
-              </span>
-            </div>
+          <Link to="/" className="flex items-center group shrink-0" title="KTDL">
+            <span className="font-brand text-2xl sm:text-3xl text-[#1A1A1A] tracking-wider leading-none group-hover:text-[#C8A96E] transition-colors py-1">
+              KTDL
+            </span>
           </Link>
 
           {/* Navigation Links (Desktop) */}
@@ -156,23 +148,27 @@ export const SiteHeader: React.FC = () => {
               Bộ sưu tập
             </Link>
             <Link
+              to="/about"
+              className={`font-mono text-xs uppercase tracking-[0.2em] transition-colors whitespace-nowrap ${
+                isActive('/about') ? 'text-[#C8A96E] font-bold border-b border-[#C8A96E] pb-0.5' : 'text-[#1A1A1A] hover:text-[#C8A96E]'
+              }`}
+            >
+              Về chúng tôi
+            </Link>
+            <Link
               to="/my-orders"
-              className={`font-mono text-xs uppercase tracking-[0.2em] transition-colors whitespace-nowrap flex items-center gap-1.5 ${
+              className={`font-mono text-xs uppercase tracking-[0.2em] transition-colors whitespace-nowrap ${
                 isActive('/my-orders') ? 'text-[#C8A96E] font-bold border-b border-[#C8A96E] pb-0.5' : 'text-[#1A1A1A] hover:text-[#C8A96E]'
               }`}
             >
-              <Package className="w-3.5 h-3.5 text-[#6E6E6E]" />
               Đơn hàng
             </Link>
           </nav>
 
-          {/* Search Bar Autocomplete (Desktop & Tablet) */}
-          <div className="hidden sm:block w-[180px] shrink-0">
-            <SearchAutocomplete />
-          </div>
-
           {/* Actions */}
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <SearchAutocomplete expandable />
+
             <NotificationBell isAdmin={false} />
 
             <Link
@@ -195,20 +191,6 @@ export const SiteHeader: React.FC = () => {
                 </span>
               )}
             </Link>
-
-
-
-            {/* Admin Quick Shortcut if Admin session exists */}
-            {hasAdminSession && (
-              <Link
-                to="/admin/dashboard"
-                className="hidden md:inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 bg-slate-900 hover:bg-slate-800 text-amber-400 border border-slate-700/80 rounded-full font-sans text-[11px] sm:text-xs font-bold transition shadow-xs shrink-0"
-                title="Truy cập Bảng điều khiển Quản trị (Admin CRM)"
-              >
-                <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
-                <span>Trang Admin</span>
-              </Link>
-            )}
 
             {/* Account Status / Login Button */}
             {userName ? (
@@ -326,11 +308,18 @@ export const SiteHeader: React.FC = () => {
             Tất cả sản phẩm
           </Link>
           <Link
+            to="/about"
+            onClick={() => setMobileMenuOpen(false)}
+            className={`block py-2 font-medium ${isActive('/about') ? 'text-[#d97706] font-bold' : 'text-ink'}`}
+          >
+            Về chúng tôi
+          </Link>
+          <Link
             to="/my-orders"
             onClick={() => setMobileMenuOpen(false)}
-            className={`flex items-center gap-2 py-2 font-medium ${isActive('/my-orders') ? 'text-[#d97706] font-bold' : 'text-ink'}`}
+            className={`block py-2 font-medium ${isActive('/my-orders') ? 'text-[#d97706] font-bold' : 'text-ink'}`}
           >
-            <Package className="w-4 h-4 text-[#d97706]" /> Đơn hàng của tôi
+            Đơn hàng của tôi
           </Link>
           <Link
             to="/wishlist"

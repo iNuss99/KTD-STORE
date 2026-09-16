@@ -419,7 +419,7 @@ export const ProductDetailPage: React.FC = () => {
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-indigo-600 shrink-0" />
                 <span className="font-medium">
-                  Được hoàn lên đến <strong className="font-bold text-indigo-700">{cashbackAmount}đ</strong> KTD Cash.
+                  Được hoàn lên đến <strong className="font-bold text-indigo-700">{cashbackAmount}đ</strong> KTDL Cash.
                 </span>
               </div>
               <ChevronDown className="w-4 h-4 text-indigo-400" />
