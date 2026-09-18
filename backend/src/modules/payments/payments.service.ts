@@ -59,7 +59,7 @@ export class PaymentsService implements OnApplicationBootstrap {
       try {
         const backendUrl = (
           this.configService.get<string>('BACKEND_URL') ||
-          'https://ktd-store-backend.onrender.com'
+          'https://ktd-store.onrender.com'
         ).replace(/\/+$/, '');
         const webhookUrl = `${backendUrl}/api/webhooks/payos`;
         await this.payOS.webhooks.confirm(webhookUrl);

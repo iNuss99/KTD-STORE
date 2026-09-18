@@ -13,7 +13,7 @@ const getBackendUrl = (): string => {
   if (import.meta.env.VITE_WS_URL) return import.meta.env.VITE_WS_URL;
   if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
   if (import.meta.env.PROD) {
-    return 'https://ktd-store-backend.onrender.com';
+    return 'https://ktd-store.onrender.com';
   }
   return '/';
 };
