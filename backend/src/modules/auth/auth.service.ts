@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, BadRequestException, UnauthorizedException, ForbiddenException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -48,6 +48,7 @@ export class AuthService {
         full_name: user.full_name,
         role: user.role,
         phone: user.phone,
+        avatar_url: user.avatar_url || null,
       },
       ...tokens,
     };
@@ -69,6 +70,10 @@ export class AuthService {
       throw new UnauthorizedException('Email hoặc mật khẩu không chính xác');
     }
 
+    if (dto.portal === 'admin' && user.role === UserRole.CUSTOMER) {
+      throw new ForbiddenException('Tài khoản khách hàng không có quyền truy cập hệ thống quản trị CRM');
+    }
+
     const tokens = await this.generateTokens(user);
     await this.updateRefreshTokenHash(user.id, tokens.refresh_token);
 
@@ -80,6 +85,7 @@ export class AuthService {
         full_name: user.full_name,
         role: user.role,
         phone: user.phone,
+        avatar_url: user.avatar_url || null,
       },
       ...tokens,
     };

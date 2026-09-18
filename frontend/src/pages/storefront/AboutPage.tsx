@@ -67,7 +67,7 @@ export const AboutPage: React.FC = () => {
               OUR KTDL HERITAGE
             </span>
             <h2 className="font-editorial text-3xl sm:text-4xl font-bold text-[#1A1A1A] leading-tight">
-              Tôn vinh vóc dáng quý ông qua từng phom dáng chuẩn mực
+              Tôn vinh vóc dáng quý ông qua từng form dáng chuẩn mực
             </h2>
             <p className="text-[#6E6E6E] text-sm sm:text-base leading-relaxed">
               KTDL ra đời từ niềm đam mê với nghệ thuật may đo bespoke và phong cách tối giản đương đại. Chúng tôi tin rằng một chiếc áo sơ mi hay polo hoàn hảo không cần họa tiết phô trương, mà nằm ở độ đứng của cổ áo, tỷ lệ vai thoải mái và chất liệu vải tự nhiên thượng hạng.
@@ -141,7 +141,7 @@ export const AboutPage: React.FC = () => {
               <HeartHandshake className="w-8 h-8 text-[#C8A96E]" />
               <h3 className="font-editorial text-lg font-bold text-[#1A1A1A]">Chăm Sóc Chu Đáo</h3>
               <p className="text-xs text-[#6E6E6E] leading-relaxed">
-                Đội ngũ Stylist cá nhân hỗ trợ tư vấn phom dáng, phối màu và chính sách bảo hành trọn đời cho đường may cúc áo.
+                Đội ngũ Stylist cá nhân hỗ trợ tư vấn form dáng, phối màu và chính sách bảo hành trọn đời cho đường may cúc áo.
               </p>
             </div>
           </div>
@@ -178,7 +178,7 @@ export const AboutPage: React.FC = () => {
               <li>Họ và tên, số điện thoại liên lạc để xác nhận đơn hàng và điều phối giao hàng.</li>
               <li>Địa chỉ giao nhận hàng hóa chi tiết.</li>
               <li>Địa chỉ email để gửi hóa đơn điện tử, mã vận đơn và thông tin chăm sóc khách hàng.</li>
-              <li>Lịch sử đơn hàng, số đo hoặc ghi chú chọn size để tư vấn phom dáng phù hợp nhất.</li>
+              <li>Lịch sử đơn hàng, số đo hoặc ghi chú chọn size để tư vấn form dáng phù hợp nhất.</li>
             </ul>
           </div>
 

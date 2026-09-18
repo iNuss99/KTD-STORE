@@ -238,9 +238,9 @@ export const OrderDetailPage: React.FC = () => {
         </Link>
 
         {/* Header */}
-        <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="bg-white rounded-3xl p-4 sm:p-6 border border-gray-100 shadow-xs mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <h1 className="text-xl font-extrabold text-slate-900">
                 Đơn hàng #{order.id.slice(0, 8).toUpperCase()}
               </h1>
@@ -251,22 +251,22 @@ export const OrderDetailPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             <button
               type="button"
               disabled={reordering}
               onClick={handleReorder}
-              className="px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs rounded-xl transition flex items-center gap-1.5"
+              className="min-h-[40px] flex-1 sm:flex-initial justify-center px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs rounded-xl transition flex items-center gap-1.5 cursor-pointer"
             >
               {reordering ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5" />}
-              <span>Mua lại đơn này</span>
+              <span>Mua lại</span>
             </button>
 
             {canCancel && (
               <button
                 disabled={cancelling}
                 onClick={handleCancelOrder}
-                className="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-700 font-bold text-xs rounded-xl transition flex items-center gap-1"
+                className="min-h-[40px] flex-1 sm:flex-initial justify-center px-4 py-2 bg-red-50 hover:bg-red-100 text-red-700 font-bold text-xs rounded-xl transition flex items-center gap-1 cursor-pointer"
               >
                 {cancelling ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Hủy đơn hàng'}
               </button>
@@ -275,7 +275,7 @@ export const OrderDetailPage: React.FC = () => {
             {order.status === 'DELIVERED' && !returnRequest && (
               <button
                 onClick={() => setShowReturnModal(true)}
-                className="px-4 py-2 bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold text-xs rounded-xl transition flex items-center gap-1"
+                className="min-h-[40px] flex-1 sm:flex-initial justify-center px-4 py-2 bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold text-xs rounded-xl transition flex items-center gap-1 cursor-pointer"
               >
                 Yêu cầu Đổi trả
               </button>

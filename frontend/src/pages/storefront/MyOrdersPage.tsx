@@ -4,6 +4,7 @@ import { Package, ArrowRight, Clock, Loader2 } from 'lucide-react';
 import { useMyOrders } from '../../hooks/useOrders';
 import { formatDateTime } from '../../lib/date-utils';
 import { OrderStatusBadge } from '../../components/admin/OrderStatusBadge';
+import { getAuthHeader } from '../../lib/auth-storage';
 
 export const MyOrdersPage: React.FC = () => {
   const { data: orders = [], isLoading: loading } = useMyOrders();
@@ -56,64 +57,134 @@ export const MyOrdersPage: React.FC = () => {
                 currency: 'VND',
               }).format(order.total || 0);
 
+              const handleReorder = async () => {
+                if (!order.items || order.items.length === 0) return;
+                for (const item of order.items) {
+                  if (item.variant_id) {
+                    await fetch('/api/cart/items', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        ...getAuthHeader(),
+                      },
+                      body: JSON.stringify({
+                        variant_id: item.variant_id,
+                        quantity: item.quantity || 1,
+                      }),
+                    });
+                  }
+                }
+                window.location.href = '/cart';
+              };
+
               return (
                 <div
                   key={order.id}
-                  className="bg-canvas border border-chalk p-5 transition hover:border-steel/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+                  className="bg-white border border-chalk rounded-2xl shadow-xs overflow-hidden transition-all hover:border-accent/40 hover:shadow-sm"
                 >
-                  <div className="space-y-1.5 font-mono text-xs">
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <span className="font-bold text-ink text-xs">
-                        ĐƠN HÀNG #{order.id.slice(0, 8).toUpperCase()}
+                  {/* MOBILE & TABLET PORTRAIT CARD VIEW (< md) */}
+                  <div className="md:hidden p-4 space-y-3.5">
+                    {/* Card Header: Order ID + Status */}
+                    <div className="flex items-center justify-between gap-2 border-b border-chalk pb-2.5">
+                      <span className="font-mono font-bold text-ink text-xs tracking-wider">
+                        #{order.id.slice(0, 8).toUpperCase()}
                       </span>
                       <OrderStatusBadge status={order.status} />
                     </div>
-                    <div className="text-smoke flex items-center gap-1.5 text-[11px]">
-                      <Clock className="w-3 h-3 text-stitch" /> Ngày đặt: {formattedDate}
+
+                    {/* Card Body: Info */}
+                    <div className="space-y-1.5 font-sans text-xs">
+                      <div className="text-smoke flex items-center gap-1.5 text-[11px] font-mono">
+                        <Clock className="w-3.5 h-3.5 text-stitch shrink-0" />
+                        <span>{formattedDate}</span>
+                      </div>
+                      <div className="text-steel">
+                        Người nhận:{' '}
+                        <strong className="text-ink font-semibold">
+                          {order.shipping_snapshot?.receiver_name || 'Khách hàng'}
+                        </strong>
+                        {order.shipping_snapshot?.phone && (
+                          <span className="text-smoke font-mono"> ({order.shipping_snapshot.phone})</span>
+                        )}
+                      </div>
                     </div>
-                    <div className="text-steel font-sans text-xs">
-                      Người nhận: <strong className="text-ink">{order.shipping_snapshot?.receiver_name}</strong> ({order.shipping_snapshot?.phone})
+
+                    {/* Card Footer: Total Amount + Actions */}
+                    <div className="pt-2.5 border-t border-chalk flex flex-col gap-3">
+                      <div className="flex items-baseline justify-between font-mono">
+                        <span className="text-[11px] text-smoke uppercase tracking-wider">
+                          Tổng ({order.items?.length || 0} món):
+                        </span>
+                        <span className="font-bold text-ink text-base">
+                          {formattedTotal}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={handleReorder}
+                          className="min-h-[44px] px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs rounded-xl transition flex items-center justify-center cursor-pointer"
+                        >
+                          Mua lại
+                        </button>
+
+                        <Link
+                          to={`/orders/${order.id}`}
+                          className="min-h-[44px] px-3 py-2 bg-ink hover:bg-accent text-white font-sans text-xs font-bold rounded-xl flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                        >
+                          Chi tiết <ArrowRight className="w-3.5 h-3.5" />
+                        </Link>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto pt-3 sm:pt-0 border-t sm:border-t-0 border-chalk">
-                    <div className="text-left sm:text-right font-mono">
-                      <div className="text-[10px] text-smoke uppercase">Tổng thanh toán ({order.items?.length || 0} sản phẩm)</div>
-                      <div className="font-bold text-ink text-base stitch-underline">{formattedTotal}</div>
+                  {/* DESKTOP & TABLET LANDSCAPE VIEW (≥ md) */}
+                  <div className="hidden md:flex items-center justify-between p-5 gap-6">
+                    <div className="space-y-1.5 font-mono text-xs flex-1">
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <span className="font-bold text-ink text-xs tracking-wider">
+                          ĐƠN HÀNG #{order.id.slice(0, 8).toUpperCase()}
+                        </span>
+                        <OrderStatusBadge status={order.status} />
+                      </div>
+                      <div className="text-smoke flex items-center gap-1.5 text-[11px]">
+                        <Clock className="w-3.5 h-3.5 text-stitch" /> Ngày đặt: {formattedDate}
+                      </div>
+                      <div className="text-steel font-sans text-xs">
+                        Người nhận:{' '}
+                        <strong className="text-ink">
+                          {order.shipping_snapshot?.receiver_name}
+                        </strong>{' '}
+                        ({order.shipping_snapshot?.phone})
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          if (!order.items || order.items.length === 0) return;
-                          for (const item of order.items) {
-                            if (item.variant_id) {
-                              await fetch('/api/cart/items', {
-                                method: 'POST',
-                                headers: {
-                                  'Content-Type': 'application/json',
-                                  Authorization: `Bearer ${localStorage.getItem('token')}`,
-                                },
-                                body: JSON.stringify({
-                                  variant_id: item.variant_id,
-                                  quantity: item.quantity || 1,
-                                }),
-                              });
-                            }
-                          }
-                          window.location.href = '/cart';
-                        }}
-                        className="px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs rounded-xl transition"
-                      >
-                        Mua lại
-                      </button>
 
-                      <Link
-                        to={`/orders/${order.id}`}
-                        className="px-4 py-2 bg-ink hover:bg-accent text-white font-sans text-xs font-bold rounded-xl flex items-center gap-1 transition-colors"
-                      >
-                        Chi tiết <ArrowRight className="w-3.5 h-3.5" />
-                      </Link>
+                    <div className="flex items-center gap-6 shrink-0">
+                      <div className="text-right font-mono">
+                        <div className="text-[10px] text-smoke uppercase">
+                          Tổng thanh toán ({order.items?.length || 0} sản phẩm)
+                        </div>
+                        <div className="font-bold text-ink text-base stitch-underline">
+                          {formattedTotal}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={handleReorder}
+                          className="min-h-[40px] px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs rounded-xl transition cursor-pointer"
+                        >
+                          Mua lại
+                        </button>
+
+                        <Link
+                          to={`/orders/${order.id}`}
+                          className="min-h-[40px] px-4 py-2 bg-ink hover:bg-accent text-white font-sans text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
+                        >
+                          Chi tiết <ArrowRight className="w-3.5 h-3.5" />
+                        </Link>
+                      </div>
                     </div>
                   </div>
                 </div>

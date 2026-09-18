@@ -109,7 +109,7 @@ export function getUserId(): string | null {
     const id = localStorage.getItem(CUSTOMER_USER_ID_KEY);
     if (id) return id;
     // Fallback: decode from JWT
-    const token = localStorage.getItem(CUSTOMER_TOKEN_KEY);
+    const token = getAuthToken();
     if (token) {
       const decoded = decodeJwtPayload(token);
       return decoded?.sub || null;
@@ -141,7 +141,7 @@ export function getUserRole(): string | null {
       if (u.role) return u.role;
     }
     // Fallback: decode from JWT
-    const token = localStorage.getItem(CUSTOMER_TOKEN_KEY);
+    const token = getAuthToken();
     if (token) {
       const decoded = decodeJwtPayload(token);
       return decoded?.role || null;
@@ -163,7 +163,7 @@ export function getUserName(): string | null {
       if (u.full_name || u.email) return u.full_name || u.email.split('@')[0];
     }
     // Fallback: decode from JWT
-    const token = localStorage.getItem(CUSTOMER_TOKEN_KEY);
+    const token = getAuthToken();
     if (token) {
       const decoded = decodeJwtPayload(token);
       return decoded?.email?.split('@')[0] || null;
@@ -195,32 +195,31 @@ export function getUserPhone(): string | null {
 }
 
 /**
- * Sets the CUSTOMER active session.
- * Wipes prior customer sessions AND clears any lingering admin sessions
- * to ensure complete session isolation on this browser.
+ * Sets the active session for Storefront (Customer namespace).
+ * Hoàn toàn cô lập (Complete Isolation):
+ * - Chỉ ghi vào CUSTOMER namespace.
+ * - TUYỆT ĐỐI KHÔNG xóa hay ghi đè ADMIN namespace.
  */
 export function setActiveSession(data: {
   accessToken: string;
   refreshToken?: string;
-  user?: { id: string; role?: string; full_name?: string; email?: string; phone?: string } | null;
+  user?: { id: string; role?: string; full_name?: string; email?: string; phone?: string; avatar_url?: string } | null;
 }): void {
   try {
     if (typeof localStorage !== 'undefined') {
-      CUSTOMER_STORAGE_KEYS.forEach((k) => localStorage.removeItem(k));
-      ADMIN_STORAGE_KEYS.forEach((k) => localStorage.removeItem(k));
-
-      localStorage.setItem(CUSTOMER_TOKEN_KEY, data.accessToken);
-      if (data.refreshToken) {
-        localStorage.setItem(CUSTOMER_REFRESH_KEY, data.refreshToken);
-      }
-
-      // Resolve user object — fall back to JWT decode if backend omits it
       let user = data.user;
       if (!user) {
         const decoded = decodeJwtPayload(data.accessToken);
         if (decoded) {
           user = { id: decoded.sub || '', role: decoded.role, email: decoded.email };
         }
+      }
+
+      CUSTOMER_STORAGE_KEYS.forEach((k) => localStorage.removeItem(k));
+
+      localStorage.setItem(CUSTOMER_TOKEN_KEY, data.accessToken);
+      if (data.refreshToken) {
+        localStorage.setItem(CUSTOMER_REFRESH_KEY, data.refreshToken);
       }
 
       if (user) {
@@ -239,6 +238,10 @@ export function setActiveSession(data: {
   }
 }
 
+/**
+ * Đăng xuất theo ngữ cảnh Storefront (Contextual Logout):
+ * Chỉ xóa sạch phiên ở Storefront (CUSTOMER namespace), giữ nguyên phiên Quản trị CRM.
+ */
 export function clearAuthToken(): void {
   try {
     if (typeof localStorage !== 'undefined') {
@@ -247,6 +250,21 @@ export function clearAuthToken(): void {
     dispatchAuthEvents();
   } catch (e) {
     console.error('Error clearing customer auth:', e);
+  }
+}
+
+/**
+ * Global Logout: Đăng xuất toàn diện, xóa sạch cả Storefront và CRM (dùng khi cần thiết).
+ */
+export function clearAllAuth(): void {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      CUSTOMER_STORAGE_KEYS.forEach((k) => localStorage.removeItem(k));
+      ADMIN_STORAGE_KEYS.forEach((k) => localStorage.removeItem(k));
+    }
+    dispatchAuthEvents();
+  } catch (e) {
+    console.error('Error clearing all auth:', e);
   }
 }
 
@@ -395,10 +413,21 @@ export function updateAdminProfileData(partialUser: {
   }
 }
 
+export function getAdminUser(): any | null {
+  try {
+    if (typeof localStorage === 'undefined') return null;
+    const userStr = localStorage.getItem(ADMIN_USER_KEY);
+    return userStr ? JSON.parse(userStr) : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Sets the ADMIN active session in the admin namespace.
- * Wipes prior admin sessions AND clears any customer sessions
- * to ensure complete session isolation.
+ * Hoàn toàn cô lập (Complete Isolation):
+ * - Chỉ ghi vào ADMIN namespace cho CRM.
+ * - TUYỆT ĐỐI KHÔNG xóa hay ghi đè CUSTOMER namespace của Storefront.
  */
 export function setAdminActiveSession(data: {
   accessToken: string;
@@ -408,8 +437,8 @@ export function setAdminActiveSession(data: {
   try {
     if (typeof localStorage !== 'undefined') {
       ADMIN_STORAGE_KEYS.forEach((k) => localStorage.removeItem(k));
-      CUSTOMER_STORAGE_KEYS.forEach((k) => localStorage.removeItem(k));
 
+      // Lưu phiên quản trị CRM
       localStorage.setItem(ADMIN_TOKEN_KEY, data.accessToken);
       if (data.refreshToken) {
         localStorage.setItem(ADMIN_REFRESH_KEY, data.refreshToken);
@@ -433,6 +462,10 @@ export function setAdminActiveSession(data: {
   }
 }
 
+/**
+ * Đăng xuất theo ngữ cảnh CRM (Contextual Logout):
+ * Chỉ xóa sạch phiên ở CRM (ADMIN namespace), giữ nguyên phiên Khách hàng Storefront.
+ */
 export function clearAdminAuth(): void {
   try {
     if (typeof localStorage !== 'undefined') {

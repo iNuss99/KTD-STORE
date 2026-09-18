@@ -6,7 +6,7 @@ import { OrderStatusBadge } from '../admin/OrderStatusBadge';
 describe('OrderStatusBadge Component', () => {
   it('Render đúng nhãn cho trạng thái PENDING', () => {
     render(<OrderStatusBadge status="PENDING" />);
-    expect(screen.getByText('Mới (Chờ xác nhận)')).toBeInTheDocument();
+    expect(screen.getByText('Chờ xác nhận')).toBeInTheDocument();
   });
 
   it('Render đúng nhãn cho trạng thái DELIVERED', () => {

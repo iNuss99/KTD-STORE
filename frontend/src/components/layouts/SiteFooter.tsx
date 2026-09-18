@@ -15,16 +15,16 @@ export const SiteFooter: React.FC = () => {
   });
 
   return (
-    <footer className="bg-white border-t border-[#1A1A1A]/10 text-[#1A1A1A] font-sans pt-16 pb-12 mt-20">
+    <footer className="bg-white border-t border-[#1A1A1A]/10 text-[#1A1A1A] font-sans pt-10 sm:pt-16 pb-10 sm:pb-12 mt-12 sm:mt-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Value Proposition Strip */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 pb-12 mb-12 border-b border-[#1A1A1A]/10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 pb-8 sm:pb-12 mb-8 sm:mb-12 border-b border-[#1A1A1A]/10">
           <div className="flex items-start gap-4">
             <div className="p-3 bg-[#F5F2EE] border border-[#C8A96E]/40 text-[#C8A96E]">
               <Truck className="w-5 h-5 stroke-[1.5]" />
             </div>
             <div>
-              <h4 className="font-editorial font-bold text-lg text-[#1A1A1A] mb-1">Vận chuyển toàn quốc</h4>
+              <h4 className="font-editorial font-bold text-base sm:text-lg text-[#1A1A1A] mb-1">Vận chuyển toàn quốc</h4>
               <p className="text-xs text-[#6E6E6E] leading-relaxed">Giao hàng hỏa tốc trong 24h-48h toàn quốc</p>
             </div>
           </div>
@@ -33,7 +33,7 @@ export const SiteFooter: React.FC = () => {
               <RefreshCw className="w-5 h-5 stroke-[1.5]" />
             </div>
             <div>
-              <h4 className="font-editorial font-bold text-lg text-[#1A1A1A] mb-1">Đổi trả 30 ngày</h4>
+              <h4 className="font-editorial font-bold text-base sm:text-lg text-[#1A1A1A] mb-1">Đổi trả 30 ngày</h4>
               <p className="text-xs text-[#6E6E6E] leading-relaxed">Đổi mẫu hoặc đổi size miễn phí tận nhà</p>
             </div>
           </div>
@@ -42,8 +42,8 @@ export const SiteFooter: React.FC = () => {
               <ShieldCheck className="w-5 h-5 stroke-[1.5]" />
             </div>
             <div>
-              <h4 className="font-editorial font-bold text-lg text-[#1A1A1A] mb-1">Cam kết KTDL</h4>
-              <p className="text-xs text-[#6E6E6E] leading-relaxed">100% chất liệu vải tuyển chọn chuẩn phom</p>
+              <h4 className="font-editorial font-bold text-base sm:text-lg text-[#1A1A1A] mb-1">Cam kết KTDL</h4>
+              <p className="text-xs text-[#6E6E6E] leading-relaxed">100% chất liệu vải tuyển chọn chuẩn form dáng</p>
             </div>
           </div>
           <div className="flex items-start gap-4">
@@ -51,16 +51,16 @@ export const SiteFooter: React.FC = () => {
               <PhoneCall className="w-5 h-5 stroke-[1.5]" />
             </div>
             <div>
-              <h4 className="font-editorial font-bold text-lg text-[#1A1A1A] mb-1">Tư vấn phong cách</h4>
+              <h4 className="font-editorial font-bold text-base sm:text-lg text-[#1A1A1A] mb-1">Tư vấn phong cách</h4>
               <p className="text-xs text-[#6E6E6E] leading-relaxed">Hỗ trợ phối đồ chuyên nghiệp 24/7</p>
             </div>
           </div>
         </div>
 
         {/* Footer Links Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-12 pb-12 border-b border-[#1A1A1A]/10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-8 lg:gap-12 pb-12 border-b border-[#1A1A1A]/10">
           {/* Brand Col */}
-          <div className="md:col-span-5 space-y-4">
+          <div className="sm:col-span-2 lg:col-span-5 space-y-4">
             <Link to="/" className="flex items-center">
               <span className="font-brand text-2xl text-[#1A1A1A] tracking-wider">KTDL</span>
             </Link>
@@ -79,7 +79,7 @@ export const SiteFooter: React.FC = () => {
                 />
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-[#1A1A1A] text-white hover:bg-[#C8A96E] transition-colors flex items-center gap-2 font-mono text-xs uppercase tracking-wider"
+                  className="px-5 py-2 bg-[#1A1A1A] text-white hover:bg-[#C8A96E] transition-colors flex items-center gap-2 font-mono text-xs uppercase tracking-wider cursor-pointer"
                 >
                   <ArrowRight className="w-4 h-4" />
                 </button>
@@ -88,7 +88,7 @@ export const SiteFooter: React.FC = () => {
           </div>
 
           {/* Quick Links */}
-          <div className="md:col-span-2 space-y-3">
+          <div className="lg:col-span-2 space-y-3">
             <h4 className="font-mono text-xs font-semibold text-[#1A1A1A] uppercase tracking-[0.2em]">BỘ SƯU TẬP</h4>
             <ul className="space-y-2 text-xs text-[#6E6E6E] font-sans">
               {categories.length > 0 ? (
@@ -116,7 +116,7 @@ export const SiteFooter: React.FC = () => {
           </div>
 
           {/* Support */}
-          <div className="md:col-span-2 space-y-3">
+          <div className="lg:col-span-2 space-y-3">
             <h4 className="font-mono text-xs font-semibold text-[#1A1A1A] uppercase tracking-[0.2em]">HỖ TRỢ</h4>
             <ul className="space-y-2 text-xs text-[#6E6E6E] font-sans">
               <li><Link to="/about" className="hover:text-[#C8A96E] transition">Về KTDL</Link></li>
@@ -128,7 +128,7 @@ export const SiteFooter: React.FC = () => {
           </div>
 
           {/* Contact */}
-          <div className="md:col-span-3 space-y-3">
+          <div className="sm:col-span-2 lg:col-span-3 space-y-3">
             <h4 className="font-mono text-xs font-semibold text-[#1A1A1A] uppercase tracking-[0.2em]">LIÊN HỆ KTDL</h4>
             <p className="text-xs text-[#6E6E6E] leading-relaxed">
               Showroom: 123 Đường Thời Trang, Quận 1, TP. Hồ Chí Minh

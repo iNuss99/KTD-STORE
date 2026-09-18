@@ -92,23 +92,20 @@ export const HomePage: React.FC = () => {
       id: 'ao-so-mi',
       name: 'Áo Sơ Mi KTDL',
       tag: 'Tailored Oxford',
-      itemCount: '24+ Thiết kế',
-      desc: 'Phom dáng may đo chuẩn xác, chất vải Oxford dệt vân cao cấp',
+      desc: 'Form dáng may đo chuẩn xác, chất vải Oxford dệt vân cao cấp',
       image: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=900&auto=format&fit=crop&q=85',
     },
     {
       id: 'ao-polo',
       name: 'Áo Polo Cotton',
       tag: 'Pima Cotton 3D',
-      itemCount: '18+ Thiết kế',
-      desc: 'Sợi bông chải kỹ siêu mịn, cổ dệt 3D giữ phom sắc nét',
+      desc: 'Sợi bông chải kỹ siêu mịn, cổ dệt 3D giữ form sắc nét',
       image: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=900&auto=format&fit=crop&q=85',
     },
     {
       id: 'ao-thun',
       name: 'Áo Thun',
       tag: 'Heavyweight Fit',
-      itemCount: '32+ Thiết kế',
       desc: 'Định lượng 260gsm dày dặn, thoáng khí tự nhiên vượt trội',
       image: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=900&auto=format&fit=crop&q=85',
     },
@@ -116,7 +113,6 @@ export const HomePage: React.FC = () => {
       id: 'ao-khoac',
       name: 'Áo Khoác Heritage',
       tag: 'Signature Outerwear',
-      itemCount: '12+ Thiết kế',
       desc: 'Chất liệu trượt nước công nghệ cao, lót lụa mềm mại',
       image: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=900&auto=format&fit=crop&q=85',
     },
@@ -159,7 +155,7 @@ export const HomePage: React.FC = () => {
               </span>
             </div>
 
-            <h1 className="font-editorial font-bold text-4xl sm:text-6xl lg:text-7xl text-[#C8A96E] leading-[1.15] sm:leading-[1.1] tracking-tight">
+            <h1 className="font-editorial font-bold text-3xl sm:text-6xl lg:text-7xl text-[#C8A96E] leading-[1.15] sm:leading-[1.1] tracking-tight">
               <span className="italic font-serif block">
                 Tối Giản <br />
                 Tinh Tế <br />
@@ -168,7 +164,7 @@ export const HomePage: React.FC = () => {
             </h1>
 
             <p className="text-[#6E6E6E] text-base sm:text-lg max-w-xl font-sans leading-relaxed">
-              KTDL — Studio chuyên các dòng áo nam cao cấp. Cắt may tỉ mỉ, chất liệu tự nhiên chuẩn phom, nâng tầm phong cách lịch lãm hàng ngày.
+              KTDL — Studio chuyên các dòng áo nam cao cấp. Cắt may tỉ mỉ, chất liệu tự nhiên chuẩn form dáng, nâng tầm phong cách lịch lãm hàng ngày.
             </p>
 
             <div className="pt-2 sm:pt-4">
@@ -279,7 +275,7 @@ export const HomePage: React.FC = () => {
             Lựa Chọn Theo Dáng Áo
           </h3>
           <p className="text-xs sm:text-sm text-[#6E6E6E] font-sans max-w-lg mx-auto leading-relaxed">
-            Được nghiên cứu phom dáng chuẩn mực theo tỉ lệ cơ thể nam giới, tôn vinh khí chất lịch lãm trong từng chuyển động.
+            Được nghiên cứu form dáng chuẩn mực theo tỉ lệ cơ thể nam giới, tôn vinh khí chất lịch lãm trong từng chuyển động.
           </p>
         </div>
 
@@ -288,7 +284,7 @@ export const HomePage: React.FC = () => {
             <Link
               key={cat.id}
               to={`/products?category=${cat.id}`}
-              className="group relative overflow-hidden rounded-2xl bg-[#141414] aspect-[3/4] sm:aspect-[4/5] shadow-md hover:shadow-2xl transition-all duration-700 flex flex-col justify-between border border-[#1A1A1A]/10 hover:border-[#C8A96E]/80"
+              className="group relative overflow-hidden bg-[#141414] aspect-[3/4] sm:aspect-[4/5] shadow-md hover:shadow-2xl transition-all duration-700 flex flex-col justify-between border border-[#E5C985]/40 hover:border-[#E5C985]"
             >
               {/* Background Image with Smooth Zoom */}
               <div className="absolute inset-0 overflow-hidden bg-[#1A1A1A]">
@@ -305,23 +301,18 @@ export const HomePage: React.FC = () => {
               <div className="absolute inset-x-0 bottom-0 h-3/4 bg-gradient-to-t from-black/95 via-black/55 to-transparent pointer-events-none" />
 
               {/* Subtle ambient border glow on hover */}
-              <div className="absolute inset-0 rounded-2xl ring-1 ring-inset ring-white/10 group-hover:ring-[#C8A96E]/50 pointer-events-none transition-all duration-500" />
+              <div className="absolute inset-0 ring-1 ring-inset ring-[#E5C985]/20 group-hover:ring-[#E5C985]/60 pointer-events-none transition-all duration-500" />
 
-              {/* Floating Header Badges */}
-              <div className="relative z-10 p-5 flex items-center justify-between">
-                <span className="px-3 py-1 rounded-full bg-black/45 backdrop-blur-md border border-white/20 text-[11px] font-mono font-medium text-white/90 shadow-sm flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#C8A96E]" />
-                  {cat.itemCount}
-                </span>
-
-                <div className="w-8 h-8 rounded-full bg-white/15 backdrop-blur-md border border-white/25 text-white flex items-center justify-center group-hover:bg-[#C8A96E] group-hover:text-[#1A1A1A] group-hover:scale-110 group-hover:border-[#C8A96E] shadow-sm transition-all duration-300">
+              {/* Floating Header Action */}
+              <div className="relative z-10 p-5 flex items-center justify-end">
+                <div className="w-8 h-8 rounded-full bg-white/15 backdrop-blur-md border border-white/25 text-white flex items-center justify-center group-hover:bg-[#E5C985] group-hover:text-[#1A1A1A] group-hover:scale-110 group-hover:border-[#E5C985] shadow-sm transition-all duration-300">
                   <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
                 </div>
               </div>
 
               {/* Bottom Content Overlay */}
               <div className="relative z-10 p-5 pt-0 space-y-1.5">
-                <span className="text-[10px] sm:text-[11px] font-mono tracking-widest text-[#C8A96E] uppercase font-bold block">
+                <span className="text-[10px] sm:text-[11px] font-mono tracking-widest text-[#E5C985] uppercase font-bold block">
                   {cat.tag}
                 </span>
 
@@ -334,7 +325,7 @@ export const HomePage: React.FC = () => {
                 </p>
 
                 {/* Hover CTA Bar */}
-                <div className="pt-3 border-t border-white/15 flex items-center justify-between text-xs font-semibold text-white/90 group-hover:text-[#C8A96E] transition-colors">
+                <div className="pt-3 border-t border-[#E5C985]/25 group-hover:border-[#E5C985]/60 flex items-center justify-between text-xs font-semibold text-white/90 group-hover:text-[#E5C985] transition-colors">
                   <span className="font-mono text-[11px] tracking-wider uppercase">Xem bộ sưu tập</span>
                   <ArrowRight className="w-3.5 h-3.5 transition-transform duration-300 group-hover:translate-x-1" />
                 </div>
@@ -364,7 +355,7 @@ export const HomePage: React.FC = () => {
         </div>
 
         {isLoading ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5 sm:gap-6">
             {[...Array(4)].map((_, i) => (
               <div key={i} className="animate-pulse bg-white border border-[#1A1A1A]/10 p-4 space-y-4">
                 <div className="aspect-[3/4] bg-[#EFECE6]" />
@@ -374,7 +365,7 @@ export const HomePage: React.FC = () => {
             ))}
           </div>
         ) : isError || products.length === 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5 sm:gap-6">
             <ProductCard
               name="Áo Polo Cotton Supima"
               price={450000}
@@ -408,7 +399,7 @@ export const HomePage: React.FC = () => {
             />
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5 sm:gap-6">
             {products.slice(0, 8).map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
@@ -418,7 +409,7 @@ export const HomePage: React.FC = () => {
 
       {/* Brand Pillars Grid */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 bg-white border border-[#1A1A1A]/10 p-8 sm:p-12">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 bg-white border border-[#1A1A1A]/10 p-6 sm:p-12">
           <div className="space-y-3 text-center md:text-left">
             <div className="w-10 h-10 rounded-full bg-[#F5F2EE] border border-[#C8A96E]/40 flex items-center justify-center text-[#C8A96E] mx-auto md:mx-0">
               <Sparkles className="w-5 h-5" />

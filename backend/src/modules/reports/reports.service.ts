@@ -367,12 +367,15 @@ export class ReportsService {
       const parsedLimit = Number(limit) > 0 ? Number(limit) : 10;
       const rawResults = await this.orderItemRepo
         .createQueryBuilder('item')
-        .leftJoin('item.order', 'order')
-        .select('COALESCE(item.product_name, item.sku)', 'productName')
+        .innerJoin('item.order', 'order')
+        .leftJoin('item.variant', 'variant')
+        .leftJoin('variant.product', 'product')
+        .select('COALESCE(product.name, item.product_name)', 'productName')
         .addSelect('SUM(item.quantity)::int', 'totalQuantity')
         .addSelect('SUM(item.price * item.quantity)::numeric', 'totalRevenue')
         .where('order.status = :status', { status: OrderStatus.DELIVERED })
-        .groupBy('COALESCE(item.product_name, item.sku)')
+        .andWhere('(product.id IS NOT NULL AND product.is_active = true)')
+        .groupBy('COALESCE(product.name, item.product_name)')
         .orderBy('"totalQuantity"', 'DESC')
         .limit(parsedLimit)
         .getRawMany();

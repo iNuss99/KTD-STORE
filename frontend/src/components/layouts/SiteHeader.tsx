@@ -25,19 +25,24 @@ export const SiteHeader: React.FC = () => {
 
   const [userName, setUserName] = useState<string | null>(null);
   const [hasAdminSession, setHasAdminSession] = useState(false);
+  const [isAdminShopping, setIsAdminShopping] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const checkAuth = useCallback(() => {
     const isAdminRoute = location.pathname.startsWith('/admin') || location.pathname.startsWith('/crm');
+    const staffRoles = ['SUPER_ADMIN', 'CEO', 'MANAGER', 'STAFF'];
 
-    // 1. Kiểm tra session Admin
+    // 1. Kiểm tra session Admin CRM
     const adminToken = getAdminAuthToken();
     const adminRoleVal = getAdminRole();
-    const staffRoles = ['SUPER_ADMIN', 'CEO', 'MANAGER', 'STAFF'];
     const hasValidAdmin = Boolean(adminToken && adminRoleVal && staffRoles.includes(adminRoleVal));
 
-    // 2. Xác định tài khoản hiển thị trên Header tùy ngữ cảnh
+    // 2. Kiểm tra session Storefront
+    const token = getAuthToken();
+    const customerRole = getUserRole();
+    const isCustomerStaff = Boolean(customerRole && staffRoles.includes(customerRole));
+
     if (isAdminRoute) {
       if (adminToken) {
         setUserName(getAdminName() || 'Admin');
@@ -45,29 +50,20 @@ export const SiteHeader: React.FC = () => {
         setUserName(null);
       }
       setHasAdminSession(hasValidAdmin);
+      setIsAdminShopping(false);
     } else {
-      // Trên Storefront: chỉ đọc danh tính khách hàng từ customer namespace
-      const token = getAuthToken();
-      const customerRole = getUserRole();
+      // Trên Storefront: danh tính người dùng lấy từ Customer namespace
       if (token) {
-        const name = getUserName() || 'Tài khoản';
-        setUserName(name);
+        setUserName(getUserName() || 'Tài khoản');
       } else {
         setUserName(null);
       }
 
-      // TUYỆT ĐỐI KHÔNG hiển thị nút Trang Admin nếu tài khoản đang đăng nhập là CUSTOMER
-      // Chỉ hiển thị nút Trang Admin khi tài khoản đang đăng nhập thực sự là Staff/Admin
-      if (customerRole === 'CUSTOMER') {
-        setHasAdminSession(false);
-      } else {
-        const isStaffUser = Boolean(adminRoleVal && staffRoles.includes(adminRoleVal));
-        setHasAdminSession(isStaffUser && hasValidAdmin);
-      }
+      // Có quyền Admin nếu tài khoản Storefront là Staff HOẶC trình duyệt đã đăng nhập CRM
+      setHasAdminSession(isCustomerStaff || hasValidAdmin);
+      setIsAdminShopping(isCustomerStaff && Boolean(token));
     }
   }, [location.pathname]);
-
-  const isAdminShopping = hasAdminSession && !userName;
 
   useEffect(() => {
     checkAuth();
@@ -81,9 +77,20 @@ export const SiteHeader: React.FC = () => {
     };
   }, [checkAuth]);
 
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileMenuOpen]);
+
   const handleLogout = () => {
+    // Contextual Logout: Chỉ đăng xuất khỏi Storefront
     clearAuthToken();
-    clearAdminAuth();
     setShowUserMenu(false);
     setMobileMenuOpen(false);
     navigate('/login');
@@ -108,13 +115,13 @@ export const SiteHeader: React.FC = () => {
         <div className="bg-gradient-to-r from-amber-600 to-amber-700 text-white text-xs font-bold flex items-center justify-between px-4 py-2 shadow-xs">
           <span className="flex items-center gap-2">
             <span>👑</span>
-            <span>Đang dùng tài khoản Admin ({getAdminName() || 'Super Admin'}) để test mua sắm</span>
+            <span>Đang dùng tài khoản Quản trị ({userName || 'Staff'}) để trải nghiệm mua sắm</span>
           </span>
           <button
             onClick={() => {
               navigate('/admin');
             }}
-            className="ml-4 underline hover:no-underline bg-amber-800/80 hover:bg-amber-900 px-3 py-1 rounded-md text-white text-xs font-semibold transition"
+            className="ml-4 underline hover:no-underline bg-amber-800/80 hover:bg-amber-900 px-3 py-1 rounded-md text-white text-xs font-semibold transition cursor-pointer"
           >
             ← Về trang Quản trị
           </button>
@@ -254,93 +261,217 @@ export const SiteHeader: React.FC = () => {
                 )}
               </div>
             ) : (
-              <Link
-                to="/login"
-                className="inline-flex items-center gap-1 px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-[#d97706] to-[#b45309] hover:from-[#b45309] hover:to-[#92400e] text-white font-sans text-[11px] sm:text-xs font-bold uppercase tracking-wider rounded-full transition-colors shadow-xs shrink-0"
-              >
-                <User className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> <span className="hidden xs:inline">Đăng nhập</span>
-              </Link>
+              <div className="flex items-center gap-1.5">
+                {hasAdminSession && (
+                  <Link
+                    to="/admin/dashboard"
+                    className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1.5 sm:py-2 bg-slate-900 hover:bg-slate-800 text-amber-400 font-sans text-[11px] sm:text-xs font-bold rounded-full transition shadow-xs shrink-0"
+                    title="Trang quản trị CRM"
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5 text-amber-400" /> <span className="hidden sm:inline">Trang Quản trị</span>
+                  </Link>
+                )}
+                <Link
+                  to="/login"
+                  className="inline-flex items-center gap-1 px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-[#d97706] to-[#b45309] hover:from-[#b45309] hover:to-[#92400e] text-white font-sans text-[11px] sm:text-xs font-bold uppercase tracking-wider rounded-full transition-colors shadow-xs shrink-0"
+                >
+                  <User className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> <span className="hidden xs:inline">Đăng nhập</span>
+                </Link>
+              </div>
             )}
 
-            {/* Mobile menu toggle */}
+            {/* Mobile & Tablet menu toggle */}
             <button
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-1.5 text-ink hover:bg-bg-alt rounded-lg transition"
-              aria-label="Toggle menu"
+              className="lg:hidden min-h-[44px] min-w-[44px] flex items-center justify-center p-2 text-ink hover:bg-bg-alt rounded-xl transition cursor-pointer"
+              aria-label={mobileMenuOpen ? 'Đóng menu' : 'Mở menu'}
             >
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
           </div>
         </div>
       </div>
 
-      {/* Mobile nav dropdown drawer */}
+      {/* Mobile & Tablet Off-canvas Drawer */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-line bg-card px-4 py-4 space-y-3 font-sans text-sm shadow-lg animate-fade-in">
-          {/* Mobile Search */}
-          <div className="pb-2">
-            <SearchAutocomplete onSearchSubmitted={() => setMobileMenuOpen(false)} />
-          </div>
+        <div className="fixed inset-0 z-50 lg:hidden">
+          {/* Backdrop overlay */}
+          <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-xs transition-opacity duration-300"
+            onClick={() => setMobileMenuOpen(false)}
+            aria-hidden="true"
+          />
 
-          {hasAdminSession && (
-            <Link
-              to="/admin/dashboard"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-2 py-2 px-3 bg-indigo-50 text-indigo-700 font-bold rounded-xl border border-indigo-200/60"
-            >
-              <ShieldCheck className="w-4 h-4 text-indigo-600" /> Trang quản trị (Admin Dashboard)
-            </Link>
-          )}
-
-          <Link
-            to="/"
-            onClick={() => setMobileMenuOpen(false)}
-            className={`block py-2 font-medium ${isActive('/') ? 'text-[#d97706] font-bold' : 'text-ink'}`}
+          {/* Drawer panel */}
+          <aside
+            aria-label="Mobile Navigation"
+            className="fixed inset-y-0 right-0 max-w-sm w-full bg-[#F5F2EE] shadow-2xl flex flex-col justify-between overflow-y-auto border-l border-line transform transition-transform duration-300 ease-out"
           >
-            Trang chủ
-          </Link>
-          <Link
-            to="/products"
-            onClick={() => setMobileMenuOpen(false)}
-            className={`block py-2 font-medium ${isActive('/products') ? 'text-[#d97706] font-bold' : 'text-ink'}`}
-          >
-            Tất cả sản phẩm
-          </Link>
-          <Link
-            to="/about"
-            onClick={() => setMobileMenuOpen(false)}
-            className={`block py-2 font-medium ${isActive('/about') ? 'text-[#d97706] font-bold' : 'text-ink'}`}
-          >
-            Về chúng tôi
-          </Link>
-          <Link
-            to="/my-orders"
-            onClick={() => setMobileMenuOpen(false)}
-            className={`block py-2 font-medium ${isActive('/my-orders') ? 'text-[#d97706] font-bold' : 'text-ink'}`}
-          >
-            Đơn hàng của tôi
-          </Link>
-          <Link
-            to="/wishlist"
-            onClick={() => setMobileMenuOpen(false)}
-            className={`flex items-center gap-2 py-2 font-medium ${isActive('/wishlist') ? 'text-[#d97706] font-bold' : 'text-ink'}`}
-          >
-            <Heart className="w-4 h-4 text-[#d97706]" /> Sản phẩm yêu thích
-          </Link>
-
-          {userName && (
-            <div className="pt-2 border-t border-line flex items-center justify-between">
-              <span className="text-xs font-bold text-ink truncate">Tài khoản: {userName}</span>
+            {/* Drawer Header */}
+            <div className="p-4 sm:p-5 border-b border-line flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-10">
+              <Link
+                to="/"
+                onClick={() => setMobileMenuOpen(false)}
+                className="font-brand text-2xl text-ink tracking-wider"
+              >
+                KTDL
+              </Link>
               <button
                 type="button"
-                onClick={handleLogout}
-                className="text-xs font-bold text-coral hover:underline"
+                onClick={() => setMobileMenuOpen(false)}
+                className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 text-ink-soft hover:text-ink hover:bg-bg-alt rounded-full transition cursor-pointer"
+                aria-label="Đóng menu"
               >
-                Đăng xuất
+                <X className="w-5 h-5" />
               </button>
             </div>
-          )}
+
+            {/* Drawer Body */}
+            <div className="p-4 sm:p-6 space-y-6 flex-1">
+              {/* Mobile Search Autocomplete */}
+              <div className="w-full">
+                <SearchAutocomplete onSearchSubmitted={() => setMobileMenuOpen(false)} />
+              </div>
+
+              {/* Admin Portal Shortcut if authenticated */}
+              {hasAdminSession && (
+                <Link
+                  to="/admin/dashboard"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2.5 py-3 px-4 bg-indigo-50 text-indigo-700 font-bold text-sm rounded-xl border border-indigo-200/80 shadow-xs hover:bg-indigo-100 transition"
+                >
+                  <ShieldCheck className="w-5 h-5 text-indigo-600 shrink-0" />
+                  <span>Trang Quản Trị (Admin)</span>
+                </Link>
+              )}
+
+              {/* Main Navigation Links */}
+              <nav className="space-y-1">
+                <span className="font-mono text-[10px] text-ink-soft uppercase tracking-[0.2em] px-3 pb-2 block">
+                  Danh mục chính
+                </span>
+                <Link
+                  to="/"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center justify-between py-3 px-4 rounded-xl text-sm font-medium transition ${
+                    isActive('/')
+                      ? 'bg-accent/15 text-accent font-bold'
+                      : 'text-ink hover:bg-white hover:text-accent'
+                  }`}
+                >
+                  <span>Trang chủ</span>
+                </Link>
+                <Link
+                  to="/products"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center justify-between py-3 px-4 rounded-xl text-sm font-medium transition ${
+                    isActive('/products')
+                      ? 'bg-accent/15 text-accent font-bold'
+                      : 'text-ink hover:bg-white hover:text-accent'
+                  }`}
+                >
+                  <span>Tất cả sản phẩm (Bộ sưu tập)</span>
+                </Link>
+                <Link
+                  to="/about"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center justify-between py-3 px-4 rounded-xl text-sm font-medium transition ${
+                    isActive('/about')
+                      ? 'bg-accent/15 text-accent font-bold'
+                      : 'text-ink hover:bg-white hover:text-accent'
+                  }`}
+                >
+                  <span>Về chúng tôi</span>
+                </Link>
+                <Link
+                  to="/my-orders"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center justify-between py-3 px-4 rounded-xl text-sm font-medium transition ${
+                    isActive('/my-orders')
+                      ? 'bg-accent/15 text-accent font-bold'
+                      : 'text-ink hover:bg-white hover:text-accent'
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    <Package className="w-4 h-4 text-accent" /> Đơn hàng của tôi
+                  </span>
+                </Link>
+                <Link
+                  to="/wishlist"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center justify-between py-3 px-4 rounded-xl text-sm font-medium transition ${
+                    isActive('/wishlist')
+                      ? 'bg-accent/15 text-accent font-bold'
+                      : 'text-ink hover:bg-white hover:text-accent'
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    <Heart className="w-4 h-4 text-coral" /> Sản phẩm yêu thích
+                  </span>
+                </Link>
+                <Link
+                  to="/cart"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center justify-between py-3 px-4 rounded-xl text-sm font-medium transition ${
+                    isActive('/cart')
+                      ? 'bg-accent/15 text-accent font-bold'
+                      : 'text-ink hover:bg-white hover:text-accent'
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    <ShoppingBag className="w-4 h-4 text-accent" /> Giỏ hàng
+                  </span>
+                  {cartCount > 0 && (
+                    <span className="bg-accent text-white font-mono text-xs font-bold px-2 py-0.5 rounded-full">
+                      {cartCount}
+                    </span>
+                  )}
+                </Link>
+              </nav>
+            </div>
+
+            {/* Drawer Footer (User Info & Actions) */}
+            <div className="p-4 sm:p-6 border-t border-line bg-white/70 space-y-3 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
+              {userName ? (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-accent text-white flex items-center justify-center font-bold text-sm uppercase shrink-0">
+                      {userName.charAt(0)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-ink-soft">Đã đăng nhập</p>
+                      <p className="text-sm font-bold text-ink truncate">{userName}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 pt-1">
+                    <Link
+                      to="/addresses"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex-1 text-center py-2 px-3 bg-bg-alt hover:bg-line/30 rounded-xl text-xs font-semibold text-ink transition"
+                    >
+                      Sổ địa chỉ
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      className="flex-1 text-center py-2 px-3 bg-coral/10 hover:bg-coral/20 text-coral rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer"
+                    >
+                      <LogOut className="w-3.5 h-3.5" /> Đăng xuất
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <Link
+                  to="/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-ink hover:bg-accent text-white rounded-xl text-sm font-bold uppercase tracking-wider transition shadow-sm"
+                >
+                  <User className="w-4 h-4" /> Đăng nhập / Đăng ký
+                </Link>
+              )}
+            </div>
+          </aside>
         </div>
       )}
     </header>

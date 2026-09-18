@@ -12,7 +12,7 @@ export const OrderStatusBadge: React.FC<OrderStatusBadgeProps> = ({ status, clas
     { label: string; bg: string; text: string; border: string; dot: string }
   > = {
     PENDING: {
-      label: 'Mới (Chờ xác nhận)',
+      label: 'Chờ xác nhận',
       bg: 'bg-amber-50',
       text: 'text-amber-700',
       border: 'border-amber-200/80',
@@ -79,7 +79,7 @@ export const OrderStatusBadge: React.FC<OrderStatusBadgeProps> = ({ status, clas
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${current.bg} ${current.text} ${current.border} ${className}`}
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border whitespace-nowrap ${current.bg} ${current.text} ${current.border} ${className}`}
     >
       <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${current.dot}`} />
       <span>{current.label}</span>

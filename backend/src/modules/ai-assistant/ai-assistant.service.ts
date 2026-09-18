@@ -25,7 +25,7 @@ export class AiAssistantService {
 
     if (text.includes('sơ mi') || text.includes('dài tay') || text.includes('công sở')) {
       queryBuilder = queryBuilder.andWhere('(LOWER(product.name) LIKE :kw OR LOWER(category.name) LIKE :kw)', { kw: '%sơ mi%' });
-      reply = 'Dạ chào anh! Với phong cách lịch lãm công sở hoặc dự sự kiện, em gợi ý các mẫu **Áo Sơ Mi Nam** cao cấp chuẩn phom dưới đây ạ:';
+      reply = 'Dạ chào anh! Với phong cách lịch lãm công sở hoặc dự sự kiện, em gợi ý các mẫu **Áo Sơ Mi Nam** cao cấp chuẩn form dáng dưới đây ạ:';
       keywordFound = true;
     } else if (text.includes('quần') || text.includes('tây') || text.includes('jeans') || text.includes('kaki')) {
       // Specialized studio for shirts: politely inform customer and offer top shirt items

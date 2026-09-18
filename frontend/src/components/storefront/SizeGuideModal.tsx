@@ -35,8 +35,8 @@ export const SizeGuideModal: React.FC<SizeGuideModalProps> = ({ isOpen, onClose 
         {/* Tops Size Table */}
         <div className="space-y-3">
           <h4 className="font-sans text-xs font-bold uppercase tracking-wider text-accent">Thông Số Size Áo Nam (Sơ Mi, Polo, T-Shirt, Jacket)</h4>
-          <div className="border border-line rounded-2xl overflow-hidden font-sans text-xs">
-            <table className="w-full text-left">
+          <div className="border border-line rounded-2xl overflow-x-auto font-sans text-xs">
+            <table className="w-full text-left min-w-[500px]">
               <thead className="bg-bg-alt border-b border-line text-ink-soft uppercase text-[10px] tracking-wider">
                 <tr>
                   <th className="p-3">Size</th>
@@ -96,10 +96,10 @@ export const SizeGuideModal: React.FC<SizeGuideModalProps> = ({ isOpen, onClose 
         {/* Tips */}
         <div className="bg-bg-alt p-4 rounded-2xl border border-line space-y-2 text-xs text-ink-soft">
           <p className="font-bold text-ink flex items-center gap-1.5">
-            <CheckCircle className="w-4 h-4 text-ok" /> Mẹo chọn dáng áo chuẩn phom:
+            <CheckCircle className="w-4 h-4 text-ok" /> Mẹo chọn dáng áo chuẩn form dáng:
           </p>
           <ul className="list-disc list-inside space-y-1 pl-1">
-            <li><strong>Áo Sơ Mi Slimfit:</strong> Nếu chọn phom ôm vừa vặn, hãy chọn chuẩn size theo vòng ngực.</li>
+            <li><strong>Áo Sơ Mi Slimfit:</strong> Nếu chọn form ôm vừa vặn, hãy chọn chuẩn size theo vòng ngực.</li>
             <li><strong>Áo T-Shirt & Polo Oversize:</strong> Nếu thích mặc rộng rãi giấu bụng hoặc phong cách Streetwear, có thể tăng 1 size.</li>
             <li>KTDL hỗ trợ đổi size áo tận nhà hoàn toàn miễn phí trong vòng 30 ngày.</li>
           </ul>

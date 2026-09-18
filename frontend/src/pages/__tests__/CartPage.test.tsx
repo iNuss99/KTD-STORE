@@ -52,7 +52,7 @@ describe('CartPage Component', () => {
     render(
       <QueryClientProvider client={queryClient}>
         <LanguageProvider>
-          <MemoryRouter>
+          <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
             <CartPage />
           </MemoryRouter>
         </LanguageProvider>

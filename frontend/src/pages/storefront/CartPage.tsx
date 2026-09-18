@@ -135,7 +135,7 @@ export const CartPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-bg flex flex-col font-sans">
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-1 w-full space-y-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 pb-28 lg:pb-10 flex-1 w-full space-y-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4 border-b border-line gap-4">
           <div>
@@ -194,12 +194,12 @@ export const CartPage: React.FC = () => {
                 return (
                   <div
                     key={item.id}
-                    className={`bg-card border rounded-2xl p-4 sm:p-5 transition flex flex-col sm:flex-row items-center gap-5 ${
+                    className={`bg-card border rounded-2xl p-3.5 sm:p-5 transition flex flex-row items-start sm:items-center gap-3.5 sm:gap-5 ${
                       !item.isAvailable ? 'border-coral/50 bg-coral/5' : 'border-line shadow-xs'
                     }`}
                   >
                     {/* Thumbnail */}
-                    <div className="w-20 h-24 bg-bg-alt border border-line rounded-xl overflow-hidden shrink-0 relative">
+                    <div className="w-16 h-20 sm:w-20 sm:h-24 bg-bg-alt border border-line rounded-xl overflow-hidden shrink-0 relative">
                       <ProductImage
                         src={mainImageUrl}
                         alt={product?.name}
@@ -213,54 +213,59 @@ export const CartPage: React.FC = () => {
                       )}
                     </div>
 
-                    {/* Meta info */}
-                    <div className="flex-1 min-w-0 text-center sm:text-left space-y-1">
-                      <Link
-                        to={`/products/${product?.id || product?.slug}`}
-                        className="font-display font-medium text-base text-ink hover:text-accent transition-colors truncate block"
-                      >
-                        {product?.name || 'Sản phẩm'}
-                      </Link>
-                      <div className="text-xs font-mono text-ink-soft flex flex-wrap gap-3 justify-center sm:justify-start">
-                        <span>Size: <strong className="text-ink">{variant?.size?.code || variant?.size?.name || '-'}</strong></span>
-                        <span>Màu: <strong className="text-ink">{variant?.color?.name || '-'}</strong></span>
+                    {/* Meta info & controls container */}
+                    <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      {/* Meta info */}
+                      <div className="min-w-0 space-y-1">
+                        <Link
+                          to={`/products/${product?.id || product?.slug}`}
+                          className="font-display font-medium text-sm sm:text-base text-ink hover:text-accent transition-colors truncate block"
+                        >
+                          {product?.name || 'Sản phẩm'}
+                        </Link>
+                        <div className="text-xs font-mono text-ink-soft flex flex-wrap gap-2 sm:gap-3">
+                          <span>Size: <strong className="text-ink">{variant?.size?.code || variant?.size?.name || '-'}</strong></span>
+                          <span>Màu: <strong className="text-ink">{variant?.color?.name || '-'}</strong></span>
+                        </div>
+
+                        {/* Inventory Error Badge */}
+                        {!item.isAvailable && (
+                          <span className="inline-block mt-1 font-mono text-[11px] font-medium text-coral bg-coral/10 border border-coral/30 px-2.5 py-0.5 rounded-full">
+                            ⚠️ {item.errorReason}
+                          </span>
+                        )}
                       </div>
 
-                      {/* Inventory Error Badge */}
-                      {!item.isAvailable && (
-                        <span className="inline-block mt-1 font-mono text-[11px] font-medium text-coral bg-coral/10 border border-coral/30 px-2.5 py-0.5 rounded-full">
-                          ⚠️ {item.errorReason}
-                        </span>
-                      )}
-                    </div>
+                      {/* Price & Quantity Controls */}
+                      <div className="flex items-center gap-3 sm:gap-6 justify-between sm:justify-end w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-line/50">
+                        <div className="font-mono text-sm sm:text-base font-bold text-accent">{formattedItemPrice}</div>
 
-                    {/* Price & Quantity Controls */}
-                    <div className="flex items-center gap-4 sm:gap-6 justify-between sm:justify-end w-full sm:w-auto mt-2 sm:mt-0">
-                      <div className="font-mono text-base font-bold text-accent">{formattedItemPrice}</div>
+                        <div className="flex items-center gap-2 sm:gap-4">
+                          {/* QtyStepper */}
+                          <QtyStepper
+                            value={item.quantity}
+                            onChange={(val) => handleUpdateQuantity(item.id, val)}
+                            min={1}
+                            max={item.stock > 0 ? item.stock : 1}
+                            disabled={updateQuantityMutation.isPending}
+                          />
 
-                      {/* QtyStepper */}
-                      <QtyStepper
-                        value={item.quantity}
-                        onChange={(val) => handleUpdateQuantity(item.id, val)}
-                        min={1}
-                        max={item.stock > 0 ? item.stock : 1}
-                        disabled={updateQuantityMutation.isPending}
-                      />
-
-                      {/* Remove Button */}
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveItem(item.id)}
-                        disabled={removeItemMutation.isPending && removeItemMutation.variables === item.id}
-                        className="p-2 text-ink-soft hover:text-coral transition-colors rounded-lg hover:bg-coral/10 disabled:opacity-50 inline-flex items-center justify-center"
-                        title="Xóa khỏi giỏ hàng"
-                      >
-                        {removeItemMutation.isPending && removeItemMutation.variables === item.id ? (
-                          <Loader2 className="w-4 h-4 animate-spin text-coral" />
-                        ) : (
-                          <Trash2 className="w-4 h-4" />
-                        )}
-                      </button>
+                          {/* Remove Button */}
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveItem(item.id)}
+                            disabled={removeItemMutation.isPending && removeItemMutation.variables === item.id}
+                            className="p-2 min-h-[36px] min-w-[36px] text-ink-soft hover:text-coral transition-colors rounded-lg hover:bg-coral/10 disabled:opacity-50 inline-flex items-center justify-center cursor-pointer"
+                            title="Xóa khỏi giỏ hàng"
+                          >
+                            {removeItemMutation.isPending && removeItemMutation.variables === item.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin text-coral" />
+                            ) : (
+                              <Trash2 className="w-4 h-4" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 );
@@ -382,6 +387,35 @@ export const CartPage: React.FC = () => {
           </div>
         )}
       </main>
+
+      {/* MOBILE STICKY CHECKOUT BAR (< lg) */}
+      {!loading && items.length > 0 && getAuthToken() && (
+        <aside
+          aria-label="Thanh tiến hành đặt hàng di động"
+          className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-line px-4 py-2.5 pb-[calc(0.6rem+env(safe-area-inset-bottom))] shadow-lg lg:hidden flex items-center justify-between gap-3"
+        >
+          <div className="flex flex-col min-w-0">
+            <span className="text-[10px] text-ink-soft font-mono uppercase tracking-wider">
+              Tổng ({items.length} món)
+            </span>
+            <span className="text-base font-bold text-accent truncate">
+              {formattedTotal}
+            </span>
+          </div>
+
+          <button
+            type="button"
+            disabled={hasUnavailableItems || isMaintenance}
+            onClick={() => {
+              navigate('/checkout', { state: { appliedCode } });
+            }}
+            className="min-h-[44px] px-5 py-2.5 bg-accent hover:bg-accent-dark text-white rounded-full font-sans text-xs uppercase tracking-wider font-bold flex items-center gap-1.5 transition shadow-sm disabled:opacity-50 cursor-pointer"
+          >
+            <span>Thanh toán</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </aside>
+      )}
     </div>
   );
 };

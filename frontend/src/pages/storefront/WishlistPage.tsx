@@ -35,7 +35,7 @@ export const WishlistPage: React.FC = () => {
         </div>
 
         {!getAuthToken() ? (
-          <div className="bg-canvas border border-chalk p-12 text-center max-w-lg mx-auto my-12 space-y-4">
+          <div className="bg-canvas border border-chalk p-6 sm:p-12 text-center max-w-lg mx-auto my-8 sm:my-12 space-y-4">
             <div className="w-12 h-12 bg-warm-white border border-chalk text-stitch rounded-full flex items-center justify-center mx-auto">
               <Heart className="w-6 h-6" />
             </div>
@@ -51,7 +51,7 @@ export const WishlistPage: React.FC = () => {
             </Link>
           </div>
         ) : items.length === 0 ? (
-          <div className="bg-canvas border border-chalk p-12 text-center max-w-lg mx-auto my-12 space-y-4">
+          <div className="bg-canvas border border-chalk p-6 sm:p-12 text-center max-w-lg mx-auto my-8 sm:my-12 space-y-4">
             <div className="w-12 h-12 bg-warm-white border border-chalk text-stitch rounded-full flex items-center justify-center mx-auto">
               <Heart className="w-6 h-6" />
             </div>
@@ -67,7 +67,7 @@ export const WishlistPage: React.FC = () => {
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-6">
             {items.map((item) => (
               <div key={item.id} className="group bg-warm-white border border-chalk overflow-hidden transition-all duration-300 hover:border-steel/50 flex flex-col relative">
                 <button

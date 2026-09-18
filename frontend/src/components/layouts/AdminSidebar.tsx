@@ -12,6 +12,7 @@ import {
   Sparkles,
   ShoppingBag,
   Package,
+  X,
 } from 'lucide-react';
 import { useAuth, Role } from '../../hooks/useAuth';
 import { getAdminName, getAdminAvatar } from '../../lib/auth-storage';
@@ -49,6 +50,17 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpenMobile, onClos
     window.addEventListener('admin-auth-change', updateUserData);
     return () => window.removeEventListener('admin-auth-change', updateUserData);
   }, []);
+
+  useEffect(() => {
+    if (isOpenMobile) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpenMobile]);
 
   // Strict Matrix 1.3 Role Mapping from spec.md & README.md
   const mainNavItems: NavItem[] = [
@@ -143,14 +155,14 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpenMobile, onClos
           ${isOpenMobile ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
       >
-        {/* Brand Logo */}
-        <div className="px-4 py-5 border-b border-slate-100/80 flex items-center justify-center">
+        {/* Brand Logo & Mobile Close */}
+        <div className="px-4 py-4 sm:py-5 border-b border-slate-100/80 flex items-center justify-between">
           <Link
             to="/admin/dashboard"
             onClick={handleNavClick}
-            className="flex flex-col items-center justify-center text-center w-full group"
+            className="flex flex-col items-start group"
           >
-            <div className="flex items-center justify-center gap-2">
+            <div className="flex items-center gap-2">
               <span className="font-brand text-[17px] text-slate-900 tracking-wider whitespace-nowrap group-hover:text-accent transition-colors">
                 KTDL
               </span>
@@ -162,6 +174,16 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpenMobile, onClos
               Control Center
             </p>
           </Link>
+          {onCloseMobile && (
+            <button
+              type="button"
+              onClick={onCloseMobile}
+              className="lg:hidden min-h-[40px] min-w-[40px] flex items-center justify-center p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition cursor-pointer"
+              aria-label="Đóng menu quản trị"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
         </div>
 
         {/* Navigation List */}

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   LayoutDashboard,
   TrendingUp,
@@ -119,11 +119,15 @@ interface StaffPerf {
 }
 
 import { useAuth } from '../../hooks/useAuth';
+import { useToast } from '../../context/ToastContext';
 import { getAdminAuthHeader, getAuthHeader } from '../../lib/auth-storage';
 
 export const AdminDashboardPage: React.FC = () => {
   const { isSuperAdmin, isCEO, isManager, role } = useAuth();
+  const { showSuccess, showError } = useToast();
+  const queryClient = useQueryClient();
   const [periodFilter, setPeriodFilter] = useState<'day' | 'week' | 'month' | 'quarter' | 'year'>('day');
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const getEffectiveHeaders = (): Record<string, string> => {
     const adminH = getAdminAuthHeader();
@@ -197,11 +201,25 @@ export const AdminDashboardPage: React.FC = () => {
   const topProducts = dashboardData?.topProducts || [];
   const lowStockVariants = dashboardData?.lowStockVariants || [];
   const staffPerformance = dashboardData?.staffPerformance || [];
-  const loading = dashboardLoading || revenueLoading;
-
-  const handleRefresh = () => {
-    refetchDashboard();
-    refetchRevenue();
+  const handleRefresh = async () => {
+    if (isRefreshing) return;
+    setIsRefreshing(true);
+    try {
+      await queryClient.invalidateQueries({ queryKey: ['admin', 'reports'] });
+      const [dashRes, revRes] = await Promise.all([
+        refetchDashboard(),
+        refetchRevenue(),
+      ]);
+      if (dashRes.isError || revRes.isError) {
+        showError('Lỗi cập nhật', 'Không thể làm mới dữ liệu báo cáo. Vui lòng thử lại.');
+      } else {
+        showSuccess('Đã làm mới', 'Dữ liệu báo cáo & dashboard đã được cập nhật mới nhất.');
+      }
+    } catch {
+      showError('Lỗi cập nhật', 'Không thể làm mới dữ liệu báo cáo. Vui lòng thử lại.');
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   if (!isSuperAdmin && !isCEO && !isManager) {
@@ -224,9 +242,7 @@ export const AdminDashboardPage: React.FC = () => {
   const avgOrderValue = totalPeriodOrders > 0 ? Math.round(totalPeriodRevenue / totalPeriodOrders) : 0;
 
   return (
-    <div className="flex flex-col font-sans bg-slate-50/50 min-h-screen">
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full space-y-6">
+    <div className="w-full space-y-6 font-sans">
 
         {/* ── Header ── */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -255,16 +271,21 @@ export const AdminDashboardPage: React.FC = () => {
 
             <button
               onClick={handleRefresh}
-              className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-medium text-xs rounded-xl shadow-sm transition flex items-center gap-1.5"
+              disabled={isRefreshing}
+              className={`px-3.5 py-2 font-medium text-xs rounded-xl shadow-sm transition flex items-center gap-1.5 ${
+                isRefreshing
+                  ? 'bg-slate-700 text-slate-300 cursor-not-allowed opacity-80'
+                  : 'bg-slate-900 hover:bg-slate-800 text-white cursor-pointer active:scale-95'
+              }`}
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-              Làm mới
+              <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+              {isRefreshing ? 'Đang làm mới...' : 'Làm mới'}
             </button>
           </div>
         </div>
 
-        {/* ── Hàng 1: 4 KPI Cards ── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+        {/* ── Hàng 1: 4 KPI Cards (2 cột trên iPad/Tablet, 4 cột trên Desktop lớn) ── */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-5">
 
           {/* KPI 1: Tổng Doanh thu */}
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 border-l-4 border-l-emerald-500 hover:shadow-md hover:-translate-y-0.5 transition duration-200 flex flex-col justify-between group">
@@ -275,14 +296,14 @@ export const AdminDashboardPage: React.FC = () => {
               </div>
             </div>
             <div className="mt-3">
-              <h3 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-none">
+              <h3 className="text-xl sm:text-2xl 2xl:text-3xl font-black text-slate-900 tracking-tight leading-none whitespace-nowrap">
                 {overview.totalRevenue.toLocaleString('vi-VN')} ₫
               </h3>
-              <div className="mt-3 flex items-center gap-2">
-                <span className="flex items-center text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
+              <div className="mt-3 flex flex-wrap items-center gap-1.5 sm:gap-2">
+                <span className="flex items-center text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md shrink-0">
                   <TrendingUp className="w-3.5 h-3.5 mr-1" />+12.5%
                 </span>
-                <span className="text-xs text-slate-400 font-medium">so với kỳ trước</span>
+                <span className="text-xs text-slate-400 font-medium whitespace-nowrap">so với kỳ trước</span>
               </div>
             </div>
           </div>
@@ -296,14 +317,14 @@ export const AdminDashboardPage: React.FC = () => {
               </div>
             </div>
             <div className="mt-3">
-              <h3 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-none">
+              <h3 className="text-xl sm:text-2xl 2xl:text-3xl font-black text-slate-900 tracking-tight leading-none">
                 {overview.totalCompletedOrders}
               </h3>
-              <div className="mt-3 flex items-center gap-2">
-                <span className="flex items-center text-xs font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md">
+              <div className="mt-3 flex flex-wrap items-center gap-1.5 sm:gap-2">
+                <span className="flex items-center text-xs font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md shrink-0">
                   <TrendingUp className="w-3.5 h-3.5 mr-1" />+8.2%
                 </span>
-                <span className="text-xs text-slate-400 font-medium">so với kỳ trước</span>
+                <span className="text-xs text-slate-400 font-medium whitespace-nowrap">so với kỳ trước</span>
               </div>
             </div>
           </div>
@@ -317,14 +338,14 @@ export const AdminDashboardPage: React.FC = () => {
               </div>
             </div>
             <div className="mt-3">
-              <h3 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-none">
+              <h3 className="text-xl sm:text-2xl 2xl:text-3xl font-black text-slate-900 tracking-tight leading-none">
                 {overview.pendingOrdersCount}
               </h3>
-              <div className="mt-3 flex items-center gap-2">
-                <span className="flex items-center text-xs font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md">
+              <div className="mt-3 flex flex-wrap items-center gap-1.5 sm:gap-2">
+                <span className="flex items-center text-xs font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md shrink-0">
                   <TrendingDown className="w-3.5 h-3.5 mr-1" />-2.4%
                 </span>
-                <span className="text-xs text-slate-400 font-medium">so với kỳ trước</span>
+                <span className="text-xs text-slate-400 font-medium whitespace-nowrap">so với kỳ trước</span>
               </div>
             </div>
           </div>
@@ -338,14 +359,14 @@ export const AdminDashboardPage: React.FC = () => {
               </div>
             </div>
             <div className="mt-3">
-              <h3 className="text-2xl sm:text-3xl font-black text-rose-600 tracking-tight leading-none">
+              <h3 className="text-xl sm:text-2xl 2xl:text-3xl font-black text-rose-600 tracking-tight leading-none">
                 {overview.lowStockCount}
               </h3>
-              <div className="mt-3 flex items-center gap-2">
-                <span className="flex items-center text-xs font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-md">
+              <div className="mt-3 flex flex-wrap items-center gap-1.5 sm:gap-2">
+                <span className="flex items-center text-xs font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-md shrink-0">
                   <AlertTriangle className="w-3.5 h-3.5 mr-1" />Cần nhập hàng
                 </span>
-                <span className="text-xs text-slate-400 font-medium">ngay lập tức</span>
+                <span className="text-xs text-slate-400 font-medium whitespace-nowrap">ngay lập tức</span>
               </div>
             </div>
           </div>
@@ -353,7 +374,7 @@ export const AdminDashboardPage: React.FC = () => {
 
         {/* ── Hàng 2: Chart Doanh thu & Đơn hàng (full width) ── */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 sm:p-7 hover:shadow-md transition duration-200 select-none">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 sm:gap-6 mb-6">
+          <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 sm:gap-6 mb-6">
             <div className="flex items-center justify-between sm:justify-start gap-3 w-full lg:w-auto">
               <div className="flex items-center gap-3">
                 <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl border border-indigo-100/80">
@@ -442,10 +463,10 @@ export const AdminDashboardPage: React.FC = () => {
         </div>
 
         {/* ── Hàng 3: Top Products (2/3) + Low Stock (1/3) ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-5">
 
           {/* Top 10 Sản phẩm bán chạy — 2/3 */}
-          <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm p-5 sm:p-6 hover:shadow-md transition duration-200 flex flex-col">
+          <div className="xl:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm p-5 sm:p-6 hover:shadow-md transition duration-200 flex flex-col">
             <div className="flex items-center justify-between mb-5">
               <div>
                 <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
@@ -501,7 +522,7 @@ export const AdminDashboardPage: React.FC = () => {
           </div>
 
           {/* Cảnh báo Tồn kho thấp — 1/3 */}
-          <div className="lg:col-span-1 bg-white rounded-2xl border border-slate-200 shadow-sm p-5 sm:p-6 hover:shadow-md transition duration-200 flex flex-col">
+          <div className="xl:col-span-1 bg-white rounded-2xl border border-slate-200 shadow-sm p-5 sm:p-6 hover:shadow-md transition duration-200 flex flex-col">
             <div className="mb-5">
               <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
                 <AlertTriangle className="w-5 h-5 text-rose-500" />
@@ -615,7 +636,6 @@ export const AdminDashboardPage: React.FC = () => {
           </div>
         </div>
 
-      </main>
     </div>
   );
 };

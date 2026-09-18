@@ -242,7 +242,7 @@ export const AddressManagementPage: React.FC = () => {
         {/* Modal Create/Edit Address */}
         {showModal && (
           <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl space-y-4 font-sans animate-fade-in">
+            <div className="bg-white rounded-3xl p-5 sm:p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl space-y-4 font-sans animate-fade-in">
               <h3 className="text-lg font-bold text-slate-900">
                 {editingAddress ? 'Chỉnh sửa địa chỉ' : 'Thêm địa chỉ mới'}
               </h3>

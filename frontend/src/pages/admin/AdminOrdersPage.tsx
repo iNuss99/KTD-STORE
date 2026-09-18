@@ -215,10 +215,8 @@ export const AdminOrdersPage: React.FC = () => {
   ];
 
   return (
-    <div className="flex flex-col font-sans">
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="w-full space-y-6 font-sans">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-extrabold text-slate-900 flex items-center gap-2">
               <Package className="w-6 h-6 text-amber-600" /> Quản lý & Vận hành Đơn hàng
@@ -274,12 +272,12 @@ export const AdminOrdersPage: React.FC = () => {
               <table className="w-full text-left border-collapse min-w-[960px]">
                 <thead>
                   <tr className="bg-slate-50/80 border-b border-gray-200 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
-                    <th className="py-3.5 px-4 w-36">Mã đơn & Ngày</th>
-                    <th className="py-3.5 px-4 min-w-[200px]">Khách hàng</th>
-                    <th className="py-3.5 px-4 w-32 text-right">Tổng tiền</th>
-                    <th className="py-3.5 px-4 w-40">Thanh toán</th>
-                    <th className="py-3.5 px-4 w-44">Trạng thái</th>
-                    <th className="py-3.5 px-4 w-56 text-right">Thao tác</th>
+                    <th className="py-3 px-4 w-36 whitespace-nowrap">Mã đơn & Ngày</th>
+                    <th className="py-3 px-4 min-w-[200px]">Khách hàng</th>
+                    <th className="py-3 px-4 w-36 whitespace-nowrap">Tổng tiền</th>
+                    <th className="py-3 px-4 w-44 whitespace-nowrap">Thanh toán</th>
+                    <th className="py-3 px-4 w-44 text-center whitespace-nowrap">Trạng thái</th>
+                    <th className="py-3 px-4 min-w-[240px] text-right whitespace-nowrap">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 text-xs">
@@ -302,7 +300,7 @@ export const AdminOrdersPage: React.FC = () => {
                     return (
                       <tr key={order.id} className="hover:bg-slate-50/70 transition-colors">
                         {/* Mã đơn & Ngày */}
-                        <td className="py-3.5 px-4 align-middle">
+                        <td className="py-3 px-4 align-middle whitespace-nowrap">
                           <span className="font-mono font-bold text-slate-900 text-xs tracking-wider block">
                             #{order.id.slice(0, 8).toUpperCase()}
                           </span>
@@ -312,7 +310,7 @@ export const AdminOrdersPage: React.FC = () => {
                         </td>
 
                         {/* Khách hàng */}
-                        <td className="py-3.5 px-4 align-middle">
+                        <td className="py-3 px-4 align-middle">
                           <div className="font-bold text-slate-800 text-xs truncate max-w-[200px]">
                             {order.shipping_snapshot?.receiver_name || 'Khách vãng lai'}
                           </div>
@@ -340,7 +338,7 @@ export const AdminOrdersPage: React.FC = () => {
                         </td>
 
                         {/* Tổng tiền */}
-                        <td className="py-3.5 px-4 align-middle text-right">
+                        <td className="py-3 px-4 align-middle whitespace-nowrap">
                           <span className="font-bold text-slate-900 text-xs block">
                             {formattedTotal}
                           </span>
@@ -352,7 +350,7 @@ export const AdminOrdersPage: React.FC = () => {
                         </td>
 
                         {/* Thanh toán */}
-                        <td className="py-3.5 px-4 align-middle">
+                        <td className="py-3 px-4 align-middle whitespace-nowrap">
                           <div className="font-semibold text-slate-700 text-xs">
                             {payment?.method === 'COD' ? 'Thanh toán COD' : 'Chuyển khoản'}
                           </div>
@@ -368,18 +366,20 @@ export const AdminOrdersPage: React.FC = () => {
                         </td>
 
                         {/* Trạng thái đơn */}
-                        <td className="py-3.5 px-4 align-middle">
-                          <OrderStatusBadge status={order.status} />
+                        <td className="py-3 px-4 align-middle text-center whitespace-nowrap">
+                          <div className="flex items-center justify-center">
+                            <OrderStatusBadge status={order.status} />
+                          </div>
                         </td>
 
                         {/* Thao tác */}
-                        <td className="py-3.5 px-4 align-middle text-right">
-                          <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                        <td className="py-3 px-4 align-middle text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-1.5 flex-nowrap">
                             {payment?.status !== 'COMPLETED' && order.status !== 'CANCELLED' && (
                               <button
                                 disabled={actionLoadingId === order.id}
                                 onClick={() => openConfirmCodModal(order)}
-                                className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] rounded-lg transition shadow-sm flex items-center gap-1 shrink-0"
+                                className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] rounded-lg transition shadow-sm flex items-center gap-1 shrink-0 whitespace-nowrap"
                                 title={`Xác nhận đã thu tiền (${payment?.method === 'COD' ? 'Thanh toán COD' : 'Chuyển khoản'})`}
                               >
                                 <DollarSign className="w-3.5 h-3.5" />
@@ -392,14 +392,14 @@ export const AdminOrdersPage: React.FC = () => {
                                 <button
                                   disabled={actionLoadingId === order.id}
                                   onClick={() => openUpdateStatusModal(order, 'CONFIRMED')}
-                                  className="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] rounded-lg transition shadow-sm shrink-0"
+                                  className="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] rounded-lg transition shadow-sm shrink-0 whitespace-nowrap"
                                 >
                                   Xác nhận đơn
                                 </button>
                                 <button
                                   disabled={actionLoadingId === order.id}
                                   onClick={() => openUpdateStatusModal(order, 'CANCELLED')}
-                                  className="px-2 py-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold text-[11px] rounded-lg transition shrink-0"
+                                  className="px-2 py-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold text-[11px] rounded-lg transition shrink-0 whitespace-nowrap"
                                   title="Hủy đơn hàng"
                                 >
                                   Hủy
@@ -412,14 +412,14 @@ export const AdminOrdersPage: React.FC = () => {
                                 <button
                                   disabled={actionLoadingId === order.id}
                                   onClick={() => openUpdateStatusModal(order, 'PROCESSING')}
-                                  className="px-2.5 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-[11px] rounded-lg transition shadow-sm shrink-0"
+                                  className="px-2.5 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-[11px] rounded-lg transition shadow-sm shrink-0 whitespace-nowrap"
                                 >
                                   Đóng gói
                                 </button>
                                 <button
                                   disabled={actionLoadingId === order.id}
                                   onClick={() => openUpdateStatusModal(order, 'CANCELLED')}
-                                  className="px-2 py-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold text-[11px] rounded-lg transition shrink-0"
+                                  className="px-2 py-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold text-[11px] rounded-lg transition shrink-0 whitespace-nowrap"
                                   title="Hủy đơn hàng"
                                 >
                                   Hủy
@@ -431,7 +431,7 @@ export const AdminOrdersPage: React.FC = () => {
                               <button
                                 disabled={actionLoadingId === order.id}
                                 onClick={() => openUpdateStatusModal(order, 'SHIPPING')}
-                                className="px-2.5 py-1.5 bg-sky-600 hover:bg-sky-700 text-white font-bold text-[11px] rounded-lg transition shadow-sm flex items-center gap-1 shrink-0"
+                                className="px-2.5 py-1.5 bg-sky-600 hover:bg-sky-700 text-white font-bold text-[11px] rounded-lg transition shadow-sm flex items-center gap-1 shrink-0 whitespace-nowrap"
                               >
                                 <Truck className="w-3.5 h-3.5" /> Giao hàng
                               </button>
@@ -441,7 +441,7 @@ export const AdminOrdersPage: React.FC = () => {
                               <button
                                 disabled={actionLoadingId === order.id}
                                 onClick={() => openUpdateStatusModal(order, 'DELIVERED')}
-                                className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] rounded-lg transition shadow-sm flex items-center gap-1 shrink-0"
+                                className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] rounded-lg transition shadow-sm flex items-center gap-1 shrink-0 whitespace-nowrap"
                               >
                                 <CheckCircle2 className="w-3.5 h-3.5" /> Hoàn tất
                               </button>
@@ -461,7 +461,7 @@ export const AdminOrdersPage: React.FC = () => {
                             <PermissionGuard requireSuperAdmin>
                               <button
                                 onClick={() => setOverrideOrder(order)}
-                                className="px-2 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-[11px] rounded-lg transition shrink-0"
+                                className="px-2 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-[11px] rounded-lg transition shrink-0 whitespace-nowrap"
                                 title="Can thiệp thủ công (Super Admin)"
                               >
                                 Sửa
@@ -676,7 +676,6 @@ export const AdminOrdersPage: React.FC = () => {
             </div>
           </div>
         )}
-      </main>
     </div>
   );
 };

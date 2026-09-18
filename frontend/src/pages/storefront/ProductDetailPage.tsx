@@ -253,7 +253,7 @@ export const ProductDetailPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-white flex flex-col font-sans">
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full space-y-12">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24 md:pb-6 flex-1 w-full space-y-12">
         {/* Breadcrumb Navigation */}
         <div className="flex items-center gap-2 text-xs text-slate-500">
           <Link to="/" className="hover:text-slate-900 transition">Trang chủ</Link>
@@ -686,6 +686,62 @@ export const ProductDetailPage: React.FC = () => {
           </div>
         </div>
       </main>
+
+      {/* MOBILE STICKY BOTTOM ACTION BAR */}
+      <aside
+        aria-label="Thao tác đặt hàng nhanh"
+        className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/80 px-4 py-2.5 pb-[calc(0.6rem+env(safe-area-inset-bottom))] shadow-lg md:hidden flex items-center justify-between gap-3"
+      >
+        <div className="flex flex-col min-w-0">
+          <span className="text-[10px] text-slate-500 font-mono uppercase tracking-wider">
+            {selectedVariant ? `Size ${selectedVariant.size?.name || selectedVariant.size_id}` : 'Giá sản phẩm'}
+          </span>
+          <span className="text-base font-black text-slate-900 truncate">
+            {formattedPrice}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            disabled={isOutOfStock || addToCartMutation.isPending}
+            onClick={() => {
+              if (!selectedVariant) {
+                window.scrollTo({ top: 350, behavior: 'smooth' });
+                showWarning('Vui lòng chọn size trước khi thêm vào giỏ');
+                return;
+              }
+              handleAddToCart(false);
+            }}
+            className="min-h-[44px] px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1.5 transition active:scale-95 disabled:opacity-50 cursor-pointer"
+          >
+            {addToCartMutation.isPending ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <>
+                <ShoppingBag className="w-3.5 h-3.5" />
+                <span>Thêm giỏ</span>
+              </>
+            )}
+          </button>
+
+          <button
+            type="button"
+            disabled={isOutOfStock || addToCartMutation.isPending}
+            onClick={() => {
+              if (!selectedVariant) {
+                window.scrollTo({ top: 350, behavior: 'smooth' });
+                showWarning('Vui lòng chọn size trước khi mua ngay');
+                return;
+              }
+              handleAddToCart(true);
+            }}
+            className="min-h-[44px] px-4 py-2 rounded-xl bg-accent hover:bg-accent-dark text-white font-bold text-xs uppercase tracking-wider transition active:scale-95 disabled:opacity-50 shadow-xs cursor-pointer"
+          >
+            Mua ngay
+          </button>
+        </div>
+      </aside>
 
       {/* Size Guide Modal */}
       <SizeGuideModal isOpen={showSizeGuide} onClose={() => setShowSizeGuide(false)} />

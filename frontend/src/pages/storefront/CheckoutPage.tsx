@@ -237,7 +237,7 @@ export const CheckoutPage: React.FC = () => {
         />
       )}
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-1 w-full space-y-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 pb-28 lg:pb-10 flex-1 w-full space-y-8">
         <Link to="/cart" className="inline-flex items-center gap-2 font-mono text-xs text-smoke hover:text-ink transition-colors">
           <ArrowLeft className="w-3.5 h-3.5" /> QUAY LẠI GIỎ HÀNG
         </Link>
@@ -474,7 +474,7 @@ export const CheckoutPage: React.FC = () => {
         {/* Add Address Modal */}
         {showAddModal && (
           <div className="fixed inset-0 z-50 bg-ink/60 backdrop-blur-xs flex items-center justify-center p-4">
-            <div className="bg-card border border-line rounded-3xl p-6 max-w-lg w-full shadow-2xl space-y-4 font-sans animate-fade-in">
+            <div className="bg-card border border-line rounded-3xl p-5 sm:p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl space-y-4 font-sans animate-fade-in">
               <h3 className="font-display font-bold text-lg text-ink">Thêm địa chỉ giao hàng mới</h3>
               <form onSubmit={handleAddAddress} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -520,13 +520,13 @@ export const CheckoutPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setShowAddModal(false)}
-                    className="px-4 py-2 border border-line text-ink-soft hover:text-ink rounded-xl text-xs font-semibold transition-colors"
+                    className="px-4 py-2 border border-line text-ink-soft hover:text-ink rounded-xl text-xs font-semibold transition-colors cursor-pointer"
                   >
                     Hủy
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2 bg-ink hover:bg-accent text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-xs"
+                    className="px-5 py-2 bg-ink hover:bg-accent text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-xs cursor-pointer"
                   >
                     Lưu địa chỉ
                   </button>
@@ -536,6 +536,41 @@ export const CheckoutPage: React.FC = () => {
           </div>
         )}
       </main>
+
+      {/* MOBILE STICKY PLACE ORDER BAR (< lg) */}
+      {!loading && cart?.items && cart.items.length > 0 && (
+        <aside
+          aria-label="Thanh xác nhận đặt hàng di động"
+          className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-line px-4 py-2.5 pb-[calc(0.6rem+env(safe-area-inset-bottom))] shadow-lg lg:hidden flex items-center justify-between gap-3"
+        >
+          <div className="flex flex-col min-w-0">
+            <span className="text-[10px] text-ink-soft font-mono uppercase tracking-wider">
+              Tổng thanh toán
+            </span>
+            <span className="text-base font-bold text-accent truncate">
+              {formatPrice(Math.max(0, subtotal - (appliedDiscount?.discount_amount || 0)))}
+            </span>
+          </div>
+
+          <button
+            type="button"
+            disabled={!selectedAddressId || createOrderMutation.isPending || isMaintenance}
+            onClick={handlePlaceOrder}
+            className="min-h-[44px] px-5 py-2.5 bg-ink hover:bg-accent text-white rounded-full font-sans text-xs uppercase tracking-wider font-bold flex items-center gap-1.5 transition shadow-sm disabled:opacity-50 cursor-pointer"
+          >
+            {createOrderMutation.isPending ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : isMaintenance ? (
+              'Đang bảo trì'
+            ) : (
+              <>
+                <span>Đặt hàng</span>
+                <ChevronRight className="w-4 h-4" />
+              </>
+            )}
+          </button>
+        </aside>
+      )}
     </div>
   );
 };

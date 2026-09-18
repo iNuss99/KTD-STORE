@@ -11,6 +11,7 @@ import { useProducts, useProductMetadata } from '../../hooks/useProducts';
 export const ProductListPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [gridCols, setGridCols] = useState<'gallery' | 'grid'>('grid');
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
   const [filters, setFilters] = useState<{
     category_id?: string;
@@ -29,6 +30,17 @@ export const ProductListPage: React.FC = () => {
     max_price: searchParams.get('max_price') ? Number(searchParams.get('max_price')) : undefined,
     search: searchParams.get('search') || undefined,
   }));
+
+  useEffect(() => {
+    if (mobileFilterOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileFilterOpen]);
 
   const [sortOrder, setSortOrder] = useState<'default' | 'price-asc' | 'price-desc'>('default');
 
@@ -179,7 +191,7 @@ export const ProductListPage: React.FC = () => {
           </h1>
           <p className="text-[#6E6E6E] text-sm sm:text-base font-sans max-w-xl leading-relaxed pt-1">
             {activeCategoryName
-              ? `Khám phá các thiết kế ${activeCategoryName} cao cấp tại KTDL với chất liệu tuyển chọn và phom dáng may đo tinh tế.`
+              ? `Khám phá các thiết kế ${activeCategoryName} cao cấp tại KTDL với chất liệu tuyển chọn và form dáng may đo tinh tế.`
               : 'Thiết kế KTDL tỉ mỉ, chất liệu cao cấp tuyển chọn cho phong cách quý ông hiện đại.'}
           </p>
         </div>
@@ -268,10 +280,23 @@ export const ProductListPage: React.FC = () => {
 
         {/* Results Toolbar */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4 border-b border-[#1A1A1A]/10 gap-4">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
             <span className="font-mono text-xs text-[#6E6E6E] uppercase tracking-wider">
               Hiển thị <strong className="text-[#1A1A1A] font-bold">{products.length}</strong> sản phẩm
             </span>
+
+            {/* Mobile & Tablet Filter Trigger Button */}
+            <button
+              type="button"
+              onClick={() => setMobileFilterOpen(true)}
+              className="lg:hidden min-h-[40px] px-3.5 py-1.5 bg-white border border-[#1A1A1A]/15 text-xs font-mono font-bold text-ink rounded-lg flex items-center gap-2 hover:border-accent shadow-2xs transition cursor-pointer"
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5 text-accent" />
+              <span>Bộ lọc</span>
+              {hasActiveFilters && (
+                <span className="w-2 h-2 rounded-full bg-accent inline-block" />
+              )}
+            </button>
           </div>
 
           <div className="flex items-center gap-4 self-end sm:self-auto">
@@ -315,29 +340,31 @@ export const ProductListPage: React.FC = () => {
 
         {/* 2 Column Layout */}
         <div className="flex flex-col lg:flex-row gap-8 items-start">
-          {/* Left Sidebar */}
-          <FilterSidebar
-            categories={categories}
-            brands={brands}
-            sizes={sizes}
-            colors={colors}
-            selectedCategory={filters.category_id}
-            selectedBrand={filters.brand_id}
-            selectedSize={filters.size_id}
-            selectedColor={filters.color_id}
-            minPrice={filters.min_price}
-            maxPrice={filters.max_price}
-            priceBounds={priceBounds}
-            sortOrder={sortOrder}
-            onSortChange={setSortOrder}
-            onFilterChange={(newFilters) => updateFiltersAndUrl({ ...filters, ...newFilters })}
-            onReset={handleResetFilters}
-          />
+          {/* Left Sidebar (Desktop Only) */}
+          <div className="hidden lg:block w-72 shrink-0">
+            <FilterSidebar
+              categories={categories}
+              brands={brands}
+              sizes={sizes}
+              colors={colors}
+              selectedCategory={filters.category_id}
+              selectedBrand={filters.brand_id}
+              selectedSize={filters.size_id}
+              selectedColor={filters.color_id}
+              minPrice={filters.min_price}
+              maxPrice={filters.max_price}
+              priceBounds={priceBounds}
+              sortOrder={sortOrder}
+              onSortChange={setSortOrder}
+              onFilterChange={(newFilters) => updateFiltersAndUrl({ ...filters, ...newFilters })}
+              onReset={handleResetFilters}
+            />
+          </div>
 
           {/* Product Grid / Skeleton / Empty State */}
           <div className="flex-1 w-full">
             {loadingProducts ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-6">
                 {[...Array(6)].map((_, i) => (
                   <div key={i} className="animate-pulse bg-white border border-[#1A1A1A]/10 p-4 space-y-4">
                     <div className="aspect-[3/4] bg-[#EFECE6]" />
@@ -361,8 +388,8 @@ export const ProductListPage: React.FC = () => {
               <div
                 className={
                   gridCols === 'gallery'
-                    ? 'grid grid-cols-1 sm:grid-cols-2 gap-8'
-                    : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'
+                    ? 'grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8'
+                    : 'grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-6'
                 }
               >
                 {products.map((product) => (
@@ -372,6 +399,82 @@ export const ProductListPage: React.FC = () => {
             )}
           </div>
         </div>
+
+        {/* Mobile & Tablet Filter Modal / Slide-over Drawer */}
+        {mobileFilterOpen && (
+          <div className="fixed inset-0 z-50 lg:hidden">
+            {/* Backdrop */}
+            <div
+              className="fixed inset-0 bg-black/50 backdrop-blur-xs transition-opacity duration-300"
+              onClick={() => setMobileFilterOpen(false)}
+              aria-hidden="true"
+            />
+
+            {/* Drawer Panel */}
+            <aside
+              aria-label="Mobile Filters"
+              className="fixed inset-y-0 right-0 max-w-md w-full bg-[#F5F2EE] shadow-2xl flex flex-col justify-between overflow-hidden border-l border-line transform transition-transform duration-300 ease-out"
+            >
+              {/* Drawer Header */}
+              <div className="p-4 sm:p-5 border-b border-line flex items-center justify-between bg-white/90 backdrop-blur-md sticky top-0 z-10">
+                <div className="flex items-center gap-2">
+                  <SlidersHorizontal className="w-4 h-4 text-accent" />
+                  <h3 className="font-editorial text-lg font-bold text-ink">Bộ lọc sản phẩm</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setMobileFilterOpen(false)}
+                  className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 text-ink-soft hover:text-ink rounded-full transition cursor-pointer"
+                  aria-label="Đóng bộ lọc"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Drawer Body */}
+              <div className="flex-1 overflow-y-auto p-4 sm:p-5">
+                <FilterSidebar
+                  categories={categories}
+                  brands={brands}
+                  sizes={sizes}
+                  colors={colors}
+                  selectedCategory={filters.category_id}
+                  selectedBrand={filters.brand_id}
+                  selectedSize={filters.size_id}
+                  selectedColor={filters.color_id}
+                  minPrice={filters.min_price}
+                  maxPrice={filters.max_price}
+                  priceBounds={priceBounds}
+                  sortOrder={sortOrder}
+                  onSortChange={setSortOrder}
+                  onFilterChange={(newFilters) => updateFiltersAndUrl({ ...filters, ...newFilters })}
+                  onReset={handleResetFilters}
+                />
+              </div>
+
+              {/* Drawer Footer Actions */}
+              <div className="p-4 sm:p-5 border-t border-line bg-white flex items-center gap-3 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleResetFilters();
+                    setMobileFilterOpen(false);
+                  }}
+                  className="flex-1 min-h-[44px] py-2.5 px-4 border border-line text-ink font-mono text-xs font-bold uppercase rounded-xl hover:bg-bg-alt transition cursor-pointer"
+                >
+                  Xóa bộ lọc
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMobileFilterOpen(false)}
+                  className="flex-1 min-h-[44px] py-2.5 px-4 bg-ink hover:bg-accent text-white font-mono text-xs font-bold uppercase rounded-xl transition cursor-pointer shadow-xs"
+                >
+                  Xem {products.length} sản phẩm
+                </button>
+              </div>
+            </aside>
+          </div>
+        )}
       </main>
     </div>
   );

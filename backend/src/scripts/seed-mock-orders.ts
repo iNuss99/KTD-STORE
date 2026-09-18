@@ -222,7 +222,7 @@ async function run() {
     // Tính tiền
     let subtotal = 0;
     const itemsData = orderVariants.map((v) => {
-      const price = Number(v.price_override || v.product.base_price || 250000);
+      const price = Number(v.price_override || v.product?.base_price || 250000);
       const quantity = Math.random() < 0.8 ? 1 : 2;
       subtotal += price * quantity;
       return {

@@ -9,6 +9,7 @@ import {
   getUserName,
   setAdminActiveSession,
   getAdminAuthToken,
+  clearAdminAuth,
 } from '../auth-storage';
 
 describe('auth-storage utility', () => {
@@ -61,7 +62,7 @@ describe('auth-storage utility', () => {
     expect(getUserName()).toBeNull();
   });
 
-  it('cô lập hoàn toàn giữa Admin namespace và Customer namespace', () => {
+  it('cô lập hoàn toàn giữa Admin namespace và Customer namespace (Complete Isolation)', () => {
     // 1. Admin login trong CRM
     setAdminActiveSession({
       accessToken: 'admin-jwt-test',
@@ -77,8 +78,7 @@ describe('auth-storage utility', () => {
     expect(getUserName()).toBeNull();
     expect(getAuthHeader()).toEqual({});
 
-    // 2. setActiveSession() xóa admin namespace để đảm bảo isolation hoàn toàn
-    // Behavior đúng: không cho phép cùng lúc có session admin + customer trên 1 browser
+    // 2. Customer login tại Storefront: KHÔNG xóa hay ảnh hưởng đến Admin namespace
     setActiveSession({
       accessToken: 'customer-jwt-test',
       user: { id: 'cust-1', role: 'CUSTOMER', full_name: 'Nguyen Van Khach' },
@@ -90,12 +90,17 @@ describe('auth-storage utility', () => {
     expect(getUserName()).toBe('Nguyen Van Khach');
     expect(getAuthHeader()).toEqual({ Authorization: 'Bearer customer-jwt-test' });
 
-    // Admin namespace đã bị xóa — isolation đảm bảo
-    expect(getAdminAuthToken()).toBeNull();
+    // Admin namespace VẪN NGUYÊN VẸN — Complete Isolation
+    expect(getAdminAuthToken()).toBe('admin-jwt-test');
 
-    // 3. Khách hàng đăng xuất
+    // 3. Đăng xuất ở Storefront (Contextual Logout): chỉ xóa customer, GIỮ NGUYÊN admin
     clearAuthToken();
     expect(getAuthToken()).toBeNull();
     expect(getUserRole()).toBeNull();
+    expect(getAdminAuthToken()).toBe('admin-jwt-test');
+
+    // 4. Đăng xuất ở CRM (Contextual Logout): xóa admin
+    clearAdminAuth();
+    expect(getAdminAuthToken()).toBeNull();
   });
 });

@@ -22,7 +22,7 @@ export const AdminLoginPage: React.FC = () => {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, portal: 'admin' }),
       });
 
       let data: any = {};
@@ -34,23 +34,27 @@ export const AdminLoginPage: React.FC = () => {
 
       if (res.ok) {
         if (data.user?.role === 'CUSTOMER') {
-          setError('Tài khoản của bạn không có quyền quản trị CRM.');
-        } else {
-          setAdminActiveSession({
-            accessToken: data.access_token,
-            refreshToken: data.refresh_token,
-            user: data.user,
-          });
-          if (rememberMe) {
-            localStorage.setItem('saved_admin_email', email);
-          }
-          navigate('/admin');
+          setError('Tài khoản khách hàng không có quyền truy cập hệ thống quản trị CRM.');
+          return;
         }
+        setAdminActiveSession({
+          accessToken: data.access_token,
+          refreshToken: data.refresh_token,
+          user: data.user,
+        });
+        if (rememberMe) {
+          localStorage.setItem('saved_admin_email', email);
+        }
+        navigate('/admin');
       } else {
-        setError(
-          data.message ||
-            `Đăng nhập thất bại (Mã lỗi ${res.status}). Vui lòng kiểm tra lại.`
-        );
+        if (res.status === 403) {
+          setError(data.message || 'Tài khoản khách hàng không có quyền truy cập hệ thống quản trị CRM.');
+        } else {
+          setError(
+            data.message ||
+              `Đăng nhập thất bại (Mã lỗi ${res.status}). Vui lòng kiểm tra lại.`
+          );
+        }
       }
     } catch (err) {
       console.error(err);

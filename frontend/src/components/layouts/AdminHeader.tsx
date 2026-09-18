@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { LogOut, ChevronDown, ShieldCheck, Eye, Store, Menu, User } from 'lucide-react';
+import { LogOut, ChevronDown, ShieldCheck, Store, Menu, User } from 'lucide-react';
 import { NotificationBell } from '../widgets/NotificationBell';
-import { useAuth, Role } from '../../hooks/useAuth';
+import { useAuth } from '../../hooks/useAuth';
 import { clearAdminAuth, getAdminName, getAdminAvatar } from '../../lib/auth-storage';
 
 interface AdminHeaderProps {
@@ -11,12 +11,17 @@ interface AdminHeaderProps {
 
 export const AdminHeader: React.FC<AdminHeaderProps> = ({ onToggleMobileSidebar }) => {
   const navigate = useNavigate();
-  const { role, actualRole, simulatedRole, setSimulatedRole } = useAuth();
+  const { role, actualRole } = useAuth();
   const [userName, setUserName] = useState<string>('Admin');
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
 
   useEffect(() => {
+    // Clear any leftover role simulation from local storage
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('view_as_role');
+    }
+
     const updateUserData = () => {
       const storedName = getAdminName() || localStorage.getItem('user_name');
       if (storedName) {
@@ -34,8 +39,6 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onToggleMobileSidebar 
     clearAdminAuth();
     navigate('/crm');
   };
-
-  const isSuperAdminUser = actualRole === 'SUPER_ADMIN';
 
   return (
     <header className="h-16 bg-white/90 backdrop-blur-md border-b border-slate-100 px-4 sm:px-6 flex items-center justify-between sticky top-0 z-40 select-none font-sans">
@@ -61,32 +64,12 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onToggleMobileSidebar 
 
       {/* Right: Actions */}
       <div className="flex items-center gap-2 sm:gap-3">
-        {/* Super Admin Role View Switcher */}
-        {isSuperAdminUser && (
-          <div className="flex items-center gap-1.5 bg-amber-50/80 hover:bg-amber-100/80 text-amber-900 border border-amber-200/80 text-xs px-2 sm:px-2.5 py-1.5 rounded-xl transition shadow-2xs">
-            <Eye className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-            <span className="font-bold hidden md:inline text-slate-700">Góc nhìn:</span>
-            <select
-              value={simulatedRole || 'SUPER_ADMIN'}
-              onChange={(e) => setSimulatedRole(e.target.value as Role)}
-              className="bg-transparent font-bold text-amber-950 text-xs border-none outline-none cursor-pointer focus:ring-0 max-w-[90px] sm:max-w-none truncate"
-              title="Đổi góc nhìn giả lập vai trò (Super Admin feature)"
-            >
-              <option value="SUPER_ADMIN">👑 Super Admin (Tất cả quyền)</option>
-              <option value="CEO">👔 CEO (Báo cáo & Nhân sự)</option>
-              <option value="MANAGER">📦 Manager (Đơn hàng & Kho)</option>
-              <option value="STAFF">🛠️ Staff (Vận hành đơn hàng)</option>
-              <option value="CUSTOMER">🛍️ Customer (Góc nhìn Khách hàng)</option>
-            </select>
-          </div>
-        )}
-
         {/* Return to Storefront Button */}
         <button
           onClick={() => {
             navigate('/');
           }}
-          className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-slate-100 hover:bg-amber-500 hover:text-white text-slate-800 rounded-xl text-xs font-bold transition shadow-2xs border border-slate-200/80"
+          className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-slate-100 hover:bg-amber-500 hover:text-white text-slate-800 rounded-xl text-xs font-bold transition shadow-2xs border border-slate-200/80 cursor-pointer"
           title="Quay về trang bán hàng để trải nghiệm mua sắm (Storefront)"
         >
           <Store className="w-4 h-4 text-amber-600 group-hover:text-white shrink-0" />
@@ -100,7 +83,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onToggleMobileSidebar 
         <div className="relative">
           <button
             onClick={() => setShowUserMenu(!showUserMenu)}
-            className="flex items-center gap-1.5 sm:gap-2.5 p-1 sm:p-1.5 hover:bg-slate-50 rounded-2xl transition border border-transparent hover:border-slate-200"
+            className="flex items-center gap-1.5 sm:gap-2.5 p-1 sm:p-1.5 hover:bg-slate-50 rounded-2xl transition border border-transparent hover:border-slate-200 cursor-pointer"
           >
             {userAvatar ? (
               <img
@@ -126,12 +109,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onToggleMobileSidebar 
             <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50 animate-fade-in">
               <div className="px-4 py-2 border-b border-slate-100 mb-1">
                 <p className="text-xs font-bold text-slate-800">{userName}</p>
-                <p className="text-[11px] text-slate-500 font-medium">Role thực tế: {actualRole}</p>
-                {simulatedRole && (
-                  <p className="text-[10px] font-bold text-amber-600 mt-0.5">
-                    Đang giả lập: {simulatedRole}
-                  </p>
-                )}
+                <p className="text-[11px] text-slate-500 font-medium">Vai trò: {actualRole || role}</p>
               </div>
               <Link
                 to="/admin/profile"

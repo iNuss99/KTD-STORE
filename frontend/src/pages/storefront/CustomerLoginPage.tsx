@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { ArrowLeft, Loader2, AlertCircle, CheckCircle2, Eye, EyeOff } from 'lucide-react';
-import { setActiveSession, setAdminActiveSession } from '../../lib/auth-storage';
+import { setActiveSession } from '../../lib/auth-storage';
 
 export const CustomerLoginPage: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -43,28 +43,19 @@ export const CustomerLoginPage: React.FC = () => {
       }
 
       if (res.ok) {
-        if (data.user?.role && data.user.role !== 'CUSTOMER') {
-          // Admin role: write ONLY to admin namespace
-          setAdminActiveSession({
-            accessToken: data.access_token,
-            refreshToken: data.refresh_token,
-            user: data.user,
-          });
-          setSuccess('Đăng nhập Quản trị thành công! Đang chuyển hướng sang CRM...');
-          setTimeout(() => {
-            navigate('/admin');
-          }, 500);
-          return;
-        }
-
-        // Customer role: write ONLY to customer namespace
+        // Lưu vào phiên Storefront (Customer namespace) độc lập
         setActiveSession({
           accessToken: data.access_token,
           refreshToken: data.refresh_token,
           user: data.user,
         });
 
-        setSuccess('Đăng nhập thành công! Đang chuyển hướng...');
+        const isStaff = data.user?.role && ['SUPER_ADMIN', 'CEO', 'MANAGER', 'STAFF'].includes(data.user.role);
+        setSuccess(
+          isStaff
+            ? 'Đăng nhập tài khoản quản trị thành công! Đang chuyển hướng...'
+            : 'Đăng nhập thành công! Đang chuyển hướng...'
+        );
         setTimeout(() => {
           navigate(from);
         }, 500);
