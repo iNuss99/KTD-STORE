@@ -10,15 +10,15 @@ import { GetUser } from '../../common/decorators/get-user.decorator';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  // Rate limit: cho phép tối đa 20 lần đăng ký / phút mỗi IP
-  @Throttle({ default: { limit: 20, ttl: 60000 } })
+  // Rate limit: cho phép tối đa 10 lần đăng ký / phút mỗi IP
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('register')
   async register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);
   }
 
-  // Rate limit: cho phép tối đa 30 lần đăng nhập / phút mỗi IP
-  @Throttle({ default: { limit: 30, ttl: 60000 } })
+  // Rate limit: 5 lần đăng nhập / phút mỗi IP — ngăn brute-force
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   @Post('login')
   async login(@Body() dto: LoginDto) {

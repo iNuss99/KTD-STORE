@@ -1,9 +1,13 @@
 import { Controller, Post, Get, Body, Param, Query, Req, Res, BadRequestException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PaymentsService } from './payments.service';
 
 @Controller('payments')
 export class PaymentsController {
-  constructor(private readonly paymentsService: PaymentsService) {}
+  constructor(
+    private readonly paymentsService: PaymentsService,
+    private readonly configService: ConfigService,
+  ) {}
 
   @Post('vnpay/create-url')
   createVnpayUrl(
@@ -32,10 +36,12 @@ export class PaymentsController {
         query['vnp_TransactionNo'] || query['vnp_TxnRef'] || 'VNPAY_TXN',
         'VNPAY',
       );
-      return res.redirect(`http://localhost:5173/orders/${result.orderId}?payment_success=1`);
+      const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:5173');
+      return res.redirect(`${frontendUrl}/orders/${result.orderId}?payment_success=1`);
     }
 
-    return res.redirect(`http://localhost:5173/orders/${result.orderId || ''}?payment_error=1`);
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:5173');
+    return res.redirect(`${frontendUrl}/orders/${result.orderId || ''}?payment_error=1`);
   }
 
   @Get('vnpay/ipn')

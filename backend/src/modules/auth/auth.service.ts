@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, UnauthorizedException, ForbiddenException } from '@nestjs/common';
+import { Injectable, BadRequestException, UnauthorizedException, ForbiddenException, InternalServerErrorException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -8,6 +8,9 @@ import { User } from '../users/entities/user.entity';
 import { UserRole } from '../../common/enums/role.enum';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+
+const MAX_LOGIN_ATTEMPTS = 10;
+const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
 
 @Injectable()
 export class AuthService {
@@ -58,20 +61,43 @@ export class AuthService {
     const email = dto.email.trim().toLowerCase();
     const user = await this.userRepo.findOne({ where: { email } });
     if (!user) {
+      // Generic message to prevent user enumeration
       throw new UnauthorizedException('Email hoặc mật khẩu không chính xác');
     }
 
+    // Check permanent lock by admin
     if (user.is_locked) {
-      throw new UnauthorizedException('Tài khoản của bạn đã bị khóa');
+      throw new UnauthorizedException('Tài khoản của bạn đã bị khóa. Vui lòng liên hệ hỗ trợ.');
+    }
+
+    // Check temporary auto-lockout from brute-force
+    if (user.locked_until && user.locked_until > new Date()) {
+      const minutesLeft = Math.ceil((user.locked_until.getTime() - Date.now()) / 60000);
+      throw new UnauthorizedException(
+        `Tài khoản tạm thời bị khóa do đăng nhập sai nhiều lần. Vui lòng thử lại sau ${minutesLeft} phút.`,
+      );
     }
 
     const isPasswordValid = await bcrypt.compare(dto.password, user.password_hash);
     if (!isPasswordValid) {
+      // Increment login attempts and auto-lock if over threshold
+      const newAttempts = (user.login_attempts || 0) + 1;
+      const updates: Partial<User> = { login_attempts: newAttempts };
+      if (newAttempts >= MAX_LOGIN_ATTEMPTS) {
+        updates.locked_until = new Date(Date.now() + LOCKOUT_DURATION_MS);
+        updates.login_attempts = 0;
+      }
+      await this.userRepo.update(user.id, updates);
       throw new UnauthorizedException('Email hoặc mật khẩu không chính xác');
     }
 
     if (dto.portal === 'admin' && user.role === UserRole.CUSTOMER) {
       throw new ForbiddenException('Tài khoản khách hàng không có quyền truy cập hệ thống quản trị CRM');
+    }
+
+    // Reset login attempts on successful login
+    if (user.login_attempts > 0 || user.locked_until) {
+      await this.userRepo.update(user.id, { login_attempts: 0, locked_until: null });
     }
 
     const tokens = await this.generateTokens(user);
@@ -115,13 +141,21 @@ export class AuthService {
 
   private async generateTokens(user: User) {
     const payload = { sub: user.id, email: user.email, role: user.role };
+
+    // [CRIT-1] Throw if secrets are not configured — no hard-coded fallback
+    const jwtSecret = this.configService.get<string>('JWT_SECRET');
+    if (!jwtSecret) throw new InternalServerErrorException('JWT_SECRET is not configured');
+
+    const jwtRefreshSecret = this.configService.get<string>('JWT_REFRESH_SECRET');
+    if (!jwtRefreshSecret) throw new InternalServerErrorException('JWT_REFRESH_SECRET is not configured');
+
     const access_token = await this.jwtService.signAsync(payload, {
-      secret: this.configService.get<string>('JWT_SECRET') || 'super_secret_jwt_key_menwear_hub_2026',
+      secret: jwtSecret,
       expiresIn: this.configService.get<string>('JWT_EXPIRATION') || '8h',
     });
 
     const refresh_token = await this.jwtService.signAsync(payload, {
-      secret: this.configService.get<string>('JWT_REFRESH_SECRET') || 'super_secret_refresh_jwt_key_menwear_hub_2026',
+      secret: jwtRefreshSecret,
       expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRATION') || '7d',
     });
 
@@ -133,3 +167,5 @@ export class AuthService {
     await this.userRepo.update(userId, { refresh_token_hash: hash });
   }
 }
+
+

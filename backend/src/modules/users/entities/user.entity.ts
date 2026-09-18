@@ -32,6 +32,12 @@ export class User {
   @Column({ default: false })
   is_locked: boolean;
 
+  @Column({ default: 0 })
+  login_attempts: number;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  locked_until: Date | null;
+
   @Column({ nullable: true })
   refresh_token_hash: string;
 
