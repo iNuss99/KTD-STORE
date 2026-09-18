@@ -1,0 +1,16 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://ktd-store.onrender.com/api/:path*"
+    },
+    {
+      "source": "/webhooks/:path*",
+      "destination": "https://ktd-store.onrender.com/api/webhooks/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
