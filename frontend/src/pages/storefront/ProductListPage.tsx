@@ -95,7 +95,7 @@ export const ProductListPage: React.FC = () => {
     setSearchParams(params);
   };
 
-  const { data: productsData, isLoading: loadingProducts, isError } = useProducts(filters);
+  const { data: productsData, isLoading: loadingProducts, isError, refetch } = useProducts(filters);
   const { data: allCatalogData } = useProducts({ limit: 100 });
   const { data: metadata } = useProductMetadata();
 
@@ -264,7 +264,7 @@ export const ProductListPage: React.FC = () => {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4 border-b border-[#1A1A1A]/10 gap-4">
           <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
             <span className="font-mono text-xs text-[#6E6E6E] uppercase tracking-wider">
-              Hiển thị <strong className="text-[#1A1A1A] font-bold">{products.length}</strong> sản phẩm
+              Hiển thị <strong className="text-[#1A1A1A] font-bold">{loadingProducts ? '...' : products.length}</strong> sản phẩm
             </span>
 
             {/* Mobile & Tablet Filter Trigger Button */}
@@ -355,7 +355,14 @@ export const ProductListPage: React.FC = () => {
                   </div>
                 ))}
               </div>
-            ) : isError || products.length === 0 ? (
+            ) : isError ? (
+              <EmptyState
+                title="Không thể kết nối máy chủ"
+                description="Máy chủ backend đang phản hồi chậm hoặc đang khởi động lại. Vui lòng thử lại sau ít giây."
+                actionLabel="Thử lại"
+                onAction={() => refetch()}
+              />
+            ) : products.length === 0 ? (
               <EmptyState
                 title="Không tìm thấy sản phẩm nào"
                 description={

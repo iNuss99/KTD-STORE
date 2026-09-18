@@ -26,22 +26,30 @@ async function bootstrap() {
 
   // [HIGH-1] CORS — whitelist specific origins, not wildcard
   const frontendUrl = configService.get<string>('FRONTEND_URL', 'http://localhost:5173');
-  const allowedOrigins = frontendUrl
+  const envOrigins = frontendUrl
     .split(',')
     .map((o) => o.trim())
     .filter(Boolean);
+  const defaultOrigins = [
+    'https://ktd-store.vercel.app',
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://localhost:3000',
+  ];
+  const allowedOrigins = Array.from(new Set([...defaultOrigins, ...envOrigins]));
+
   app.enableCors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (e.g. mobile apps, curl, same-server)
-      if (!origin || allowedOrigins.includes(origin)) {
+      // Allow requests with no origin (e.g. mobile apps, curl, same-server, serverless rewrites)
+      if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
         callback(null, true);
       } else {
-        callback(new Error(`CORS: Origin "${origin}" not allowed`));
+        callback(null, false);
       }
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
   });
 
   app.setGlobalPrefix('api');
@@ -60,7 +68,7 @@ async function bootstrap() {
   const port = configService.get<number>('PORT', 3000);
 
   const logger = new Logger('Bootstrap');
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
   logger.log(`🚀 Server MenWear Hub backend đang chạy tại: http://localhost:${port}`);
   logger.log(`🔒 CORS allowed origins: ${allowedOrigins.join(', ')}`);
 }
