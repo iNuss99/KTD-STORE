@@ -266,6 +266,23 @@ describe('EmailService & EmailTemplatesService', () => {
       expect(result.provider).toBe('mock');
       expect(result.messageId).toBeDefined();
     });
+
+    it('should successfully send staff updated email via dev mock provider', async () => {
+      const result = await emailService.sendStaffUpdatedEmail({
+        staffName: 'Trần Nhân Viên',
+        staffEmail: 'staff@ktdstore.vn',
+        oldRole: 'STAFF',
+        newRole: 'MANAGER',
+        isRoleChanged: true,
+        newPassword: 'NewStaffPassword@123',
+        updatedAt: '20:10:00 05/09/2026',
+        loginUrl: 'http://localhost:5173/admin/login',
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.provider).toBe('mock');
+      expect(result.messageId).toBeDefined();
+    });
   });
 });
 

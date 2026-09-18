@@ -9,6 +9,7 @@ import {
   PasswordResetEmailData,
   StaffCreatedEmailData,
   StaffStatusEmailData,
+  StaffUpdatedEmailData,
 } from './email.types';
 
 @Injectable()
@@ -133,6 +134,19 @@ export class EmailConsumer {
       this.logger.error(`Failed to process staff.status_changed email: ${err.message}`);
     }
   }
+
+  @OnEvent('staff.updated')
+  async handleStaffUpdated(payload: StaffUpdatedEmailData) {
+    try {
+      if (payload.staffEmail) {
+        this.logger.log(`Received staff.updated event for: ${payload.staffEmail} (${payload.staffName})`);
+        await this.emailService.sendStaffUpdatedEmail(payload);
+      }
+    } catch (err: any) {
+      this.logger.error(`Failed to process staff.updated email: ${err.message}`);
+    }
+  }
 }
+
 
 

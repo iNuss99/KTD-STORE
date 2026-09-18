@@ -12,6 +12,7 @@ import {
   PasswordResetEmailData,
   StaffCreatedEmailData,
   StaffStatusEmailData,
+  StaffUpdatedEmailData,
 } from './email.types';
 
 @Injectable()
@@ -203,6 +204,16 @@ export class EmailService {
       html,
     });
   }
+
+  async sendStaffUpdatedEmail(data: StaffUpdatedEmailData): Promise<SendEmailResult> {
+    const { subject, html } = this.templatesService.generateStaffUpdatedEmail(data);
+    return this.send({
+      to: data.staffEmail,
+      subject,
+      html,
+    });
+  }
 }
+
 
 

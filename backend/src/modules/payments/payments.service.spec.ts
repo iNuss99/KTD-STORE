@@ -89,7 +89,7 @@ describe('PaymentsService', () => {
   });
 
   describe('handlePaymentSuccess', () => {
-    it('should transition order to PROCESSING and payment to COMPLETED', async () => {
+    it('should transition order to CONFIRMED and payment to COMPLETED', async () => {
       const order = await service.handlePaymentSuccess('order-12345678-uuid', 'TXN_999', 'VNPAY');
 
       expect(orderRepoMock.findOne).toHaveBeenCalledWith({
@@ -97,7 +97,7 @@ describe('PaymentsService', () => {
         relations: ['payments'],
       });
       expect(paymentRepoMock.save).toHaveBeenCalled();
-      expect(order.status).toBe(OrderStatus.PROCESSING);
+      expect(order.status).toBe(OrderStatus.CONFIRMED);
     });
   });
 });

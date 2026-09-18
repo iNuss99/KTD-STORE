@@ -7,6 +7,7 @@ import {
   PasswordResetEmailData,
   StaffCreatedEmailData,
   StaffStatusEmailData,
+  StaffUpdatedEmailData,
 } from './email.types';
 
 @Injectable()
@@ -436,5 +437,113 @@ export class EmailTemplatesService {
       html: this.wrapBaseLayout(subject, htmlContent),
     };
   }
+
+  generateStaffUpdatedEmail(data: StaffUpdatedEmailData): { subject: string; html: string } {
+    const roleLabels: Record<string, string> = {
+      SUPER_ADMIN: 'Quản trị viên cấp cao (Super Admin)',
+      CEO: 'Ban Giám Đốc (CEO)',
+      MANAGER: 'Quản lý (Manager)',
+      STAFF: 'Nhân viên vận hành (Staff)',
+    };
+    const oldRoleLabel = data.oldRole ? roleLabels[data.oldRole] || data.oldRole : '';
+    const newRoleLabel = roleLabels[data.newRole] || data.newRole;
+
+    const subject = `[KTD Store] Thông báo: Thông tin tài khoản nhân sự của bạn đã được cập nhật`;
+
+    const htmlContent = `
+      <div style="text-align: center; margin-bottom: 24px;">
+        <span class="badge" style="background: #e0e7ff; color: #4338ca; padding: 4px 12px; font-size: 12px; font-weight: 700; border-radius: 9999px;">
+          📝 CẬP NHẬT TÀI KHOẢN NHÂN SỰ
+        </span>
+        <h2 style="margin: 14px 0 6px; color: #0f172a; font-size: 22px;">Thông tin tài khoản đã được cập nhật</h2>
+        <p style="margin: 0; color: #64748b; font-size: 14px;">Kính gửi <strong>${data.staffName}</strong>,</p>
+        <p style="margin: 6px 0 0; color: #64748b; font-size: 13px;">Hồ sơ nhân sự của bạn trên hệ thống <strong>KTD Store</strong> đã được Quản trị viên cập nhật thành công vào lúc <strong>${data.updatedAt}</strong>.</p>
+      </div>
+
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+        <h4 style="margin: 0 0 14px; color: #0f172a; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
+          Chi tiết thông tin cập nhật:
+        </h4>
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+          <tr>
+            <td style="padding: 8px 0; color: #64748b; width: 150px;">Họ và tên:</td>
+            <td style="padding: 8px 0; color: #0f172a; font-weight: 700;">${data.staffName}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #64748b;">Email đăng nhập:</td>
+            <td style="padding: 8px 0; color: #0f172a; font-weight: 700;">${data.staffEmail}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #64748b;">Vai trò / Chức vụ:</td>
+            <td style="padding: 8px 0;">
+              ${
+                data.isRoleChanged && oldRoleLabel
+                  ? `<div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                      <span style="background: #f1f5f9; color: #64748b; text-decoration: line-through; padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: 600;">
+                        ${oldRoleLabel}
+                      </span>
+                      <span style="color: #64748b; font-weight: bold;">➜</span>
+                      <span style="background: #dbeafe; color: #1d4ed8; padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: 700;">
+                        ${newRoleLabel}
+                      </span>
+                    </div>`
+                  : `<span style="background: #fef3c7; color: #b45309; padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: 700;">
+                      ${newRoleLabel}
+                    </span>`
+              }
+            </td>
+          </tr>
+          ${
+            data.newPassword
+              ? `<tr>
+                  <td style="padding: 8px 0; color: #64748b; vertical-align: middle;">Mật khẩu mới:</td>
+                  <td style="padding: 8px 0;">
+                    <code style="background: #fef3c7; color: #b45309; padding: 4px 10px; border-radius: 6px; font-size: 16px; font-weight: bold; font-family: monospace; border: 1px solid #fde68a; display: inline-block;">
+                      ${data.newPassword}
+                    </code>
+                  </td>
+                </tr>`
+              : ''
+          }
+        </table>
+      </div>
+
+      ${
+        data.newPassword
+          ? `<div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 14px 18px; margin-bottom: 20px;">
+              <p style="margin: 0; font-size: 13px; color: #92400e; line-height: 1.5;">
+                🔒 <strong>Lưu ý bảo mật quan trọng:</strong> Mật khẩu tài khoản của bạn vừa được Quản trị viên cấp lại. Hãy sử dụng mật khẩu mới này để đăng nhập ngay và tiến hành đổi lại mật khẩu cá nhân để đảm bảo an toàn tuyệt đối.
+              </p>
+            </div>`
+          : ''
+      }
+
+      ${
+        data.isRoleChanged && !data.newPassword
+          ? `<div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 14px 18px; margin-bottom: 20px;">
+              <p style="margin: 0; font-size: 13px; color: #1e40af; line-height: 1.5;">
+                ℹ️ <strong>Thay đổi quyền hạn:</strong> Chức vụ của bạn đã được cập nhật thành <strong>${newRoleLabel}</strong>. Quyền hạn thao tác trên hệ thống quản trị KTD Store sẽ tự động áp dụng tương ứng.
+              </p>
+            </div>`
+          : ''
+      }
+
+      <div style="text-align: center; margin: 28px 0;">
+        <a href="${data.loginUrl}" class="btn" style="background: #d97706; text-decoration: none;">
+          🔑 Đăng Nhập Trang Quản Trị
+        </a>
+      </div>
+
+      <div style="border-top: 1px solid #e2e8f0; padding-top: 16px; font-size: 12px; color: #94a3b8; text-align: center;">
+        Nếu bạn không yêu cầu hoặc có thắc mắc về thay đổi này, vui lòng liên hệ Ban Giám Đốc hoặc Bộ phận IT KTD Store.
+      </div>
+    `;
+
+    return {
+      subject,
+      html: this.wrapBaseLayout(subject, htmlContent),
+    };
+  }
 }
+
 

@@ -200,6 +200,10 @@ export class UsersService implements OnApplicationBootstrap {
     }
 
     const wasLocked = user.is_locked;
+    const oldRole = user.role;
+    const oldFullName = user.full_name;
+    const oldPhone = user.phone;
+    const rawPassword = dto.password ? dto.password.trim() : undefined;
 
     // Checking Super Admin Protection when locking or changing role of Super Admin
     if (user.role === UserRole.SUPER_ADMIN) {
@@ -211,8 +215,8 @@ export class UsersService implements OnApplicationBootstrap {
       }
     }
 
-    if (dto.password) {
-      user.password_hash = await bcrypt.hash(dto.password, 10);
+    if (rawPassword) {
+      user.password_hash = await bcrypt.hash(rawPassword, 10);
     }
     if (dto.email) user.email = dto.email;
     if (dto.full_name) user.full_name = dto.full_name;
@@ -242,6 +246,30 @@ export class UsersService implements OnApplicationBootstrap {
         staffEmail: updatedUser.email,
         role: updatedUser.role,
         isLocked: updatedUser.is_locked,
+        updatedAt: new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }),
+        loginUrl: `${frontendUrl}/admin/login`,
+      });
+    }
+
+    // Gửi email thông báo khi hồ sơ nhân sự được cập nhật (đổi mật khẩu, chức vụ, họ tên, SĐT)
+    const hasProfileUpdate =
+      Boolean(rawPassword) ||
+      (dto.role !== undefined && dto.role !== oldRole) ||
+      (dto.full_name !== undefined && dto.full_name !== oldFullName) ||
+      (dto.phone !== undefined && dto.phone !== oldPhone);
+
+    if (
+      hasProfileUpdate &&
+      (oldRole !== UserRole.CUSTOMER || updatedUser.role !== UserRole.CUSTOMER)
+    ) {
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      this.eventEmitter.emit('staff.updated', {
+        staffName: updatedUser.full_name,
+        staffEmail: updatedUser.email,
+        oldRole,
+        newRole: updatedUser.role,
+        isRoleChanged: dto.role !== undefined && dto.role !== oldRole,
+        newPassword: rawPassword,
         updatedAt: new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }),
         loginUrl: `${frontendUrl}/admin/login`,
       });

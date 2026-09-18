@@ -100,3 +100,14 @@ export interface StaffStatusEmailData {
   loginUrl?: string;
 }
 
+export interface StaffUpdatedEmailData {
+  staffName: string;
+  staffEmail: string;
+  oldRole?: string;
+  newRole: string;
+  isRoleChanged?: boolean;
+  newPassword?: string;
+  updatedAt: string;
+  loginUrl: string;
+}
+

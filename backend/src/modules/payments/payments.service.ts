@@ -154,9 +154,9 @@ export class PaymentsService implements OnApplicationBootstrap {
     }
     await this.paymentRepo.save(payment);
 
-    // If order was PENDING, advance to PROCESSING
+    // If order was PENDING, advance to CONFIRMED
     if (order.status === OrderStatus.PENDING) {
-      order.status = OrderStatus.PROCESSING;
+      order.status = OrderStatus.CONFIRMED;
       await this.orderRepo.save(order);
     }
 

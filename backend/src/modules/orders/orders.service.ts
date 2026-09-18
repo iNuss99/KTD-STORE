@@ -398,8 +398,8 @@ export class OrdersService {
 
     const savedPayment = await this.paymentRepo.save(payment);
 
-    if (order.status === OrderStatus.PENDING || order.status === OrderStatus.CONFIRMED) {
-      order.status = OrderStatus.PROCESSING;
+    if (order.status === OrderStatus.PENDING) {
+      order.status = OrderStatus.CONFIRMED;
       await this.orderRepo.save(order);
     }
 
@@ -440,8 +440,8 @@ export class OrdersService {
       }
       await this.paymentRepo.save(payment);
 
-      if (order.status === OrderStatus.PENDING || order.status === OrderStatus.CONFIRMED) {
-        order.status = OrderStatus.PROCESSING;
+      if (order.status === OrderStatus.PENDING) {
+        order.status = OrderStatus.CONFIRMED;
         await this.orderRepo.save(order);
       }
 
@@ -549,8 +549,8 @@ export class OrdersService {
     payment.paid_at = new Date();
     await this.paymentRepo.save(payment);
 
-    if (order.status === OrderStatus.PENDING || order.status === OrderStatus.CONFIRMED) {
-      order.status = OrderStatus.PROCESSING;
+    if (order.status === OrderStatus.PENDING) {
+      order.status = OrderStatus.CONFIRMED;
       await this.orderRepo.save(order);
     }
 
@@ -632,8 +632,8 @@ export class OrdersService {
       payment.paid_at = new Date();
       await this.paymentRepo.save(payment);
 
-      if (order.status === OrderStatus.PENDING || order.status === OrderStatus.CONFIRMED) {
-        order.status = OrderStatus.PROCESSING;
+      if (order.status === OrderStatus.PENDING) {
+        order.status = OrderStatus.CONFIRMED;
         await this.orderRepo.save(order);
       }
 
@@ -730,8 +730,8 @@ export class OrdersService {
     payment.paid_at = new Date();
     await this.paymentRepo.save(payment);
 
-    if (order.status === OrderStatus.PENDING || order.status === OrderStatus.CONFIRMED) {
-      order.status = OrderStatus.PROCESSING;
+    if (order.status === OrderStatus.PENDING) {
+      order.status = OrderStatus.CONFIRMED;
       await this.orderRepo.save(order);
     }
 

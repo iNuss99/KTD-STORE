@@ -3,6 +3,7 @@ import { Users, AlertCircle, Plus, ShieldCheck, Lock, Unlock, Loader2, Trash2, U
 import { PermissionGuard } from '../../components/guards/PermissionGuard';
 import { useAuth } from '../../hooks/useAuth';
 import { getAdminAuthHeader } from '../../lib/auth-storage';
+import { useToast } from '../../context/ToastContext';
 
 interface User {
   id: string;
@@ -16,6 +17,7 @@ interface User {
 
 export const AdminStaffPage: React.FC = () => {
   const { isSuperAdmin, isCEO, role } = useAuth();
+  const { showSuccess, showError } = useToast();
   const [staff, setStaff] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -87,6 +89,10 @@ export const AdminStaffPage: React.FC = () => {
       if (res.ok) {
         setEditingUser(null);
         fetchStaff();
+        showSuccess(
+          'Cập nhật thành công',
+          'Đã cập nhật hồ sơ và gửi email thông báo cho nhân sự.'
+        );
       } else {
         const data = await res.json();
         setEditError(data.message || 'Không thể cập nhật thông tin nhân sự.');
@@ -132,6 +138,10 @@ export const AdminStaffPage: React.FC = () => {
           role: 'STAFF',
         });
         fetchStaff();
+        showSuccess(
+          'Tạo nhân sự thành công',
+          'Đã tạo tài khoản và gửi email thông tin đăng nhập cho nhân sự mới.'
+        );
       } else {
         const data = await res.json();
         setCreateError(data.message || 'Không thể tạo tài khoản nhân sự.');
@@ -231,6 +241,12 @@ export const AdminStaffPage: React.FC = () => {
         if (res.ok) {
           setConfirmModal({ type: null, user: null, loading: false });
           fetchStaff();
+          showSuccess(
+            type === 'lock' ? 'Đã khóa tài khoản' : 'Đã mở khóa tài khoản',
+            type === 'lock'
+              ? 'Tài khoản nhân sự đã tạm khóa và gửi email thông báo.'
+              : 'Tài khoản nhân sự đã được kích hoạt lại và gửi email thông báo.'
+          );
         } else {
           const errorData = await res.json();
           setConfirmModal((prev) => ({
@@ -250,6 +266,7 @@ export const AdminStaffPage: React.FC = () => {
         if (res.ok) {
           setConfirmModal({ type: null, user: null, loading: false });
           fetchStaff();
+          showSuccess('Đã xóa nhân sự', 'Tài khoản nhân sự đã được gỡ bỏ khỏi hệ thống.');
         } else {
           const errorData = await res.json();
           setConfirmModal((prev) => ({

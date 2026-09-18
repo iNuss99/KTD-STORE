@@ -303,7 +303,7 @@ describe('OrdersService', () => {
       await service.processSandboxPayment('ord-vnpay', 'SUCCESS', 'user-1');
 
       expect(mockPayment.status).toBe(PaymentStatus.COMPLETED);
-      expect(mockOrder.status).toBe(OrderStatus.PROCESSING);
+      expect(mockOrder.status).toBe(OrderStatus.CONFIRMED);
       expect(paymentRepo.save).toHaveBeenCalledWith(mockPayment);
       expect(orderRepo.save).toHaveBeenCalledWith(mockOrder);
     });
@@ -341,7 +341,7 @@ describe('OrdersService', () => {
       expect(result.error).toBe(0);
       expect(result.results[0].success).toBe(true);
       expect(result.results[0].order_id).toBe(mockOrder.id);
-      expect(mockOrder.status).toBe(OrderStatus.PROCESSING);
+      expect(mockOrder.status).toBe(OrderStatus.CONFIRMED);
     });
   });
 });
