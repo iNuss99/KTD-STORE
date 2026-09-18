@@ -8,28 +8,14 @@ import { Category, Brand } from '../../types';
 import { RefreshCw, SlidersHorizontal, ArrowUpDown, X, Tag, Grid2X2, Grid3X3 } from 'lucide-react';
 import { useProducts, useProductMetadata } from '../../hooks/useProducts';
 
+const EMPTY_CATEGORIES: Category[] = [];
+const EMPTY_BRANDS: Brand[] = [];
+
 export const ProductListPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [gridCols, setGridCols] = useState<'gallery' | 'grid'>('grid');
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
-
-  const [filters, setFilters] = useState<{
-    category_id?: string;
-    brand_id?: string;
-    size_id?: string;
-    color_id?: string;
-    min_price?: number;
-    max_price?: number;
-    search?: string;
-  }>(() => ({
-    category_id: searchParams.get('category_id') || searchParams.get('category') || undefined,
-    brand_id: searchParams.get('brand_id') || undefined,
-    size_id: searchParams.get('size_id') || undefined,
-    color_id: searchParams.get('color_id') || undefined,
-    min_price: searchParams.get('min_price') ? Number(searchParams.get('min_price')) : undefined,
-    max_price: searchParams.get('max_price') ? Number(searchParams.get('max_price')) : undefined,
-    search: searchParams.get('search') || undefined,
-  }));
+  const [sortOrder, setSortOrder] = useState<'default' | 'price-asc' | 'price-desc'>('default');
 
   useEffect(() => {
     if (mobileFilterOpen) {
@@ -42,9 +28,7 @@ export const ProductListPage: React.FC = () => {
     };
   }, [mobileFilterOpen]);
 
-  const [sortOrder, setSortOrder] = useState<'default' | 'price-asc' | 'price-desc'>('default');
-
-  const { data: categories = [] } = useQuery<Category[]>({
+  const { data: categories = EMPTY_CATEGORIES } = useQuery<Category[]>({
     queryKey: ['categories', 'tree'],
     queryFn: async () => {
       const res = await fetch('/api/categories/tree');
@@ -53,7 +37,7 @@ export const ProductListPage: React.FC = () => {
     staleTime: 1000 * 60 * 30,
   });
 
-  const { data: brands = [] } = useQuery<Brand[]>({
+  const { data: brands = EMPTY_BRANDS } = useQuery<Brand[]>({
     queryKey: ['brands'],
     queryFn: async () => {
       const res = await fetch('/api/brands');
@@ -79,13 +63,13 @@ export const ProductListPage: React.FC = () => {
     [categories],
   );
 
-  useEffect(() => {
+  const filters = useMemo(() => {
     const rawCategory = searchParams.get('category_id') || searchParams.get('category') || undefined;
     const matchedCategory = findCategory(rawCategory);
     // Nếu tìm thấy danh mục theo slug hoặc UUID thì lấy ID chuẩn của danh mục
     const resolvedCategoryId = matchedCategory ? matchedCategory.id : rawCategory;
 
-    setFilters({
+    return {
       search: searchParams.get('search') || undefined,
       category_id: resolvedCategoryId,
       brand_id: searchParams.get('brand_id') || undefined,
@@ -93,11 +77,10 @@ export const ProductListPage: React.FC = () => {
       color_id: searchParams.get('color_id') || undefined,
       min_price: searchParams.get('min_price') ? Number(searchParams.get('min_price')) : undefined,
       max_price: searchParams.get('max_price') ? Number(searchParams.get('max_price')) : undefined,
-    });
-  }, [searchParams, categories, findCategory]);
+    };
+  }, [searchParams, findCategory]);
 
   const updateFiltersAndUrl = (newFilters: typeof filters) => {
-    setFilters(newFilters);
     const params = new URLSearchParams();
     if (newFilters.search) params.set('search', newFilters.search);
     if (newFilters.category_id) {
@@ -145,7 +128,6 @@ export const ProductListPage: React.FC = () => {
   }, [productsData, sortOrder]);
 
   const handleResetFilters = () => {
-    setFilters({});
     setSortOrder('default');
     setSearchParams(new URLSearchParams());
   };
