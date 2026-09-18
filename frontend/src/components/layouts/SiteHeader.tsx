@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { ShoppingBag, User, Package, Heart, LogOut, ChevronDown, Menu, X, ShieldCheck } from 'lucide-react';
+import { ShoppingBag, User, Package, Heart, LogOut, ChevronDown, Menu, X } from 'lucide-react';
 import { NotificationBell } from '../widgets/NotificationBell';
 import { SearchAutocomplete } from '../widgets/SearchAutocomplete';
 import { useCart } from '../../hooks/useCart';
@@ -8,12 +8,7 @@ import { useMaintenanceMode } from '../../hooks/useSystemConfig';
 import {
   getAuthToken,
   clearAuthToken,
-  getUserRole,
   getUserName,
-  getAdminAuthToken,
-  getAdminName,
-  getAdminRole,
-  clearAdminAuth,
 } from '../../lib/auth-storage';
 
 export const SiteHeader: React.FC = () => {
@@ -24,56 +19,25 @@ export const SiteHeader: React.FC = () => {
   const location = useLocation();
 
   const [userName, setUserName] = useState<string | null>(null);
-  const [hasAdminSession, setHasAdminSession] = useState(false);
-  const [isAdminShopping, setIsAdminShopping] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const checkAuth = useCallback(() => {
-    const isAdminRoute = location.pathname.startsWith('/admin') || location.pathname.startsWith('/crm');
-    const staffRoles = ['SUPER_ADMIN', 'CEO', 'MANAGER', 'STAFF'];
-
-    // 1. Kiểm tra session Admin CRM
-    const adminToken = getAdminAuthToken();
-    const adminRoleVal = getAdminRole();
-    const hasValidAdmin = Boolean(adminToken && adminRoleVal && staffRoles.includes(adminRoleVal));
-
-    // 2. Kiểm tra session Storefront
     const token = getAuthToken();
-    const customerRole = getUserRole();
-    const isCustomerStaff = Boolean(customerRole && staffRoles.includes(customerRole));
-
-    if (isAdminRoute) {
-      if (adminToken) {
-        setUserName(getAdminName() || 'Admin');
-      } else {
-        setUserName(null);
-      }
-      setHasAdminSession(hasValidAdmin);
-      setIsAdminShopping(false);
+    if (token) {
+      setUserName(getUserName() || 'Tài khoản');
     } else {
-      // Trên Storefront: danh tính người dùng lấy từ Customer namespace
-      if (token) {
-        setUserName(getUserName() || 'Tài khoản');
-      } else {
-        setUserName(null);
-      }
-
-      // Có quyền Admin nếu tài khoản Storefront là Staff HOẶC trình duyệt đã đăng nhập CRM
-      setHasAdminSession(isCustomerStaff || hasValidAdmin);
-      setIsAdminShopping(isCustomerStaff && Boolean(token));
+      setUserName(null);
     }
-  }, [location.pathname]);
+  }, []);
 
   useEffect(() => {
     checkAuth();
     window.addEventListener('auth-change', checkAuth);
     window.addEventListener('customer-auth-change', checkAuth);
-    window.addEventListener('admin-auth-change', checkAuth);
     return () => {
       window.removeEventListener('auth-change', checkAuth);
       window.removeEventListener('customer-auth-change', checkAuth);
-      window.removeEventListener('admin-auth-change', checkAuth);
     };
   }, [checkAuth]);
 
@@ -110,23 +74,7 @@ export const SiteHeader: React.FC = () => {
         </div>
       )}
 
-      {/* Admin Shopping Mode Banner */}
-      {isAdminShopping && (
-        <div className="bg-gradient-to-r from-amber-600 to-amber-700 text-white text-xs font-bold flex items-center justify-between px-4 py-2 shadow-xs">
-          <span className="flex items-center gap-2">
-            <span>👑</span>
-            <span>Đang dùng tài khoản Quản trị ({userName || 'Staff'}) để trải nghiệm mua sắm</span>
-          </span>
-          <button
-            onClick={() => {
-              navigate('/admin');
-            }}
-            className="ml-4 underline hover:no-underline bg-amber-800/80 hover:bg-amber-900 px-3 py-1 rounded-md text-white text-xs font-semibold transition cursor-pointer"
-          >
-            ← Về trang Quản trị
-          </button>
-        </div>
-      )}
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center h-16 sm:h-20 gap-4">
           {/* Brand Logo */}
@@ -216,18 +164,7 @@ export const SiteHeader: React.FC = () => {
 
                 {showUserMenu && (
                   <div className="absolute right-0 mt-2 w-56 bg-card rounded-2xl border border-line py-2 z-50 shadow-md font-sans text-xs font-medium space-y-1">
-                    {hasAdminSession && (
-                      <>
-                        <Link
-                          to="/admin/dashboard"
-                          onClick={() => setShowUserMenu(false)}
-                          className="flex items-center gap-2 px-4 py-2.5 text-indigo-700 bg-indigo-50/80 hover:bg-indigo-100 font-bold rounded-t-xl"
-                        >
-                          <ShieldCheck className="w-4 h-4 text-indigo-600" /> Trang quản trị (Admin)
-                        </Link>
-                        <div className="my-1 border-t border-line" />
-                      </>
-                    )}
+
                     <Link
                       to="/my-orders"
                       onClick={() => setShowUserMenu(false)}
@@ -262,15 +199,6 @@ export const SiteHeader: React.FC = () => {
               </div>
             ) : (
               <div className="flex items-center gap-1.5">
-                {hasAdminSession && (
-                  <Link
-                    to="/admin/dashboard"
-                    className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1.5 sm:py-2 bg-slate-900 hover:bg-slate-800 text-amber-400 font-sans text-[11px] sm:text-xs font-bold rounded-full transition shadow-xs shrink-0"
-                    title="Trang quản trị CRM"
-                  >
-                    <ShieldCheck className="w-3.5 h-3.5 text-amber-400" /> <span className="hidden sm:inline">Trang Quản trị</span>
-                  </Link>
-                )}
                 <Link
                   to="/login"
                   className="inline-flex items-center gap-1 px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-[#d97706] to-[#b45309] hover:from-[#b45309] hover:to-[#92400e] text-white font-sans text-[11px] sm:text-xs font-bold uppercase tracking-wider rounded-full transition-colors shadow-xs shrink-0"
@@ -334,17 +262,7 @@ export const SiteHeader: React.FC = () => {
                 <SearchAutocomplete onSearchSubmitted={() => setMobileMenuOpen(false)} />
               </div>
 
-              {/* Admin Portal Shortcut if authenticated */}
-              {hasAdminSession && (
-                <Link
-                  to="/admin/dashboard"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2.5 py-3 px-4 bg-indigo-50 text-indigo-700 font-bold text-sm rounded-xl border border-indigo-200/80 shadow-xs hover:bg-indigo-100 transition"
-                >
-                  <ShieldCheck className="w-5 h-5 text-indigo-600 shrink-0" />
-                  <span>Trang Quản Trị (Admin)</span>
-                </Link>
-              )}
+
 
               {/* Main Navigation Links */}
               <nav className="space-y-1">
