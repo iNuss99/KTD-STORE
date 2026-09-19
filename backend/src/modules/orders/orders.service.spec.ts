@@ -61,6 +61,7 @@ describe('OrdersService', () => {
       release: jest.fn(),
       manager: {
         findOne: jest.fn(),
+        find: jest.fn().mockResolvedValue([]),
         create: jest.fn((cls, dto) => ({ ...dto, id: 'generated-id' })),
         save: jest.fn((e) => Promise.resolve(e)),
         delete: jest.fn(),
@@ -342,6 +343,206 @@ describe('OrdersService', () => {
       expect(result.results[0].success).toBe(true);
       expect(result.results[0].order_id).toBe(mockOrder.id);
       expect(mockOrder.status).toBe(OrderStatus.CONFIRMED);
+    });
+  });
+
+  describe('Khách hàng tự hủy đơn (cancelOrderByCustomer)', () => {
+    it('cho phép khách hàng tự hủy đơn PENDING/CONFIRMED và hoàn tồn kho sản phẩm', async () => {
+      const mockVariant = {
+        id: 'var-1',
+        stock_quantity: 5,
+      };
+
+      const mockOrder: any = {
+        id: 'ord-cancel-1',
+        user_id: 'user-owner',
+        status: OrderStatus.PENDING,
+        items: [{ variant_id: 'var-1', quantity: 3 }],
+        shipping_snapshot: null,
+      };
+
+      mockQueryRunner.manager.findOne.mockImplementation((entity: any, opts: any) => {
+        if (entity?.name === 'Order' || opts?.where?.id === 'ord-cancel-1') {
+          return Promise.resolve(mockOrder);
+        }
+        if (entity?.name === 'ProductVariant' || opts?.where?.id === 'var-1') {
+          return Promise.resolve(mockVariant);
+        }
+        return Promise.resolve(null);
+      });
+
+      mockQueryRunner.manager.find.mockResolvedValue(mockOrder.items);
+
+      jest.spyOn(service, 'findOne').mockResolvedValue({
+        ...mockOrder,
+        status: OrderStatus.CANCELLED,
+      } as any);
+
+      const result = await service.cancelOrderByCustomer('ord-cancel-1', 'user-owner', 'Đổi ý không mua nữa');
+
+      expect(mockOrder.status).toBe(OrderStatus.CANCELLED);
+      expect(mockOrder.shipping_snapshot.cancel_reason).toBe('Đổi ý không mua nữa');
+      expect(mockVariant.stock_quantity).toBe(8);
+      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+      expect(result.status).toBe(OrderStatus.CANCELLED);
+    });
+
+    it('báo lỗi BadRequestException nếu người dùng không phải là chủ sở hữu đơn hàng', async () => {
+      const mockOrder: any = {
+        id: 'ord-cancel-1',
+        user_id: 'user-owner',
+        status: OrderStatus.PENDING,
+      };
+
+      mockQueryRunner.manager.findOne.mockResolvedValue(mockOrder);
+
+      await expect(
+        service.cancelOrderByCustomer('ord-cancel-1', 'wrong-user', 'Lý do'),
+      ).rejects.toThrow('Bạn không có quyền hủy đơn hàng này');
+      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+    });
+
+    it('báo lỗi BadRequestException nếu đơn hàng đã được đóng gói hoặc đang vận chuyển', async () => {
+      const mockOrder: any = {
+        id: 'ord-cancel-1',
+        user_id: 'user-owner',
+        status: OrderStatus.SHIPPING,
+      };
+
+      mockQueryRunner.manager.findOne.mockResolvedValue(mockOrder);
+
+      await expect(
+        service.cancelOrderByCustomer('ord-cancel-1', 'user-owner', 'Lý do'),
+      ).rejects.toThrow('không thể tự hủy');
+      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+    });
+  });
+
+  describe('Tự động hủy đơn quá hạn thanh toán 30 phút (autoCancelExpiredOnlineOrders)', () => {
+    it('tự động hủy đơn hàng thanh toán trực tuyến quá 30 phút và hoàn tồn kho sản phẩm', async () => {
+      const mockVariant = {
+        id: 'var-10',
+        stock_quantity: 4,
+      };
+
+      const mockOrder: any = {
+        id: 'ord-expired-1',
+        user_id: 'user-expired',
+        status: OrderStatus.PENDING,
+        created_at: new Date(Date.now() - 35 * 60 * 1000), // Tạo 35 phút trước
+        items: [{ variant_id: 'var-10', quantity: 2 }],
+        payments: [{ id: 'pay-1', method: PaymentMethod.BANK_TRANSFER, status: PaymentStatus.PENDING }],
+        shipping_snapshot: { payos_order_code: 123456 },
+      };
+
+      const qbMock: any = {
+        innerJoinAndSelect: jest.fn().mockReturnThis(),
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([mockOrder]),
+      };
+
+      orderRepo.createQueryBuilder = jest.fn().mockReturnValue(qbMock);
+
+      mockQueryRunner.manager.findOne.mockImplementation((entity: any, opts: any) => {
+        if (entity?.name === 'Order' || opts?.where?.id === 'ord-expired-1') {
+          return Promise.resolve(mockOrder);
+        }
+        if (entity?.name === 'ProductVariant' || opts?.where?.id === 'var-10') {
+          return Promise.resolve(mockVariant);
+        }
+        return Promise.resolve(null);
+      });
+
+      mockQueryRunner.manager.find.mockImplementation((entity: any) => {
+        if (entity?.name === 'Payment' || entity === Payment) {
+          return Promise.resolve(mockOrder.payments);
+        }
+        return Promise.resolve(mockOrder.items);
+      });
+
+      const count = await service.autoCancelExpiredOnlineOrders(30);
+
+      expect(count).toBe(1);
+      expect(mockOrder.status).toBe(OrderStatus.CANCELLED);
+      expect(mockOrder.shipping_snapshot.cancel_reason).toContain('30 phút');
+      expect(mockVariant.stock_quantity).toBe(6);
+      expect(mockOrder.payments[0].status).toBe(PaymentStatus.FAILED);
+      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+    });
+
+    it('trả về 0 nếu không có đơn hàng nào quá hạn thanh toán', async () => {
+      const qbMock: any = {
+        innerJoinAndSelect: jest.fn().mockReturnThis(),
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([]),
+      };
+
+      orderRepo.createQueryBuilder = jest.fn().mockReturnValue(qbMock);
+
+      const count = await service.autoCancelExpiredOnlineOrders(30);
+      expect(count).toBe(0);
+    });
+  });
+
+  describe('Đổi phương thức thanh toán sang COD (switchPaymentMethodToCod)', () => {
+    it('chuyển đổi phương thức thanh toán sang COD thành công cho đơn PENDING', async () => {
+      const mockPayment: any = {
+        id: 'pay-online-1',
+        method: PaymentMethod.BANK_TRANSFER,
+        status: PaymentStatus.PENDING,
+      };
+
+      const mockOrder: any = {
+        id: 'ord-switch-1',
+        user_id: 'user-owner',
+        status: OrderStatus.PENDING,
+        payments: [mockPayment],
+        shipping_snapshot: { payos_order_code: 999888 },
+      };
+
+      orderRepo.findOne = jest.fn().mockResolvedValue(mockOrder);
+      paymentRepo.save = jest.fn().mockResolvedValue(mockPayment);
+      jest.spyOn(service, 'findOne').mockResolvedValue(mockOrder as any);
+
+      const result = await service.switchPaymentMethodToCod('ord-switch-1', 'user-owner');
+
+      expect(mockPayment.method).toBe(PaymentMethod.COD);
+      expect(paymentRepo.save).toHaveBeenCalledWith(mockPayment);
+      expect(result.id).toBe('ord-switch-1');
+    });
+
+    it('báo lỗi BadRequestException nếu không phải chủ đơn hàng', async () => {
+      const mockOrder: any = {
+        id: 'ord-switch-1',
+        user_id: 'user-owner',
+        status: OrderStatus.PENDING,
+        payments: [],
+      };
+
+      orderRepo.findOne = jest.fn().mockResolvedValue(mockOrder);
+
+      await expect(
+        service.switchPaymentMethodToCod('ord-switch-1', 'other-user'),
+      ).rejects.toThrow('Bạn không có quyền thay đổi đơn hàng này');
+    });
+
+    it('báo lỗi BadRequestException nếu đơn hàng không ở trạng thái PENDING', async () => {
+      const mockOrder: any = {
+        id: 'ord-switch-1',
+        user_id: 'user-owner',
+        status: OrderStatus.CONFIRMED,
+        payments: [],
+      };
+
+      orderRepo.findOne = jest.fn().mockResolvedValue(mockOrder);
+
+      await expect(
+        service.switchPaymentMethodToCod('ord-switch-1', 'user-owner'),
+      ).rejects.toThrow('Chỉ có thể đổi phương thức thanh toán khi đơn hàng đang chờ thanh toán');
     });
   });
 });

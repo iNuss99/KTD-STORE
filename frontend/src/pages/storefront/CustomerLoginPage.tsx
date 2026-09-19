@@ -51,10 +51,6 @@ export const CustomerLoginPage: React.FC = () => {
         });
 
         const isStaff = data.user?.role && ['SUPER_ADMIN', 'CEO', 'MANAGER', 'STAFF'].includes(data.user.role);
-        if (!isStaff) {
-          // Xóa triệt để tàn dư phiên Admin cũ nếu người đăng nhập hiện tại là khách hàng
-          clearAdminAuth();
-        }
 
         setSuccess(
           isStaff

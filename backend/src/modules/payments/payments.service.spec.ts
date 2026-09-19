@@ -38,7 +38,11 @@ describe('PaymentsService', () => {
         {
           provide: ConfigService,
           useValue: {
-            get: jest.fn((key: string, def: string) => def),
+            get: jest.fn((key: string, def?: string) => {
+              if (key === 'VNP_TMN_CODE') return '2QXUI4J4';
+              if (key === 'VNP_HASH_SECRET') return 'RAASTAVKVOEJRAENYVRGDCHJLTG0ANOM';
+              return def;
+            }),
           },
         },
         {

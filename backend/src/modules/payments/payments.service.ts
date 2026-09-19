@@ -26,27 +26,32 @@ export class PaymentsService implements OnApplicationBootstrap {
     private configService: ConfigService,
     private eventEmitter: EventEmitter2,
   ) {
-    this.vnpTmnCode = this.configService.get<string>('VNP_TMN_CODE', '2QXUI4J4');
-    this.vnpHashSecret = this.configService.get<string>('VNP_HASH_SECRET', 'RAASTAVKVOEJRAENYVRGDCHJLTG0ANOM');
+    this.vnpTmnCode = (
+      this.configService.get<string>('VNP_TMN_CODE') ||
+      process.env.VNP_TMN_CODE ||
+      ''
+    )?.trim();
+    this.vnpHashSecret = (
+      this.configService.get<string>('VNP_HASH_SECRET') ||
+      process.env.VNP_HASH_SECRET ||
+      ''
+    )?.trim();
     this.vnpUrl = this.configService.get<string>('VNP_URL', 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html');
     this.vnpReturnUrl = this.configService.get<string>('VNP_RETURN_URL', 'http://localhost:5173/orders');
 
     const clientId = (
       this.configService.get<string>('PAYOS_CLIENT_ID') ||
-      process.env.PAYOS_CLIENT_ID ||
-      '978b837a-0b96-4db1-9534-b679ed24f7d0'
+      process.env.PAYOS_CLIENT_ID
     )?.trim().replace(/^["']|["']$/g, '');
 
     const apiKey = (
       this.configService.get<string>('PAYOS_API_KEY') ||
-      process.env.PAYOS_API_KEY ||
-      '98c0a9fc-fbbd-4fcc-8688-cf18b3a03900'
+      process.env.PAYOS_API_KEY
     )?.trim().replace(/^["']|["']$/g, '');
 
     const checksumKey = (
       this.configService.get<string>('PAYOS_CHECKSUM_KEY') ||
-      process.env.PAYOS_CHECKSUM_KEY ||
-      'b7485d4e2e184e2cfdd4be9833b87ef60db7dc622ab8c6c0e708cfa0000bc26f'
+      process.env.PAYOS_CHECKSUM_KEY
     )?.trim().replace(/^["']|["']$/g, '');
 
     if (clientId && apiKey && checksumKey) {
@@ -73,6 +78,9 @@ export class PaymentsService implements OnApplicationBootstrap {
   }
 
   createVnpayPaymentUrl(orderId: string, amount: number, ipAddr = '127.0.0.1', bankCode?: string): { paymentUrl: string } {
+    if (!this.vnpTmnCode || !this.vnpHashSecret) {
+      throw new BadRequestException('Cổng thanh toán VNPAY chưa được cấu hình (thiếu VNP_TMN_CODE hoặc VNP_HASH_SECRET)');
+    }
     const date = new Date();
     const createDate = date.toISOString().replace(/[-:T.Z]/g, '').slice(0, 14);
 
@@ -107,6 +115,9 @@ export class PaymentsService implements OnApplicationBootstrap {
   }
 
   verifyVnpayCallback(params: Record<string, any>): { isValid: boolean; orderId?: string; isSuccess: boolean; code?: string } {
+    if (!this.vnpHashSecret) {
+      return { isValid: false, isSuccess: false };
+    }
     const secureHash = params['vnp_SecureHash'];
     const cleanParams = { ...params };
     delete cleanParams['vnp_SecureHash'];
@@ -269,5 +280,19 @@ export class PaymentsService implements OnApplicationBootstrap {
     }
 
     return { isPaid: false, status: 'PENDING', orderId };
+  }
+
+  async cancelPayosPaymentLink(orderCode: number, reason?: string): Promise<boolean> {
+    if (!this.payOS || !orderCode) {
+      return false;
+    }
+    try {
+      await this.payOS.paymentRequests.cancel(orderCode, reason || 'Đơn hàng đã bị hủy');
+      this.logger.log(`[PayOS] Canceled payment link for orderCode: ${orderCode}`);
+      return true;
+    } catch (err: any) {
+      this.logger.warn(`[PayOS] Failed to cancel payment link for orderCode ${orderCode}: ${err?.message || err}`);
+      return false;
+    }
   }
 }

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Trash2, ShoppingBag, ArrowRight, ArrowLeft, Loader2, AlertTriangle, Tag, CheckCircle2 } from 'lucide-react';
 import { useCart, useUpdateCartItemMutation, useRemoveCartItemMutation } from '../../hooks/useCart';
 import { QtyStepper } from '../../components/common/QtyStepper';
@@ -16,11 +17,41 @@ const formatVND = (amount: number) => vndFormatter.format(amount);
 
 export const CartPage: React.FC = () => {
   const navigate = useNavigate();
-  const { showSuccess, showError } = useToast();
+  const queryClient = useQueryClient();
+  const { showSuccess, showError, showInfo } = useToast();
   const { data: cart, isLoading: loading } = useCart();
   const { isMaintenance } = useMaintenanceMode();
   const updateQuantityMutation = useUpdateCartItemMutation();
   const removeItemMutation = useRemoveCartItemMutation();
+
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem('ktd_active_qr_order');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        sessionStorage.removeItem('ktd_active_qr_order');
+        if (parsed?.id) {
+          fetch(`/api/orders/${parsed.id}/cancel`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              ...getAuthHeader(),
+            },
+            body: JSON.stringify({
+              reason: 'Khách hàng quay lại giỏ hàng khi đang chờ quét mã QR',
+              restoreToCart: true,
+            }),
+          }).then(() => {
+            queryClient.invalidateQueries({ queryKey: ['cart'] });
+            showInfo(
+              'Đã khôi phục giỏ hàng',
+              'Đơn hàng chưa thanh toán đã được hủy và sản phẩm được đưa lại vào Giỏ hàng.',
+            );
+          });
+        }
+      }
+    } catch {}
+  }, [queryClient, showInfo]);
 
   const [promoCode, setPromoCode] = useState('');
   const [promoLoading, setPromoLoading] = useState(false);

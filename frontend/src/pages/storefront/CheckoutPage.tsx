@@ -41,7 +41,12 @@ export const CheckoutPage: React.FC = () => {
   const loading = loadingCart || loadingAddresses;
 
   // Sandbox Payment Modal State
-  const [activeSandboxOrder, setActiveSandboxOrder] = useState<{ id: string; total: number; method: 'VNPAY' } | null>(null);
+  const [activeSandboxOrder, setActiveSandboxOrder] = useState<{
+    id: string;
+    total: number;
+    method: 'VNPAY';
+  } | null>(null);
+  const [isRestoringCartFromReload, setIsRestoringCartFromReload] = useState(false);
 
   // Discount State
   const location = useLocation();
@@ -75,8 +80,59 @@ export const CheckoutPage: React.FC = () => {
     const token = getAuthToken();
     if (!token) {
       navigate('/login?redirect=/checkout', { replace: true, state: { from: '/checkout' } });
+      return;
     }
-  }, [navigate]);
+
+    try {
+      const saved = sessionStorage.getItem('ktd_active_qr_order');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        sessionStorage.removeItem('ktd_active_qr_order');
+        if (parsed?.id) {
+          setIsRestoringCartFromReload(true);
+          fetch(`/api/orders/${parsed.id}/cancel`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              ...getAuthHeader(),
+            },
+            body: JSON.stringify({
+              reason: 'Khách hàng tải lại trang (F5) khi đang chờ quét mã QR',
+              restoreToCart: true,
+            }),
+          })
+            .then(async (res) => {
+              if (res.ok) {
+                await queryClient.invalidateQueries({ queryKey: ['cart'] });
+                showInfo(
+                  'Đã khôi phục giỏ hàng',
+                  'Đơn hàng chưa thanh toán đã được hủy và sản phẩm được đưa lại vào Giỏ hàng.',
+                );
+                navigate('/cart', { replace: true });
+              } else {
+                const checkRes = await fetch(`/api/orders/${parsed.id}`, { headers: getAuthHeader() });
+                if (checkRes.ok) {
+                  const orderData = await checkRes.json();
+                  if (orderData.status !== 'PENDING' && orderData.status !== 'CANCELLED') {
+                    showSuccess('Thanh toán thành công!', 'Đơn hàng của bạn đã được ghi nhận.');
+                    navigate(`/order-success/${parsed.id}`, { replace: true });
+                    return;
+                  }
+                }
+                navigate('/cart', { replace: true });
+              }
+            })
+            .catch((err) => {
+              console.error('Failed to auto-cancel and restore cart on F5:', err);
+              navigate('/cart', { replace: true });
+            })
+            .finally(() => {
+              setIsRestoringCartFromReload(false);
+            });
+        }
+      }
+    } catch {}
+  }, [navigate, queryClient, showInfo, showSuccess]);
 
   useEffect(() => {
     if (addresses.length > 0 && !selectedAddressId) {
@@ -183,11 +239,16 @@ export const CheckoutPage: React.FC = () => {
       {
         onSuccess: (order: any) => {
           if (paymentMethod === 'VNPAY') {
-            setActiveSandboxOrder({
+            const orderState = {
               id: order.id,
               total: Number(order.total),
-              method: paymentMethod,
-            });
+              method: paymentMethod as 'VNPAY',
+              expiresAt: Date.now() + 180 * 1000,
+            };
+            try {
+              sessionStorage.setItem('ktd_active_qr_order', JSON.stringify(orderState));
+            } catch {}
+            setActiveSandboxOrder(orderState);
           } else {
             showSuccess('Đặt hàng thành công!', 'Cảm ơn bạn đã mua sắm tại KTDL.');
             navigate(`/order-success/${order.id}`);
@@ -199,6 +260,17 @@ export const CheckoutPage: React.FC = () => {
       },
     );
   };
+
+  if (isRestoringCartFromReload) {
+    return (
+      <div className="min-h-screen bg-warm-white flex flex-col font-sans">
+        <div className="flex-1 flex items-center justify-center flex-col gap-3">
+          <Loader2 className="w-8 h-8 text-stitch animate-spin" />
+          <span className="font-mono text-xs text-smoke">Đang hủy đơn và khôi phục giỏ hàng...</span>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -224,17 +296,26 @@ export const CheckoutPage: React.FC = () => {
           paymentMethod={activeSandboxOrder.method}
           onSuccess={() => {
             const id = activeSandboxOrder.id;
+            try {
+              sessionStorage.removeItem('ktd_active_qr_order');
+            } catch {}
             setActiveSandboxOrder(null);
             showSuccess('Thanh toán thành công!', 'Cảm ơn bạn đã mua sắm tại KTDL.');
             navigate(`/order-success/${id}`);
           }}
           onCancel={() => {
             const id = activeSandboxOrder.id;
+            try {
+              sessionStorage.removeItem('ktd_active_qr_order');
+            } catch {}
             setActiveSandboxOrder(null);
             showInfo('Đã đóng thanh toán', 'Đơn hàng của bạn đã được ghi nhận. Bạn có thể thanh toán lại trong mục Đơn mua.');
             navigate(`/orders/${id}`);
           }}
           onContinueShopping={() => {
+            try {
+              sessionStorage.removeItem('ktd_active_qr_order');
+            } catch {}
             setActiveSandboxOrder(null);
             showInfo('Đơn hàng đã được lưu', 'Đơn hàng của bạn đang chờ thanh toán. Bạn có thể thanh toán lại bất cứ lúc nào trong mục Đơn mua.');
             navigate('/products');

@@ -44,8 +44,17 @@ export class OrdersController {
   }
 
   @Patch(':id/cancel')
-  cancelOrder(@Request() req: any, @Param('id') id: string, @Body() body?: { reason?: string }) {
-    return this.ordersService.cancelOrderByCustomer(id, req.user.id, body?.reason);
+  cancelOrder(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() body?: { reason?: string; restoreToCart?: boolean },
+  ) {
+    return this.ordersService.cancelOrderByCustomer(id, req.user.id, body?.reason, body?.restoreToCart);
+  }
+
+  @Patch(':id/switch-to-cod')
+  switchToCod(@Request() req: any, @Param('id') id: string) {
+    return this.ordersService.switchPaymentMethodToCod(id, req.user.id);
   }
 
   @Post(':id/confirm-payment')

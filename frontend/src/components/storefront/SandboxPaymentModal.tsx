@@ -1,6 +1,22 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { QrCode, AlertCircle, Loader2, Phone, MessageCircle, Check, Copy, X, ExternalLink, ArrowLeft } from 'lucide-react';
+import {
+  QrCode,
+  AlertCircle,
+  Loader2,
+  Phone,
+  MessageCircle,
+  Check,
+  Copy,
+  X,
+  ExternalLink,
+  ArrowLeft,
+  Truck,
+  ShoppingBag,
+  RotateCcw,
+  Clock,
+  AlertTriangle,
+} from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { getAuthHeader } from '../../lib/auth-storage';
 import { useToast } from '../../context/ToastContext';
@@ -24,17 +40,47 @@ export const SandboxPaymentModal: React.FC<SandboxPaymentModalProps> = ({
 }) => {
   const navigate = useNavigate();
   const [processing, setProcessing] = useState(false);
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  const getInitialRemaining = () => {
+    try {
+      const saved = sessionStorage.getItem('ktd_active_qr_order');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.expiresAt && parsed?.id === orderId) {
+          const diff = Math.floor((parsed.expiresAt - Date.now()) / 1000);
+          return Math.max(0, diff);
+        }
+      }
+    } catch {}
+    return 180;
+  };
+
+  const [timeLeft, setTimeLeft] = useState(getInitialRemaining);
+  const [showFallbackModal, setShowFallbackModal] = useState(() => getInitialRemaining() <= 0);
+  const [switchingCod, setSwitchingCod] = useState(false);
+  const [cancellingOrder, setCancellingOrder] = useState(false);
   const [copiedField, setCopiedField] = useState<'accountNo' | 'content' | null>(null);
   const { formatPrice } = useLanguage();
   const { showSuccess, showError, showWarning } = useToast();
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setElapsedSeconds((prev) => prev + 1);
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          setShowFallbackModal(true);
+          return 0;
+        }
+        return prev - 1;
+      });
     }, 1000);
     return () => clearInterval(timer);
   }, []);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
 
   const [bankCode, setBankCode] = useState('MB');
   const [bankName, setBankName] = useState('MBBank (Ngân hàng Quân Đội)');
@@ -86,6 +132,38 @@ export const SandboxPaymentModal: React.FC<SandboxPaymentModalProps> = ({
         });
         if (res.ok) {
           const data = await res.json();
+          const isPaid =
+            data.status === 'PROCESSING' ||
+            data.status === 'CONFIRMED' ||
+            data.status === 'COMPLETED' ||
+            data.payments?.some((p: any) => p.status === 'COMPLETED');
+
+          if (isPaid) {
+            try {
+              sessionStorage.removeItem('ktd_active_qr_order');
+            } catch {}
+            showSuccess('Thanh toán thành công!', 'Hệ thống đã nhận được tiền từ ngân hàng và xác nhận đơn hàng.');
+            onSuccess();
+            return;
+          }
+
+          if (data.status === 'CANCELLED') {
+            try {
+              sessionStorage.removeItem('ktd_active_qr_order');
+            } catch {}
+            showWarning('Đơn hàng đã hủy', 'Đơn hàng này đã bị hủy trước đó.');
+            navigate('/cart');
+            return;
+          }
+
+          if (data.payment?.method === 'COD') {
+            try {
+              sessionStorage.removeItem('ktd_active_qr_order');
+            } catch {}
+            onSuccess();
+            return;
+          }
+
           const name = data.address?.full_name || data.user?.full_name || '';
           const phone = data.address?.phone || data.user?.phone || '';
           setCustomerName(name);
@@ -268,15 +346,82 @@ export const SandboxPaymentModal: React.FC<SandboxPaymentModalProps> = ({
   };
 
   const handleCancel = () => {
-    onCancel();
+    setShowFallbackModal(true);
   };
 
   const handleContinueShopping = () => {
-    if (onContinueShopping) {
-      onContinueShopping();
-    } else {
-      navigate('/products');
+    setShowFallbackModal(true);
+  };
+
+  const handleSwitchToCod = async () => {
+    setSwitchingCod(true);
+    try {
+      const res = await fetch(`/api/orders/${orderId}/switch-to-cod`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeader(),
+        },
+      });
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.message || 'Không thể đổi phương thức sang COD');
+      }
+      try {
+        sessionStorage.removeItem('ktd_active_qr_order');
+      } catch {}
+      showSuccess('Đã đổi sang COD thành công!', 'Đơn hàng của bạn sẽ được thanh toán bằng tiền mặt khi nhận hàng.');
+      setShowFallbackModal(false);
+      onSuccess();
+    } catch (err: any) {
+      showError('Lỗi', err.message || 'Không thể chuyển đổi phương thức');
+    } finally {
+      setSwitchingCod(false);
     }
+  };
+
+  const handleCancelAndRestoreCart = async () => {
+    setCancellingOrder(true);
+    try {
+      const res = await fetch(`/api/orders/${orderId}/cancel`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeader(),
+        },
+        body: JSON.stringify({
+          reason: 'Khách hàng không quét mã QR và chọn hủy đơn',
+          restoreToCart: true,
+        }),
+      });
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.message || 'Không thể hủy đơn');
+      }
+      try {
+        sessionStorage.removeItem('ktd_active_qr_order');
+      } catch {}
+      showSuccess('Đã hủy đơn hàng', 'Các sản phẩm trong đơn đã được đưa lại vào Giỏ hàng của bạn.');
+      setShowFallbackModal(false);
+      navigate('/cart');
+    } catch (err: any) {
+      showError('Lỗi', err.message || 'Không thể hủy đơn hàng');
+    } finally {
+      setCancellingOrder(false);
+    }
+  };
+
+  const handleResumeQr = () => {
+    try {
+      const saved = sessionStorage.getItem('ktd_active_qr_order');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        parsed.expiresAt = Date.now() + 180 * 1000;
+        sessionStorage.setItem('ktd_active_qr_order', JSON.stringify(parsed));
+      }
+    } catch {}
+    setTimeLeft(180);
+    setShowFallbackModal(false);
   };
 
   const effectiveAmount = payosLink?.amount || totalAmount;
@@ -466,7 +611,7 @@ export const SandboxPaymentModal: React.FC<SandboxPaymentModalProps> = ({
             </div>
 
             {/* 60s Lag/Delay Fallback Banner */}
-            {elapsedSeconds >= 60 && (
+            {(180 - timeLeft) >= 60 && (
               <div className="p-3 bg-amber-50 border border-amber-200 rounded-2xl space-y-2 animate-in fade-in slide-in-from-top duration-300">
                 <div className="flex items-start gap-2 text-amber-900">
                   <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
@@ -517,9 +662,9 @@ export const SandboxPaymentModal: React.FC<SandboxPaymentModalProps> = ({
           </button>
 
           <div className="w-full sm:w-auto flex items-center justify-between sm:justify-end gap-3">
-            <div className="flex items-center gap-2 text-slate-500 text-xs font-medium">
-              <Loader2 className="w-4 h-4 text-amber-600 animate-spin shrink-0" />
-              <span>Đang chờ thanh toán ({elapsedSeconds}s)...</span>
+            <div className={`flex items-center gap-2 text-xs font-medium ${timeLeft <= 30 ? 'text-rose-600 font-bold animate-pulse' : 'text-slate-600'}`}>
+              <Loader2 className={`w-4 h-4 shrink-0 ${timeLeft <= 30 ? 'text-rose-600' : 'text-amber-600'} animate-spin`} />
+              <span>Chờ thanh toán ({formatTime(timeLeft)})...</span>
             </div>
             <button
               type="button"
@@ -532,6 +677,81 @@ export const SandboxPaymentModal: React.FC<SandboxPaymentModalProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Fallback Options Modal when 3 mins expire or user clicks close without paying */}
+      {showFallbackModal && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-slate-950/75 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 border border-slate-100 flex flex-col text-center animate-in zoom-in-95 duration-200">
+            <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto mb-4 border border-amber-200/60 shadow-xs">
+              <Clock className="w-7 h-7" />
+            </div>
+
+            <h3 className="text-lg font-bold text-slate-900 mb-1">
+              Bạn chưa hoàn tất thanh toán?
+            </h3>
+            <p className="text-xs text-slate-500 mb-6 leading-relaxed">
+              Mã QR đã hết thời gian chờ hoặc bạn đang gặp khó khăn khi chuyển tiền? Hãy chọn phương án phù hợp bên dưới để không bỏ lỡ đơn hàng:
+            </p>
+
+            <div className="space-y-3 mb-5 text-left">
+              {/* Option 1: Switch to COD */}
+              <button
+                type="button"
+                disabled={switchingCod || cancellingOrder}
+                onClick={handleSwitchToCod}
+                className="w-full p-3.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-2xl font-bold text-sm transition flex items-center justify-between gap-3 shadow-md hover:shadow-lg cursor-pointer disabled:opacity-50 group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+                    <Truck className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-white text-xs sm:text-sm">Giao hàng thu tiền mặt (COD)</div>
+                    <div className="text-[11px] text-emerald-100 font-normal">Nhận hàng kiểm tra rồi mới thanh toán</div>
+                  </div>
+                </div>
+                {switchingCod ? (
+                  <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                ) : (
+                  <Check className="w-4 h-4 opacity-75 group-hover:opacity-100 shrink-0" />
+                )}
+              </button>
+
+              {/* Option 2: Cancel and restore cart */}
+              <button
+                type="button"
+                disabled={switchingCod || cancellingOrder}
+                onClick={handleCancelAndRestoreCart}
+                className="w-full p-3.5 bg-rose-50 hover:bg-rose-100/80 active:bg-rose-100 text-rose-700 border border-rose-200/80 rounded-2xl font-bold text-sm transition flex items-center justify-between gap-3 cursor-pointer disabled:opacity-50 group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-rose-200/60 flex items-center justify-center shrink-0 text-rose-700">
+                    <ShoppingBag className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-rose-800 text-xs sm:text-sm">Hủy đơn & lưu vào giỏ hàng</div>
+                    <div className="text-[11px] text-rose-600/90 font-normal">Tự động đưa sản phẩm về lại giỏ hàng</div>
+                  </div>
+                </div>
+                {cancellingOrder && <Loader2 className="w-4 h-4 animate-spin shrink-0 text-rose-600" />}
+              </button>
+            </div>
+
+            {/* Sub-actions */}
+            <div className="pt-3 border-t border-slate-100 flex items-center justify-center text-xs text-slate-500">
+              <button
+                type="button"
+                disabled={switchingCod || cancellingOrder}
+                onClick={handleResumeQr}
+                className="font-semibold text-amber-600 hover:text-amber-700 flex items-center gap-1.5 py-1.5 px-3 rounded-xl hover:bg-amber-50 transition cursor-pointer"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                Tiếp tục quét QR (+3 phút)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

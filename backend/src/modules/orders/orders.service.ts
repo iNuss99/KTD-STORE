@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException, Optional } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Optional, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Order } from './entities/order.entity';
@@ -6,6 +6,9 @@ import { OrderItem } from './entities/order-item.entity';
 import { Payment } from './entities/payment.entity';
 import { Address } from '../addresses/entities/address.entity';
 import { ProductVariant } from '../products/entities/product-variant.entity';
+import { Product } from '../products/entities/product.entity';
+import { Size } from '../products/entities/size.entity';
+import { Color } from '../products/entities/color.entity';
 import { Cart } from '../cart/entities/cart.entity';
 import { CartItem } from '../cart/entities/cart-item.entity';
 import { Discount } from '../discounts/entities/discount.entity';
@@ -16,11 +19,15 @@ import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import { UserRole } from '../../common/enums/role.enum';
 import { DiscountsService } from '../discounts/discounts.service';
 import { SystemConfigsService } from '../system-configs/system-configs.service';
+import { PaymentsService } from '../payments/payments.service';
 
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { Cron } from '@nestjs/schedule';
 
 @Injectable()
 export class OrdersService {
+  private readonly logger = new Logger(OrdersService.name);
+
   constructor(
     @InjectRepository(Order)
     private orderRepo: Repository<Order>,
@@ -32,6 +39,7 @@ export class OrdersService {
     private auditLogsService: AuditLogsService,
     private discountsService: DiscountsService,
     private systemConfigsService: SystemConfigsService,
+    @Optional() private paymentsService?: PaymentsService,
     @Optional() private eventEmitter?: EventEmitter2,
   ) {}
 
@@ -103,22 +111,29 @@ export class OrdersService {
       const orderItems: OrderItem[] = [];
 
       for (const itemDto of itemsToOrder) {
-        // Lock variant row with pessimistic_write without outer join relations (Postgres FOR UPDATE restriction on outer joins)
-        const lockedVariant = await queryRunner.manager.findOne(ProductVariant, {
+        // Lock variant row with pessimistic_write directly (single query on ProductVariant)
+        const variant = await queryRunner.manager.findOne(ProductVariant, {
           where: { id: itemDto.variant_id },
           lock: { mode: 'pessimistic_write' },
         });
 
-        if (!lockedVariant || !lockedVariant.is_active) {
+        if (!variant || !variant.is_active) {
           throw new BadRequestException(`Sản phẩm (ID: ${itemDto.variant_id}) không khả dụng hoặc đã bị ẩn`);
         }
 
-        const variant = await queryRunner.manager.findOne(ProductVariant, {
-          where: { id: itemDto.variant_id },
-          relations: ['product', 'size', 'color'],
-        });
+        // Populate related entities without outer-join locking conflict
+        if (!variant.product) {
+          const [product, size, color] = await Promise.all([
+            queryRunner.manager.findOne(Product, { where: { id: variant.product_id } }),
+            variant.size_id ? queryRunner.manager.findOne(Size, { where: { id: variant.size_id } }) : Promise.resolve(null),
+            variant.color_id ? queryRunner.manager.findOne(Color, { where: { id: variant.color_id } }) : Promise.resolve(null),
+          ]);
+          variant.product = product as any;
+          if (size) variant.size = size as any;
+          if (color) variant.color = color as any;
+        }
 
-        if (!variant || !variant.product || !variant.product.is_active) {
+        if (!variant.product || !variant.product.is_active) {
           throw new BadRequestException(`Sản phẩm (ID: ${itemDto.variant_id}) không khả dụng hoặc đã bị ẩn`);
         }
 
@@ -228,7 +243,7 @@ export class OrdersService {
 
       return createdOrder;
     } catch (err: any) {
-      console.error('[OrdersService.create error]:', err);
+      this.logger.error(`[OrdersService.create error]: ${err?.message || err}`, err?.stack);
       if (queryRunner?.rollbackTransaction) {
         await queryRunner.rollbackTransaction();
       }
@@ -362,8 +377,8 @@ export class OrdersService {
               { from_status: currentStatus, to_status: targetStatus },
             );
           }
-        } catch (logErr) {
-          console.warn('Failed to record audit log:', logErr);
+        } catch (logErr: any) {
+          this.logger.warn(`Failed to record audit log: ${logErr?.message || logErr}`);
         }
       }
 
@@ -382,10 +397,154 @@ export class OrdersService {
     }
   }
 
-  async cancelOrderByCustomer(orderId: string, userId: string, reason?: string): Promise<Order> {
+  async cancelOrderByCustomer(
+    orderId: string,
+    userId: string,
+    reason?: string,
+    restoreToCart = false,
+  ): Promise<Order> {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const order = await queryRunner.manager.findOne(Order, {
+        where: { id: orderId },
+        lock: { mode: 'pessimistic_write' },
+      });
+
+      if (!order) {
+        throw new NotFoundException('Không tìm thấy đơn hàng');
+      }
+
+      order.items = await queryRunner.manager.find(OrderItem, {
+        where: { order_id: orderId },
+      });
+
+      if (order.user_id !== userId) {
+        throw new BadRequestException('Bạn không có quyền hủy đơn hàng này');
+      }
+
+      if (order.status === OrderStatus.CANCELLED) {
+        throw new BadRequestException('Đơn hàng này đã được hủy trước đó');
+      }
+
+      // Chỉ cho phép khách tự hủy khi đơn chưa đóng gói / chưa giao
+      if (order.status !== OrderStatus.PENDING && order.status !== OrderStatus.CONFIRMED) {
+        throw new BadRequestException(
+          'Đơn hàng đã được kho đóng gói hoặc đang vận chuyển, không thể tự hủy. Quý khách vui lòng liên hệ hotline để được hỗ trợ.',
+        );
+      }
+
+      const previousStatus = order.status;
+      order.status = OrderStatus.CANCELLED;
+
+      // Lưu lý do hủy vào snapshot đơn hàng
+      const cancelReasonText = reason || 'Khách hàng tự hủy đơn';
+      if (!order.shipping_snapshot) {
+        order.shipping_snapshot = {
+          receiver_name: '',
+          phone: '',
+          address_line: '',
+          cancel_reason: cancelReasonText,
+        };
+      } else {
+        order.shipping_snapshot.cancel_reason = cancelReasonText;
+      }
+
+      await queryRunner.manager.save(order);
+
+      // Hoàn lại tồn kho các biến thể sản phẩm trong transaction
+      if (order.items && Array.isArray(order.items)) {
+        for (const item of order.items) {
+          if (item.variant_id) {
+            const variant = await queryRunner.manager.findOne(ProductVariant, {
+              where: { id: item.variant_id },
+              lock: { mode: 'pessimistic_write' },
+            });
+            if (variant) {
+              variant.stock_quantity += item.quantity;
+              await queryRunner.manager.save(variant);
+            }
+          }
+        }
+      }
+
+      // Khôi phục lại sản phẩm vào Giỏ hàng nếu được yêu cầu
+      if (restoreToCart && order.items && Array.isArray(order.items)) {
+        let cart = await queryRunner.manager.findOne(Cart, { where: { user_id: userId } });
+        if (!cart) {
+          cart = queryRunner.manager.create(Cart, { user_id: userId });
+          cart = await queryRunner.manager.save(cart);
+        }
+
+        for (const item of order.items) {
+          if (item.variant_id) {
+            let cartItem = await queryRunner.manager.findOne(CartItem, {
+              where: { cart_id: cart.id, variant_id: item.variant_id },
+            });
+            if (cartItem) {
+              cartItem.quantity += item.quantity;
+              await queryRunner.manager.save(cartItem);
+            } else {
+              cartItem = queryRunner.manager.create(CartItem, {
+                cart_id: cart.id,
+                variant_id: item.variant_id,
+                quantity: item.quantity,
+              });
+              await queryRunner.manager.save(cartItem);
+            }
+          }
+        }
+      }
+
+      await queryRunner.commitTransaction();
+
+      // Ghi nhận Audit Log
+      try {
+        await this.auditLogsService.log(
+          userId,
+          'CUSTOMER_CANCEL_ORDER',
+          'Order',
+          orderId,
+          { from_status: previousStatus, to_status: OrderStatus.CANCELLED, reason: cancelReasonText, restoreToCart },
+        );
+      } catch (logErr: any) {
+        this.logger.warn(`Failed to record audit log for cancelOrderByCustomer: ${logErr?.message || logErr}`);
+      }
+
+      // Đồng bộ hủy link thanh toán PayOS nếu có
+      const payosOrderCode = (order.shipping_snapshot as any)?.payos_order_code;
+      if (payosOrderCode && this.paymentsService) {
+        try {
+          await this.paymentsService.cancelPayosPaymentLink(payosOrderCode, cancelReasonText);
+        } catch (payosErr: any) {
+          this.logger.warn(`Failed to cancel PayOS link for order ${orderId}: ${payosErr?.message || payosErr}`);
+        }
+      }
+
+      // Phát sự kiện cập nhật đơn hàng
+      this.eventEmitter?.emit('order.updated', {
+        orderId,
+        userId: order.user_id,
+        status: OrderStatus.CANCELLED,
+      });
+
+      return this.findOne(orderId);
+    } catch (err: any) {
+      if (queryRunner?.rollbackTransaction) {
+        await queryRunner.rollbackTransaction();
+      }
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async switchPaymentMethodToCod(orderId: string, userId: string): Promise<Order> {
     const order = await this.orderRepo.findOne({
       where: { id: orderId },
-      relations: ['items', 'payments', 'user'],
+      relations: ['payments', 'items'],
     });
 
     if (!order) {
@@ -393,38 +552,60 @@ export class OrdersService {
     }
 
     if (order.user_id !== userId) {
-      throw new BadRequestException('Bạn không có quyền hủy đơn hàng này');
+      throw new BadRequestException('Bạn không có quyền thay đổi đơn hàng này');
     }
 
-    if (order.status === OrderStatus.CANCELLED) {
-      throw new BadRequestException('Đơn hàng này đã được hủy trước đó');
+    if (order.status !== OrderStatus.PENDING) {
+      throw new BadRequestException('Chỉ có thể đổi phương thức thanh toán khi đơn hàng đang chờ thanh toán');
     }
 
-    // Chỉ cho phép khách tự hủy khi đơn chưa đóng gói / chưa giao
-    if (order.status !== OrderStatus.PENDING && order.status !== OrderStatus.CONFIRMED) {
-      throw new BadRequestException(
-        'Đơn hàng đã được kho đóng gói hoặc đang vận chuyển, không thể tự hủy. Quý khách vui lòng liên hệ hotline để được hỗ trợ.',
-      );
-    }
-
-    // Lưu lý do hủy vào snapshot đơn hàng
-    if (!order.shipping_snapshot) {
-      order.shipping_snapshot = {
-        receiver_name: '',
-        phone: '',
-        address_line: '',
-        cancel_reason: reason || 'Khách hàng tự hủy đơn',
-      };
+    let payment = order.payments && order.payments.length > 0 ? order.payments[0] : null;
+    const oldMethod = payment?.method;
+    if (!payment) {
+      payment = this.paymentRepo.create({
+        order_id: orderId,
+        method: PaymentMethod.COD,
+        status: PaymentStatus.PENDING,
+      });
     } else {
-      order.shipping_snapshot.cancel_reason = reason || 'Khách hàng tự hủy đơn';
+      payment.method = PaymentMethod.COD;
     }
-    await this.orderRepo.save(order);
+    await this.paymentRepo.save(payment);
 
-    return this.updateStatus(
+    // Hủy link PayOS nếu có
+    const payosOrderCode = (order.shipping_snapshot as any)?.payos_order_code;
+    if (payosOrderCode && this.paymentsService) {
+      try {
+        await this.paymentsService.cancelPayosPaymentLink(
+          payosOrderCode,
+          'Khách hàng chuyển sang thanh toán khi nhận hàng (COD)',
+        );
+      } catch (payosErr: any) {
+        this.logger.warn(`Failed to cancel PayOS link on switch to COD for order ${orderId}: ${payosErr?.message || payosErr}`);
+      }
+    }
+
+    // Ghi nhận Audit Log
+    try {
+      await this.auditLogsService.log(
+        userId,
+        'SWITCH_PAYMENT_METHOD_TO_COD',
+        'Order',
+        orderId,
+        { previousMethod: oldMethod, newMethod: PaymentMethod.COD },
+      );
+    } catch (logErr: any) {
+      this.logger.warn(`Failed to record audit log for switchPaymentMethodToCod: ${logErr?.message || logErr}`);
+    }
+
+    // Phát sự kiện
+    this.eventEmitter?.emit('order.updated', {
       orderId,
-      { status: OrderStatus.CANCELLED, reason: reason || 'Khách hàng tự hủy' },
-      { id: userId, role: 'CUSTOMER' },
-    );
+      userId: order.user_id,
+      status: order.status,
+    });
+
+    return this.findOne(orderId);
   }
 
   async confirmPayment(orderId: string, performedByUserId: string): Promise<Order> {
@@ -805,5 +986,166 @@ export class OrdersService {
     } catch (e) {}
 
     return { error: 0, message: 'Success', data: { order_id: order.id, status: order.status } };
+  }
+
+  /**
+   * Cron Job chạy mỗi 10 phút để tự động hủy các đơn hàng trực tuyến
+   * (BANK_TRANSFER / PayOS, VNPAY, MOMO) ở trạng thái PENDING quá 30 phút mà chưa thanh toán.
+   */
+  @Cron('*/10 * * * *')
+  async handleAutoCancelExpiredOrders(): Promise<number> {
+    return this.autoCancelExpiredOnlineOrders(30);
+  }
+
+  async autoCancelExpiredOnlineOrders(expirationMinutes = 30): Promise<number> {
+    const cutoffDate = new Date(Date.now() - expirationMinutes * 60 * 1000);
+
+    // Tìm các đơn hàng PENDING tạo trước cutoffDate và có payment trực tuyến PENDING
+    const expiredOrders = await this.orderRepo
+      .createQueryBuilder('order')
+      .innerJoinAndSelect('order.payments', 'payment')
+      .leftJoinAndSelect('order.items', 'item')
+      .where('order.status = :status', { status: OrderStatus.PENDING })
+      .andWhere('order.created_at <= :cutoffDate', { cutoffDate })
+      .andWhere('payment.status = :paymentStatus', { paymentStatus: PaymentStatus.PENDING })
+      .andWhere('payment.method IN (:...onlineMethods)', {
+        onlineMethods: [PaymentMethod.BANK_TRANSFER, PaymentMethod.VNPAY, PaymentMethod.MOMO],
+      })
+      .getMany();
+
+    if (!expiredOrders || expiredOrders.length === 0) {
+      return 0;
+    }
+
+    this.logger.log(
+      `[AutoCancel] Tìm thấy ${expiredOrders.length} đơn hàng trực tuyến quá hạn ${expirationMinutes} phút cần hủy.`,
+    );
+
+    let cancelledCount = 0;
+
+    for (const expOrder of expiredOrders) {
+      const queryRunner = this.dataSource.createQueryRunner();
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
+
+      try {
+        const order = await queryRunner.manager.findOne(Order, {
+          where: { id: expOrder.id },
+          lock: { mode: 'pessimistic_write' },
+        });
+
+        // Double check trạng thái và thanh toán trước khi hủy
+        if (!order || order.status !== OrderStatus.PENDING) {
+          await queryRunner.rollbackTransaction();
+          continue;
+        }
+
+        order.items = await queryRunner.manager.find(OrderItem, {
+          where: { order_id: expOrder.id },
+        });
+        order.payments = await queryRunner.manager.find(Payment, {
+          where: { order_id: expOrder.id },
+        });
+
+        const isPaid = order.payments?.some((p) => p.status === PaymentStatus.COMPLETED);
+        if (isPaid) {
+          order.status = OrderStatus.CONFIRMED;
+          await queryRunner.manager.save(order);
+          await queryRunner.commitTransaction();
+          continue;
+        }
+
+        const previousStatus = order.status;
+        order.status = OrderStatus.CANCELLED;
+
+        const cancelReason = `Hệ thống tự động hủy do quá hạn thanh toán (${expirationMinutes} phút)`;
+        if (!order.shipping_snapshot) {
+          order.shipping_snapshot = {
+            receiver_name: '',
+            phone: '',
+            address_line: '',
+            cancel_reason: cancelReason,
+          };
+        } else {
+          order.shipping_snapshot.cancel_reason = cancelReason;
+        }
+
+        await queryRunner.manager.save(order);
+
+        // Hoàn lại tồn kho cho các items trong đơn
+        if (order.items && Array.isArray(order.items)) {
+          for (const item of order.items) {
+            if (item.variant_id) {
+              const variant = await queryRunner.manager.findOne(ProductVariant, {
+                where: { id: item.variant_id },
+                lock: { mode: 'pessimistic_write' },
+              });
+              if (variant) {
+                variant.stock_quantity += item.quantity;
+                await queryRunner.manager.save(variant);
+              }
+            }
+          }
+        }
+
+        // Cập nhật trạng thái payment sang FAILED
+        if (order.payments && Array.isArray(order.payments)) {
+          for (const p of order.payments) {
+            if (p.status === PaymentStatus.PENDING) {
+              p.status = PaymentStatus.FAILED;
+              await queryRunner.manager.save(p);
+            }
+          }
+        }
+
+        await queryRunner.commitTransaction();
+        cancelledCount++;
+
+        // Ghi nhận Audit Log
+        try {
+          await this.auditLogsService.log(
+            'SYSTEM',
+            'SYSTEM_AUTO_CANCEL_EXPIRED_ORDER',
+            'Order',
+            order.id,
+            { from_status: previousStatus, to_status: OrderStatus.CANCELLED, reason: cancelReason },
+          );
+        } catch (logErr: any) {
+          this.logger.warn(
+            `Failed to record audit log for autoCancelExpiredOnlineOrders: ${logErr?.message || logErr}`,
+          );
+        }
+
+        // Bắn event qua WebSocket tới client
+        this.eventEmitter?.emit('order.updated', {
+          orderId: order.id,
+          userId: order.user_id,
+          status: OrderStatus.CANCELLED,
+        });
+
+        // Đồng bộ hủy link thanh toán PayOS nếu có orderCode
+        const payosOrderCode = (order.shipping_snapshot as any)?.payos_order_code;
+        if (payosOrderCode && this.paymentsService) {
+          try {
+            await this.paymentsService.cancelPayosPaymentLink(payosOrderCode, cancelReason);
+          } catch (payosErr: any) {
+            this.logger.warn(
+              `[AutoCancel] Không thể hủy link PayOS cho đơn ${order.id}: ${payosErr?.message || payosErr}`,
+            );
+          }
+        }
+
+        this.logger.log(`[AutoCancel] Đã tự động hủy đơn hàng quá hạn: #${order.id.slice(0, 8)}`);
+      } catch (err: any) {
+        if (queryRunner?.rollbackTransaction) {
+          await queryRunner.rollbackTransaction();
+        }
+        this.logger.error(`[AutoCancel] Lỗi khi xử lý hủy đơn #${expOrder.id}: ${err?.message || err}`, err?.stack);
+      } finally {
+        await queryRunner.release();
+      }
+    }
+
+    return cancelledCount;
   }
 }

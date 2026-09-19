@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { ScheduleModule } from '@nestjs/schedule';
 import { APP_GUARD } from '@nestjs/core';
 
 import { User } from './modules/users/entities/user.entity';
@@ -140,6 +141,7 @@ import { LoyaltyModule } from './modules/loyalty/loyalty.module';
       },
     }),
     AuditLogsModule,
+    ScheduleModule.forRoot(),
     PermissionsModule,
     AuthModule,
     UsersModule,

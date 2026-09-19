@@ -3,6 +3,7 @@ import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { GetUser } from '../../common/decorators/get-user.decorator';
 
@@ -17,18 +18,20 @@ export class AuthController {
     return this.authService.register(dto);
   }
 
-  // Rate limit: 5 lần đăng nhập / phút mỗi IP — ngăn brute-force
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  // Rate limit: 20 lần đăng nhập / phút mỗi IP — ngăn brute-force hợp lý
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   @Post('login')
   async login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
   }
 
+  // Rate limit: 10 lần refresh token / phút mỗi IP — ngăn brute-force token
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   @Post('refresh')
-  async refresh(@Body('userId') userId: string, @Body('refreshToken') refreshToken: string) {
-    return this.authService.refreshToken(userId, refreshToken);
+  async refresh(@Body() dto: RefreshTokenDto) {
+    return this.authService.refreshToken(dto.userId, dto.refreshToken);
   }
 
   @UseGuards(JwtAuthGuard)

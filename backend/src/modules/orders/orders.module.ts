@@ -14,6 +14,7 @@ import { PermissionsModule } from '../permissions/permissions.module';
 import { AuditLogsModule } from '../audit-logs/audit-logs.module';
 import { DiscountsModule } from '../discounts/discounts.module';
 import { SystemConfigsModule } from '../system-configs/system-configs.module';
+import { PaymentsModule } from '../payments/payments.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { SystemConfigsModule } from '../system-configs/system-configs.module';
     AuditLogsModule,
     DiscountsModule,
     SystemConfigsModule,
+    PaymentsModule,
   ],
   providers: [OrdersService],
   controllers: [OrdersController, WebhooksController],

@@ -57,6 +57,8 @@ export class ProductsController {
   }
 
   @Post('seed-mock')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('PRODUCT_MANAGE')
   async seedMock() {
     try {
       await this.productsService.seedMockProducts();
