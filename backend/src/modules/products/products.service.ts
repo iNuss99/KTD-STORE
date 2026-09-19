@@ -95,7 +95,7 @@ export class ProductsService implements OnApplicationBootstrap {
         base_price: 350000,
         brand_code: 'MW',
         cat_name: 'Áo Sơ Mi',
-        image: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=800&q=80',
+        image: 'https://images.unsplash.com/photo-1620012253295-c15c429fcc70?w=800&q=80',
       },
       {
         name: 'Áo Sơ Mi Nam Dài Tay Họa Tiết Caro',

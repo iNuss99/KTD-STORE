@@ -91,7 +91,7 @@ export const AboutPage: React.FC = () => {
           <div className="lg:col-span-6">
             <div className="relative aspect-[4/5] bg-[#EFECE6] border border-[#1A1A1A]/10 p-3 shadow-xl">
               <img
-                src="https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=1000&auto=format&fit=crop&q=80"
+                src="https://images.unsplash.com/photo-1617137984095-74e4e5e3613f?w=1000&auto=format&fit=crop&q=80"
                 alt="KTDL Craftsmanship"
                 className="w-full h-full object-cover"
               />

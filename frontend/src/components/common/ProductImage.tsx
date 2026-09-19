@@ -10,7 +10,7 @@ interface ProductImageProps {
 
 // Map curated high-resolution menswear images by category keywords
 const CATEGORY_FALLBACK_IMAGES: Record<string, string> = {
-  'ao-so-mi': 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=800&auto=format&fit=crop&q=80',
+  'ao-so-mi': 'https://images.unsplash.com/photo-1620012253295-c15c429fcc70?w=800&auto=format&fit=crop&q=80',
   'ao-polo': 'https://images.unsplash.com/photo-1586363104862-3a5e2ab60d99?w=800&auto=format&fit=crop&q=80',
   'ao-tshirt': 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&auto=format&fit=crop&q=80',
   'ao-khoac': 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=800&auto=format&fit=crop&q=80',

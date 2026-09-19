@@ -19,7 +19,7 @@ export const HomePage: React.FC = () => {
       name: 'Áo Sơ Mi Oxford Tailored',
       category: 'HERITAGE EDITION',
       price: 890000,
-      image: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=800&auto=format&fit=crop&q=80',
+      image: 'https://images.unsplash.com/photo-1620012253295-c15c429fcc70?w=800&auto=format&fit=crop&q=80',
       link: '/products',
     },
     {
@@ -57,12 +57,12 @@ export const HomePage: React.FC = () => {
   ];
 
   // Map API products if available (up to 5 items), otherwise fallback to curated items
-  const slideItems = products.length >= 3
+  const slideItems = products.length > 0
     ? products.slice(0, 5).map((p) => {
         const firstImg = p.images?.[0];
         const imgUrl = typeof firstImg === 'string'
           ? firstImg
-          : (firstImg as any)?.url || 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=800&auto=format&fit=crop&q=80';
+          : (firstImg as any)?.url || 'https://images.unsplash.com/photo-1620012253295-c15c429fcc70?w=800&auto=format&fit=crop&q=80';
         return {
           id: p.id,
           name: p.name,
@@ -110,10 +110,10 @@ export const HomePage: React.FC = () => {
       name: 'Áo Sơ Mi KTDL',
       tag: 'Tailored Oxford',
       desc: 'Form dáng may đo chuẩn xác, chất vải Oxford dệt vân cao cấp',
-      fallback: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=900&auto=format&fit=crop&q=85',
+      fallback: 'https://images.unsplash.com/photo-1620012253295-c15c429fcc70?w=900&auto=format&fit=crop&q=85',
       image: getCategoryImage(
         'ao-so-mi',
-        'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=900&auto=format&fit=crop&q=85'
+        'https://images.unsplash.com/photo-1620012253295-c15c429fcc70?w=900&auto=format&fit=crop&q=85'
       ),
     },
     {
@@ -426,7 +426,7 @@ export const HomePage: React.FC = () => {
               badge="sale"
               category="Áo Sơ Mi"
               slug="ao-so-mi-linen"
-              images={['https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=800&auto=format&fit=crop&q=80']}
+              images={['https://images.unsplash.com/photo-1620012253295-c15c429fcc70?w=800&auto=format&fit=crop&q=80']}
             />
             <ProductCard
               name="Áo Khoác Blazer Tailored Classic"

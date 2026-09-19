@@ -298,7 +298,7 @@ export const ProductDetailPage: React.FC = () => {
                         alt="Thumbnail"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src =
-                            'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=400&q=80';
+                            'https://images.unsplash.com/photo-1620012253295-c15c429fcc70?w=400&q=80';
                         }}
                         className="w-full h-full object-cover"
                       />
@@ -610,7 +610,7 @@ export const ProductDetailPage: React.FC = () => {
                     const relThumb =
                       sortedRelImages.length > 0
                         ? sortedRelImages[0].url
-                        : 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=400&q=80';
+                        : 'https://images.unsplash.com/photo-1620012253295-c15c429fcc70?w=400&q=80';
 
                     return (
                       <Link
