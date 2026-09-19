@@ -302,6 +302,50 @@ export class UsersService implements OnApplicationBootstrap {
     return { message: 'Xóa tài khoản thành công' };
   }
 
+  async resendCredentials(id: string, performedByUserId: string) {
+    const user = await this.userRepo.findOne({ where: { id } });
+    if (!user) {
+      throw new NotFoundException('Tài khoản không tồn tại');
+    }
+
+    if (user.role === UserRole.CUSTOMER) {
+      throw new BadRequestException('Tính năng này chỉ áp dụng cho tài khoản nhân sự nội bộ');
+    }
+
+    // Tạo mật khẩu mới ngẫu nhiên an toàn
+    const chars = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#';
+    let rawPassword = 'Ktd@';
+    for (let i = 0; i < 6; i++) {
+      rawPassword += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+
+    user.password_hash = await bcrypt.hash(rawPassword, 10);
+    await this.userRepo.save(user);
+
+    await this.auditLogsService.log(
+      performedByUserId,
+      'RESEND_CREDENTIALS',
+      'User',
+      id,
+      { email: user.email, role: user.role },
+    );
+
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    this.eventEmitter.emit('staff.created', {
+      staffName: user.full_name,
+      staffEmail: user.email,
+      initialPassword: rawPassword,
+      role: user.role,
+      loginUrl: `${frontendUrl}/admin/login`,
+    });
+
+    return {
+      message: `Đã cấp lại mật khẩu và gửi email thông tin đăng nhập tới ${user.email}`,
+      email: user.email,
+      tempPassword: rawPassword,
+    };
+  }
+
   private async ensureNotLastSuperAdmin(targetUserId: string) {
     const superAdmins = await this.userRepo.find({
       where: { role: UserRole.SUPER_ADMIN, is_locked: false },

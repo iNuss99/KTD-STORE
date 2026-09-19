@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, AlertCircle, Plus, ShieldCheck, Lock, Unlock, Loader2, Trash2, UserPlus, X, Pencil, Save } from 'lucide-react';
+import { Users, AlertCircle, Plus, ShieldCheck, Lock, Unlock, Loader2, Trash2, UserPlus, X, Pencil, Save, Mail, Copy, Check, KeyRound } from 'lucide-react';
 import { PermissionGuard } from '../../components/guards/PermissionGuard';
 import { useAuth } from '../../hooks/useAuth';
 import { getAdminAuthHeader } from '../../lib/auth-storage';
@@ -44,6 +44,56 @@ export const AdminStaffPage: React.FC = () => {
     role: 'STAFF',
     password: '',
   });
+
+  // Resend credentials state
+  const [resendLoading, setResendLoading] = useState<string | null>(null);
+  const [credentialResult, setCredentialResult] = useState<{
+    email: string;
+    tempPassword: string;
+    message: string;
+  } | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const handleResendCredentials = async (user: User) => {
+    if (!window.confirm(`Bạn có chắc chắn muốn cấp lại mật khẩu mới và gửi email thông tin đăng nhập cho nhân sự "${user.full_name}" (${user.email})?`)) {
+      return;
+    }
+    setResendLoading(user.id);
+    try {
+      const res = await fetch(`/api/users/${user.id}/resend-credentials`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAdminAuthHeader(),
+        },
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setCredentialResult({
+          email: data.email,
+          tempPassword: data.tempPassword,
+          message: data.message,
+        });
+        showSuccess(
+          'Đã gửi email đăng nhập',
+          `Đã cấp mật khẩu mới và gửi thông tin đến ${data.email}.`
+        );
+        fetchStaff();
+      } else {
+        showError('Gửi email thất bại', data.message || 'Không thể cấp lại thông tin đăng nhập.');
+      }
+    } catch {
+      showError('Lỗi kết nối', 'Không thể kết nối đến máy chủ.');
+    } finally {
+      setResendLoading(null);
+    }
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const openEditModal = (user: User) => {
     setEditingUser(user);
@@ -355,6 +405,18 @@ export const AdminStaffPage: React.FC = () => {
                     </td>
                     <td className="py-4 px-6 flex items-center justify-end gap-2">
                       <button 
+                        onClick={() => handleResendCredentials(user)}
+                        disabled={resendLoading === user.id}
+                        className="p-2 bg-amber-50 text-amber-600 hover:bg-amber-100 rounded-lg transition cursor-pointer disabled:opacity-50"
+                        title="Cấp lại mật khẩu mới & Gửi email cho nhân sự"
+                      >
+                        {resendLoading === user.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Mail className="w-4 h-4" />
+                        )}
+                      </button>
+                      <button 
                         onClick={() => openEditModal(user)}
                         className="p-2 bg-slate-100 text-slate-700 hover:bg-slate-200 hover:text-slate-900 rounded-lg transition cursor-pointer"
                         title="Chỉnh sửa thông tin"
@@ -632,23 +694,40 @@ export const AdminStaffPage: React.FC = () => {
                 </p>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 mt-6">
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-slate-100 mt-6">
                 <button
                   type="button"
-                  disabled={editLoading}
-                  onClick={() => setEditingUser(null)}
-                  className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition cursor-pointer disabled:opacity-50"
+                  disabled={resendLoading === editingUser.id || editLoading}
+                  onClick={() => handleResendCredentials(editingUser)}
+                  className="px-3.5 py-2 rounded-xl text-xs font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 transition cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                  title="Tự động cấp mật khẩu mới và gửi email ngay tức thì"
                 >
-                  Hủy
+                  {resendLoading === editingUser.id ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Mail className="w-3.5 h-3.5" />
+                  )}
+                  Cấp lại & Gửi email mật khẩu
                 </button>
-                <button
-                  type="submit"
-                  disabled={editLoading}
-                  className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 transition flex items-center gap-2 cursor-pointer shadow-md disabled:opacity-50"
-                >
-                  {editLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                  Lưu thay đổi
-                </button>
+
+                <div className="flex items-center gap-2 ml-auto">
+                  <button
+                    type="button"
+                    disabled={editLoading}
+                    onClick={() => setEditingUser(null)}
+                    className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition cursor-pointer disabled:opacity-50"
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={editLoading}
+                    className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 transition flex items-center gap-2 cursor-pointer shadow-md disabled:opacity-50"
+                  >
+                    {editLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    Lưu thay đổi
+                  </button>
+                </div>
               </div>
             </form>
           </div>
@@ -676,7 +755,7 @@ export const AdminStaffPage: React.FC = () => {
                    'Mở khóa tài khoản'}
                 </h3>
                 <p className="text-xs text-slate-500 font-medium mt-0.5">
-                  {confirmModal.user.full_name} ({confirmModal.user.email})
+                  Bạn có chắc chắn muốn thực hiện thao tác này cho <b>{confirmModal.user.full_name}</b>?
                 </p>
               </div>
             </div>
@@ -721,6 +800,61 @@ export const AdminStaffPage: React.FC = () => {
                 {confirmModal.type === 'delete' ? 'Xóa vĩnh viễn' :
                  confirmModal.type === 'lock' ? 'Xác nhận khóa' :
                  'Xác nhận mở khóa'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Credential Result Modal (Mật khẩu mới được cấp) */}
+      {credentialResult && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-3xl shadow-xl max-w-md w-full p-6 border border-slate-100 select-none">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl">
+                <KeyRound className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-lg font-extrabold text-slate-900">Cấp lại mật khẩu thành công</h3>
+                <p className="text-xs text-slate-500 font-medium">Hệ thống đã gửi thông tin đăng nhập tới email.</p>
+              </div>
+            </div>
+
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3 mb-4">
+              <div>
+                <span className="text-xs text-slate-500 font-medium block">Email nhận thông tin:</span>
+                <span className="text-sm font-bold text-slate-800">{credentialResult.email}</span>
+              </div>
+              <div>
+                <span className="text-xs text-slate-500 font-medium block mb-1">Mật khẩu mới khởi tạo:</span>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 bg-white border border-amber-200 px-3 py-2 rounded-xl text-base font-bold font-mono text-amber-700 select-all">
+                    {credentialResult.tempPassword}
+                  </code>
+                  <button
+                    type="button"
+                    onClick={() => copyToClipboard(credentialResult.tempPassword)}
+                    className="p-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl transition flex items-center gap-1 text-xs font-bold shadow-sm cursor-pointer"
+                    title="Sao chép mật khẩu"
+                  >
+                    {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    {copied ? 'Đã chép' : 'Sao chép'}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 mb-6">
+              💡 <b>Lưu ý:</b> Ngoài việc hệ thống đã gửi email đến hộp thư, bạn có thể bấm <b>Sao chép</b> mật khẩu ở trên để gửi trực tiếp cho nhân sự qua tin nhắn bảo mật (Zalo/Telegram/Slack) nếu cần gấp.
+            </div>
+
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => setCredentialResult(null)}
+                className="w-full sm:w-auto px-6 py-2.5 rounded-xl text-xs font-bold text-white bg-slate-800 hover:bg-slate-900 transition cursor-pointer"
+              >
+                Hoàn tất
               </button>
             </div>
           </div>

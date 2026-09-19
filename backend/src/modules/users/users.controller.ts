@@ -68,6 +68,15 @@ export class UsersController {
     return this.usersService.updateUser(id, dto, performedByUserId);
   }
 
+  @Post(':id/resend-credentials')
+  @Permissions('MANAGER_UPDATE')
+  async resendCredentials(
+    @Param('id') id: string,
+    @GetUser('id') performedByUserId: string,
+  ) {
+    return this.usersService.resendCredentials(id, performedByUserId);
+  }
+
   @Delete(':id')
   @Permissions('MANAGER_DELETE')
   async deleteUser(
