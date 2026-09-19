@@ -7,15 +7,15 @@ services:
     container_name: menwear_postgres
     restart: always
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgrespassword
-      POSTGRES_DB: menwear_db
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgrespassword}
+      POSTGRES_DB: ${DB_NAME:-menwear_db}
     ports:
       - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d menwear_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_NAME:-menwear_db}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -42,26 +42,7 @@ services:
       - menwear_net
 
   # ==========================================
-  # 3. MinIO S3-Compatible Object Storage
-  # ==========================================
-  minio:
-    image: minio/minio:RELEASE.2023-09-04T19-57-37Z
-    container_name: menwear_minio
-    restart: always
-    ports:
-      - '9000:9000'
-      - '9001:9001'
-    environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadminpassword
-    command: server /data --console-address ":9001"
-    volumes:
-      - minio_data:/data
-    networks:
-      - menwear_net
-
-  # ==========================================
-  # 4. Backend NestJS API Server
+  # 3. Backend NestJS API Server
   # ==========================================
   backend:
     build:
@@ -77,26 +58,45 @@ services:
       redis:
         condition: service_healthy
     environment:
-      NODE_ENV: production
+      NODE_ENV: ${NODE_ENV:-production}
       PORT: 3000
       DB_HOST: postgres
       DB_PORT: 5432
-      DB_USERNAME: postgres
-      DB_PASSWORD: postgrespassword
-      DB_NAME: menwear_db
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgrespassword}
+      DB_NAME: ${DB_NAME:-menwear_db}
       DB_SSL: 'false'
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      JWT_SECRET: ktd-store-super-secret-jwt-key-production-32chars
-      JWT_EXPIRATION: 8h
-      JWT_REFRESH_SECRET: ktd-store-super-secret-refresh-jwt-key-32chars
-      JWT_REFRESH_EXPIRATION: 7d
-      FRONTEND_URL: http://localhost
+      JWT_SECRET: ${JWT_SECRET:-ktd-store-super-secret-jwt-key-production-32chars}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-8h}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-ktd-store-super-secret-refresh-jwt-key-32chars}
+      JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION:-7d}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost,http://localhost:80,http://localhost:5173}
+      PAYOS_CLIENT_ID: ${PAYOS_CLIENT_ID:-}
+      PAYOS_API_KEY: ${PAYOS_API_KEY:-}
+      PAYOS_CHECKSUM_KEY: ${PAYOS_CHECKSUM_KEY:-}
+      EMAIL_PROVIDER: ${EMAIL_PROVIDER:-resend}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RESEND_FROM: ${RESEND_FROM:-KTD Store <onboarding@resend.dev>}
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-465}
+      SMTP_SECURE: ${SMTP_SECURE:-true}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      MAIL_FROM: ${MAIL_FROM:-KTD Store <support@ktdstore.com>}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     networks:
       - menwear_net
 
   # ==========================================
-  # 5. Frontend React SPA (Nginx Server)
+  # 4. Frontend React SPA (Nginx Server)
   # ==========================================
   frontend:
     build:
@@ -108,7 +108,28 @@ services:
       - '80:80'
       - '5173:80'
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
+    networks:
+      - menwear_net
+
+  # ==========================================
+  # 5. Optional: MinIO S3-Compatible Storage
+  # ==========================================
+  minio:
+    image: minio/minio:RELEASE.2023-09-04T19-57-37Z
+    container_name: menwear_minio
+    restart: always
+    profiles: ["optional"]
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadminpassword
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
     networks:
       - menwear_net
 
@@ -120,3 +141,4 @@ volumes:
 networks:
   menwear_net:
     driver: bridge
+

@@ -18,7 +18,8 @@ export function useMyOrders() {
       return res.json();
     },
     enabled: !!token,
-    staleTime: 30_000, // 30s cache để tránh spam request khi chuyển trang; mutations tự động invalidate
+    staleTime: 5_000,
+    refetchOnMount: 'always',
   });
 }
 
@@ -100,3 +101,41 @@ export function useSandboxPaymentMutation() {
     },
   });
 }
+
+export function useCancelOrderMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ orderId, reason }: { orderId: string; reason?: string }) => {
+      const res = await fetch(`/api/orders/${orderId}/cancel`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeader(),
+        },
+        body: JSON.stringify({ reason }),
+      });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Không thể hủy đơn hàng');
+      }
+      return res.json();
+    },
+    onSuccess: (updatedOrder: Order, variables) => {
+      // 1. Instantly update cache for 'my' orders list
+      queryClient.setQueryData<Order[]>(['orders', 'my'], (oldOrders) => {
+        if (!oldOrders) return [updatedOrder];
+        return oldOrders.map((o) =>
+          o.id === variables.orderId ? { ...o, ...updatedOrder, status: 'CANCELLED' } : o
+        );
+      });
+
+      // 2. Instantly update cache for single order detail
+      queryClient.setQueryData(['orders', 'detail', variables.orderId], updatedOrder);
+
+      // 3. Invalidate queries to trigger background sync
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+    },
+  });
+}
+

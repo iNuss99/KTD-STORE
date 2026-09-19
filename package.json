@@ -9,7 +9,12 @@
     "build": "npm --prefix backend run build && npm --prefix frontend run build",
     "test": "npm --prefix frontend run test -- --run",
     "test:frontend": "npm --prefix frontend run test -- --run",
-    "test:backend": "npm --prefix backend run test"
+    "test:backend": "npm --prefix backend run test",
+    "docker:up": "docker compose up -d --build",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f",
+    "docker:restart": "docker compose restart",
+    "docker:status": "docker compose ps"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",

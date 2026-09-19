@@ -1,13 +1,37 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Package, ArrowRight, Clock, Loader2 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useMyOrders } from '../../hooks/useOrders';
 import { formatDateTime } from '../../lib/date-utils';
 import { OrderStatusBadge } from '../../components/admin/OrderStatusBadge';
-import { getAuthHeader } from '../../lib/auth-storage';
+import { CancelOrderModal } from '../../components/storefront/CancelOrderModal';
+import { getAuthHeader, getAuthToken } from '../../lib/auth-storage';
+import { getSocket } from '../../lib/socketClient';
+import { Order } from '../../types';
 
 export const MyOrdersPage: React.FC = () => {
+  const queryClient = useQueryClient();
   const { data: orders = [], isLoading: loading } = useMyOrders();
+  const [selectedCancelOrder, setSelectedCancelOrder] = useState<Order | null>(null);
+
+  useEffect(() => {
+    const token = getAuthToken();
+    if (!token) return;
+    const socket = getSocket(token);
+
+    const handleUpdate = () => {
+      queryClient.invalidateQueries({ queryKey: ['orders', 'my'] });
+    };
+
+    socket.on('order_updated', handleUpdate);
+    socket.on('notification', handleUpdate);
+
+    return () => {
+      socket.off('order_updated', handleUpdate);
+      socket.off('notification', handleUpdate);
+    };
+  }, [queryClient]);
 
   if (loading) {
     return (
@@ -56,6 +80,8 @@ export const MyOrdersPage: React.FC = () => {
                 style: 'currency',
                 currency: 'VND',
               }).format(order.total || 0);
+
+              const canCancel = order.status === 'PENDING' || order.status === 'CONFIRMED';
 
               const handleReorder = async () => {
                 if (!order.items || order.items.length === 0) return;
@@ -120,18 +146,28 @@ export const MyOrdersPage: React.FC = () => {
                         </span>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className={`grid ${canCancel ? 'grid-cols-3' : 'grid-cols-2'} gap-2`}>
+                        {canCancel && (
+                          <button
+                            type="button"
+                            onClick={() => setSelectedCancelOrder(order)}
+                            className="min-h-[44px] px-2 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs rounded-xl transition flex items-center justify-center cursor-pointer"
+                          >
+                            Hủy đơn
+                          </button>
+                        )}
+
                         <button
                           type="button"
                           onClick={handleReorder}
-                          className="min-h-[44px] px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs rounded-xl transition flex items-center justify-center cursor-pointer"
+                          className="min-h-[44px] px-2 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs rounded-xl transition flex items-center justify-center cursor-pointer"
                         >
                           Mua lại
                         </button>
 
                         <Link
                           to={`/orders/${order.id}`}
-                          className="min-h-[44px] px-3 py-2 bg-ink hover:bg-accent text-white font-sans text-xs font-bold rounded-xl flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                          className="min-h-[44px] px-2 py-2 bg-ink hover:bg-accent text-white font-sans text-xs font-bold rounded-xl flex items-center justify-center gap-1 transition-colors cursor-pointer"
                         >
                           Chi tiết <ArrowRight className="w-3.5 h-3.5" />
                         </Link>
@@ -170,6 +206,16 @@ export const MyOrdersPage: React.FC = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
+                        {canCancel && (
+                          <button
+                            type="button"
+                            onClick={() => setSelectedCancelOrder(order)}
+                            className="min-h-[40px] px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs rounded-xl transition cursor-pointer"
+                          >
+                            Hủy đơn
+                          </button>
+                        )}
+
                         <button
                           type="button"
                           onClick={handleReorder}
@@ -192,6 +238,12 @@ export const MyOrdersPage: React.FC = () => {
             })}
           </div>
         )}
+
+        <CancelOrderModal
+          isOpen={!!selectedCancelOrder}
+          order={selectedCancelOrder}
+          onClose={() => setSelectedCancelOrder(null)}
+        />
       </main>
     </div>
   );

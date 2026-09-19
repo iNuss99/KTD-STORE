@@ -367,6 +367,12 @@ export class OrdersService {
         }
       }
 
+      this.eventEmitter?.emit('order.updated', {
+        orderId: id,
+        userId: order.user_id,
+        status: targetStatus,
+      });
+
       return this.findOne(id);
     } catch (err) {
       await queryRunner.rollbackTransaction();
@@ -374,6 +380,51 @@ export class OrdersService {
     } finally {
       await queryRunner.release();
     }
+  }
+
+  async cancelOrderByCustomer(orderId: string, userId: string, reason?: string): Promise<Order> {
+    const order = await this.orderRepo.findOne({
+      where: { id: orderId },
+      relations: ['items', 'payments', 'user'],
+    });
+
+    if (!order) {
+      throw new NotFoundException('Không tìm thấy đơn hàng');
+    }
+
+    if (order.user_id !== userId) {
+      throw new BadRequestException('Bạn không có quyền hủy đơn hàng này');
+    }
+
+    if (order.status === OrderStatus.CANCELLED) {
+      throw new BadRequestException('Đơn hàng này đã được hủy trước đó');
+    }
+
+    // Chỉ cho phép khách tự hủy khi đơn chưa đóng gói / chưa giao
+    if (order.status !== OrderStatus.PENDING && order.status !== OrderStatus.CONFIRMED) {
+      throw new BadRequestException(
+        'Đơn hàng đã được kho đóng gói hoặc đang vận chuyển, không thể tự hủy. Quý khách vui lòng liên hệ hotline để được hỗ trợ.',
+      );
+    }
+
+    // Lưu lý do hủy vào snapshot đơn hàng
+    if (!order.shipping_snapshot) {
+      order.shipping_snapshot = {
+        receiver_name: '',
+        phone: '',
+        address_line: '',
+        cancel_reason: reason || 'Khách hàng tự hủy đơn',
+      };
+    } else {
+      order.shipping_snapshot.cancel_reason = reason || 'Khách hàng tự hủy đơn';
+    }
+    await this.orderRepo.save(order);
+
+    return this.updateStatus(
+      orderId,
+      { status: OrderStatus.CANCELLED, reason: reason || 'Khách hàng tự hủy' },
+      { id: userId, role: 'CUSTOMER' },
+    );
   }
 
   async confirmPayment(orderId: string, performedByUserId: string): Promise<Order> {

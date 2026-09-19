@@ -43,6 +43,11 @@ export class OrdersController {
     return this.ordersService.updateStatus(id, dto, req.user);
   }
 
+  @Patch(':id/cancel')
+  cancelOrder(@Request() req: any, @Param('id') id: string, @Body() body?: { reason?: string }) {
+    return this.ordersService.cancelOrderByCustomer(id, req.user.id, body?.reason);
+  }
+
   @Post(':id/confirm-payment')
   @UseGuards(PermissionsGuard)
   @Permissions(PERMISSION_CODES.ORDER_UPDATE)

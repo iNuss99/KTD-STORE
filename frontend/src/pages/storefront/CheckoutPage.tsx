@@ -231,8 +231,13 @@ export const CheckoutPage: React.FC = () => {
           onCancel={() => {
             const id = activeSandboxOrder.id;
             setActiveSandboxOrder(null);
-            showInfo('Đã hủy thanh toán', 'Bạn đã chọn hủy thanh toán đơn hàng này.');
+            showInfo('Đã đóng thanh toán', 'Đơn hàng của bạn đã được ghi nhận. Bạn có thể thanh toán lại trong mục Đơn mua.');
             navigate(`/orders/${id}`);
+          }}
+          onContinueShopping={() => {
+            setActiveSandboxOrder(null);
+            showInfo('Đơn hàng đã được lưu', 'Đơn hàng của bạn đang chờ thanh toán. Bạn có thể thanh toán lại bất cứ lúc nào trong mục Đơn mua.');
+            navigate('/products');
           }}
         />
       )}

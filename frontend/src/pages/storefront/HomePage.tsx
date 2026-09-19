@@ -10,7 +10,7 @@ const vndFormatter = new Intl.NumberFormat('vi-VN', { style: 'currency', currenc
 const formatVND = (amount: number) => vndFormatter.format(amount);
 
 export const HomePage: React.FC = () => {
-  const { data: productsData, isLoading, isError } = useProducts({ limit: 8 });
+  const { data: productsData, isLoading, isError } = useProducts({ limit: 20 });
   const products = productsData?.data || [];
 
   const fallbackFeatured = [
@@ -87,34 +87,67 @@ export const HomePage: React.FC = () => {
 
   const currentItem = slideItems[currentSlide] || slideItems[0];
 
+  // Tự động trích xuất ảnh đại diện từ bộ sưu tập sản phẩm thực tế của trang web
+  const getCategoryImage = (catId: string, fallbackUrl: string) => {
+    const matched = products.find((p) => {
+      const slug = (p.category?.slug || '').toLowerCase();
+      const name = (p.category?.name || '').toLowerCase();
+      if (catId === 'ao-so-mi') return slug.includes('so-mi') || name.includes('sơ mi');
+      if (catId === 'ao-polo') return slug.includes('polo') || name.includes('polo');
+      if (catId === 'ao-thun') return slug.includes('thun') || slug.includes('tshirt') || name.includes('thun') || name.includes('t-shirt');
+      if (catId === 'ao-khoac') return slug.includes('khoac') || name.includes('khoác') || slug.includes('blazer') || name.includes('blazer');
+      return slug === catId;
+    });
+
+    const firstImg = matched?.images?.[0];
+    if (!firstImg) return fallbackUrl;
+    return typeof firstImg === 'string' ? firstImg : (firstImg as any)?.url || fallbackUrl;
+  };
+
   const categories = [
     {
       id: 'ao-so-mi',
       name: 'Áo Sơ Mi KTDL',
       tag: 'Tailored Oxford',
       desc: 'Form dáng may đo chuẩn xác, chất vải Oxford dệt vân cao cấp',
-      image: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=900&auto=format&fit=crop&q=85',
+      fallback: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=900&auto=format&fit=crop&q=85',
+      image: getCategoryImage(
+        'ao-so-mi',
+        'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=900&auto=format&fit=crop&q=85'
+      ),
     },
     {
       id: 'ao-polo',
       name: 'Áo Polo Cotton',
       tag: 'Pima Cotton 3D',
       desc: 'Sợi bông chải kỹ siêu mịn, cổ dệt 3D giữ form sắc nét',
-      image: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=900&auto=format&fit=crop&q=85',
+      fallback: 'https://images.unsplash.com/photo-1586363104862-3a5e2ab60d99?w=900&auto=format&fit=crop&q=85',
+      image: getCategoryImage(
+        'ao-polo',
+        'https://images.unsplash.com/photo-1586363104862-3a5e2ab60d99?w=900&auto=format&fit=crop&q=85'
+      ),
     },
     {
       id: 'ao-thun',
       name: 'Áo Thun',
       tag: 'Heavyweight Fit',
       desc: 'Định lượng 260gsm dày dặn, thoáng khí tự nhiên vượt trội',
-      image: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=900&auto=format&fit=crop&q=85',
+      fallback: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=900&auto=format&fit=crop&q=85',
+      image: getCategoryImage(
+        'ao-thun',
+        'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=900&auto=format&fit=crop&q=85'
+      ),
     },
     {
       id: 'ao-khoac',
       name: 'Áo Khoác Heritage',
       tag: 'Signature Outerwear',
       desc: 'Chất liệu trượt nước công nghệ cao, lót lụa mềm mại',
-      image: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=900&auto=format&fit=crop&q=85',
+      fallback: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=900&auto=format&fit=crop&q=85',
+      image: getCategoryImage(
+        'ao-khoac',
+        'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=900&auto=format&fit=crop&q=85'
+      ),
     },
   ];
 
@@ -292,13 +325,19 @@ export const HomePage: React.FC = () => {
                   src={cat.image}
                   alt={cat.name}
                   loading="lazy"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    if (cat.fallback && target.src !== cat.fallback) {
+                      target.src = cat.fallback;
+                    }
+                  }}
                   className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-108 group-hover:brightness-105"
                 />
               </div>
 
               {/* Multi-layered Vignette & Editorial Gradients */}
-              <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/60 via-black/25 to-transparent pointer-events-none" />
-              <div className="absolute inset-x-0 bottom-0 h-3/4 bg-gradient-to-t from-black/95 via-black/55 to-transparent pointer-events-none" />
+              <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/50 via-black/20 to-transparent pointer-events-none" />
+              <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/95 via-black/60 to-transparent pointer-events-none" />
 
               {/* Subtle ambient border glow on hover */}
               <div className="absolute inset-0 ring-1 ring-inset ring-[#E5C985]/20 group-hover:ring-[#E5C985]/60 pointer-events-none transition-all duration-500" />

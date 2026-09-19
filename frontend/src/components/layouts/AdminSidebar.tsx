@@ -149,10 +149,10 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpenMobile, onClos
       {/* Desktop: sticky placeholder giữ chỗ trong flex row */}
       {/* Mobile: fixed overlay drawer */}
       <aside
-        className={`bg-white border-r border-slate-100 flex flex-col w-64 shrink-0 select-none font-sans z-50 transition-transform duration-300 ease-in-out
+        className={`bg-white border-r border-slate-100 flex flex-col w-64 shrink-0 select-none font-sans transition-transform duration-300 ease-in-out
           fixed inset-y-0 left-0 shadow-xl
           lg:sticky lg:top-0 lg:h-screen lg:shadow-none lg:translate-x-0
-          ${isOpenMobile ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+          ${isOpenMobile ? 'translate-x-0 z-50' : '-translate-x-full lg:translate-x-0 z-20 lg:z-10'}
         `}
       >
         {/* Brand Logo & Mobile Close */}

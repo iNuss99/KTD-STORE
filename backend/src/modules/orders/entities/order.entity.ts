@@ -44,6 +44,7 @@ export class Order {
     district?: string;
     province?: string;
     payos_order_code?: number | string;
+    cancel_reason?: string;
   };
 
   @Column({ type: 'text', nullable: true })

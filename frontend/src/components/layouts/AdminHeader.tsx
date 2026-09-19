@@ -41,7 +41,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onToggleMobileSidebar 
   };
 
   return (
-    <header className="h-16 bg-white/90 backdrop-blur-md border-b border-slate-100 px-4 sm:px-6 flex items-center justify-between sticky top-0 z-40 select-none font-sans">
+    <header className="h-16 bg-white/90 backdrop-blur-md border-b border-slate-100 px-4 sm:px-6 flex items-center justify-between sticky top-0 z-20 select-none font-sans">
       {/* Left: Mobile Menu Toggle & Greeting */}
       <div className="flex items-center gap-2.5 sm:gap-3">
         <button

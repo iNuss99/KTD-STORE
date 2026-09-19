@@ -79,6 +79,16 @@ export class NotificationsService {
     this.notificationsGateway.sendToUser(payload.userId, 'notification', saved);
   }
 
+  @OnEvent('order.updated')
+  async handleOrderUpdatedEvent(payload: { orderId: string; userId?: string; status: string }) {
+    if (payload.userId) {
+      this.notificationsGateway.sendToUser(payload.userId, 'order_updated', payload);
+    }
+    this.notificationsGateway.sendToRole('MANAGER', 'order_updated', payload);
+    this.notificationsGateway.sendToRole('SUPER_ADMIN', 'order_updated', payload);
+    this.notificationsGateway.sendToRole('STAFF', 'order_updated', payload);
+  }
+
   async getUserNotifications(userId: string, role: string) {
     const adminRoles = ['SUPER_ADMIN', 'CEO', 'MANAGER', 'STAFF'];
     const isAdmin = adminRoles.includes(role);

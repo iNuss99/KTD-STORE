@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Order } from '../../types';
-import { ArrowLeft, Package, MapPin, CreditCard, Clock, CheckCircle2, AlertCircle, Loader2, RotateCcw, Star } from 'lucide-react';
+import { ArrowLeft, Package, MapPin, CreditCard, Clock, CheckCircle2, AlertCircle, Loader2, RotateCcw, Star, X } from 'lucide-react';
 import { OrderStatusBadge } from '../../components/admin/OrderStatusBadge';
 import { OrderTimeline } from '../../components/storefront/OrderTimeline';
 import { OrderReviewModal } from '../../components/storefront/OrderReviewModal';
+import { CancelOrderModal } from '../../components/storefront/CancelOrderModal';
 import { getSocket } from '../../lib/socketClient';
 
 import { getAuthToken, getAuthHeader } from '../../lib/auth-storage';
@@ -17,7 +18,8 @@ export const OrderDetailPage: React.FC = () => {
   const { showSuccess, showError } = useToast();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
-  const [cancelling, setCancelling] = useState(false);
+  // Cancel Order Modal State
+  const [showCancelModal, setShowCancelModal] = useState<boolean>(false);
 
   // Return Request State
   const [returnRequest, setReturnRequest] = useState<any>(null);
@@ -160,36 +162,6 @@ export const OrderDetailPage: React.FC = () => {
     }
   };
 
-  const handleCancelOrder = async () => {
-    if (!order) return;
-    if (!window.confirm('Bạn có chắc chắn muốn hủy đơn hàng này không?')) return;
-
-    setCancelling(true);
-    try {
-      const res = await fetch(`/api/orders/${order.id}/status`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeader(),
-        },
-        body: JSON.stringify({ status: 'CANCELLED' }),
-      });
-
-      if (res.ok) {
-        const updated = await res.json();
-        setOrder(updated);
-        showSuccess('Đã hủy đơn hàng', 'Đơn hàng của bạn đã được hủy thành công.');
-      } else {
-        const errorData = await res.json();
-        showError('Không thể hủy đơn hàng', errorData.message || 'Có lỗi xảy ra khi hủy đơn hàng');
-      }
-    } catch (err) {
-      console.error('Error cancelling order:', err);
-    } finally {
-      setCancelling(false);
-    }
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-warm-white flex flex-col font-sans">
@@ -264,12 +236,22 @@ export const OrderDetailPage: React.FC = () => {
 
             {canCancel && (
               <button
-                disabled={cancelling}
-                onClick={handleCancelOrder}
-                className="min-h-[40px] flex-1 sm:flex-initial justify-center px-4 py-2 bg-red-50 hover:bg-red-100 text-red-700 font-bold text-xs rounded-xl transition flex items-center gap-1 cursor-pointer"
+                type="button"
+                onClick={() => setShowCancelModal(true)}
+                className="min-h-[40px] flex-1 sm:flex-initial justify-center px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs rounded-xl transition flex items-center gap-1 cursor-pointer"
               >
-                {cancelling ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Hủy đơn hàng'}
+                Hủy đơn hàng
               </button>
+            )}
+
+            {(order.status === 'PROCESSING' || order.status === 'SHIPPING') && (
+              <div 
+                className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-100 text-slate-500 text-xs rounded-xl font-medium"
+                title="Đơn hàng đã được bàn giao đóng gói/vận chuyển nên không thể tự hủy"
+              >
+                <Package className="w-3.5 h-3.5 text-slate-400" />
+                <span>{order.status === 'PROCESSING' ? 'Kho đang đóng gói' : 'Đang giao hàng'}</span>
+              </div>
             )}
 
             {order.status === 'DELIVERED' && !returnRequest && (
@@ -497,6 +479,14 @@ export const OrderDetailPage: React.FC = () => {
             }}
           />
         )}
+
+        {/* Cancel Order Modal */}
+        <CancelOrderModal
+          isOpen={showCancelModal}
+          onClose={() => setShowCancelModal(false)}
+          order={order}
+          onSuccess={(updatedOrder) => setOrder(updatedOrder)}
+        />
       </main>
     </div>
   );

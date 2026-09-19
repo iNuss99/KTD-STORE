@@ -405,18 +405,6 @@ export const AdminStaffPage: React.FC = () => {
                     </td>
                     <td className="py-4 px-6 flex items-center justify-end gap-2">
                       <button 
-                        onClick={() => handleResendCredentials(user)}
-                        disabled={resendLoading === user.id}
-                        className="p-2 bg-amber-50 text-amber-600 hover:bg-amber-100 rounded-lg transition cursor-pointer disabled:opacity-50"
-                        title="Cấp lại mật khẩu mới & Gửi email cho nhân sự"
-                      >
-                        {resendLoading === user.id ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Mail className="w-4 h-4" />
-                        )}
-                      </button>
-                      <button 
                         onClick={() => openEditModal(user)}
                         className="p-2 bg-slate-100 text-slate-700 hover:bg-slate-200 hover:text-slate-900 rounded-lg transition cursor-pointer"
                         title="Chỉnh sửa thông tin"

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Order, OrderStatus } from '../../types';
 import { Package, Search, CheckCircle2, Clock, Truck, ShieldCheck, XCircle, DollarSign, Loader2, AlertCircle, Trash2, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -524,9 +525,9 @@ export const AdminOrdersPage: React.FC = () => {
         )}
 
         {/* Order Status Action Confirmation Modal */}
-        {confirmModal && confirmModal.isOpen && confirmModal.order && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn select-none">
-            <div className="bg-white rounded-3xl shadow-xl max-w-md w-full p-6 border border-slate-100">
+        {confirmModal && confirmModal.isOpen && confirmModal.order && createPortal(
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn select-none">
+            <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 border border-slate-100">
               <div className="flex items-center gap-3 mb-4">
                 <div className={`p-3 rounded-2xl ${
                   confirmModal.theme === 'emerald' ? 'bg-emerald-50 text-emerald-600' :
@@ -616,12 +617,13 @@ export const AdminOrdersPage: React.FC = () => {
                 )}
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
 
         {/* Super Admin Override Modal */}
-        {overrideOrder && (
-          <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+        {overrideOrder && createPortal(
+          <div className="fixed inset-0 z-[100] bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
             <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
               <div className="flex items-center gap-2 text-amber-600">
                 <AlertCircle className="w-6 h-6" />
@@ -674,7 +676,8 @@ export const AdminOrdersPage: React.FC = () => {
                 </div>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
     </div>
   );

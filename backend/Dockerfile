@@ -1,4 +1,4 @@
-﻿# ==========================================
+# ==========================================
 # Multi-stage Dockerfile for NestJS Backend
 # ==========================================
 
@@ -23,7 +23,7 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Install runtime dependencies for native binaries
+# Install build tools needed for native node modules in production
 RUN apk add --no-cache python3 make g++
 
 COPY package*.json ./
@@ -33,4 +33,7 @@ COPY --from=builder /app/dist ./dist
 
 EXPOSE 3000
 
-CMD [ node, dist/main]
+USER node
+
+CMD ["node", "dist/main"]
+

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { ReturnRequest, ReturnStatus } from '../../types';
 import {
   RotateCcw,
@@ -397,8 +398,8 @@ export const AdminReturnsPage: React.FC = () => {
         )}
 
         {/* Step-by-Step Glassmorphic Action Modal */}
-        {confirmModal && confirmModal.isOpen && confirmModal.item && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn select-none">
+        {confirmModal && confirmModal.isOpen && confirmModal.item && createPortal(
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn select-none">
             <div className="bg-white rounded-3xl shadow-xl max-w-md w-full p-6 border border-slate-100 space-y-4">
               <div className="flex items-center gap-3">
                 <div className={`p-3 rounded-2xl ${
@@ -485,7 +486,8 @@ export const AdminReturnsPage: React.FC = () => {
                 </button>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
       </main>
     </div>
