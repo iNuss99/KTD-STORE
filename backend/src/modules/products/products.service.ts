@@ -15,6 +15,7 @@ import { FilterProductDto } from './dto/filter-product.dto';
 import { CreateColorDto } from './dto/create-color.dto';
 import { UpdateColorDto } from './dto/update-color.dto';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
+import { MemoryCache } from '../../common/utils/cache.util';
 
 @Injectable()
 export class ProductsService implements OnApplicationBootstrap {
@@ -286,14 +287,34 @@ export class ProductsService implements OnApplicationBootstrap {
     return Number(basePrice);
   }
 
+  private sizesCache = new MemoryCache<Size[]>(15 * 60 * 1000);
+  private colorsCache = new MemoryCache<Color[]>(15 * 60 * 1000);
+  private productsCache = new MemoryCache<any>(60 * 1000, 100);
+
+  clearProductCache() {
+    this.productsCache.clear();
+  }
+
+  clearColorCache() {
+    this.colorsCache.clear();
+  }
+
   async getSizes() {
-    return this.sizeRepo.find();
+    const cached = this.sizesCache.get();
+    if (cached) return cached;
+    const data = await this.sizeRepo.find();
+    this.sizesCache.set('__default__', data);
+    return data;
   }
 
   async getColors() {
-    return this.colorRepo.find({
+    const cached = this.colorsCache.get();
+    if (cached) return cached;
+    const data = await this.colorRepo.find({
       order: { name: 'ASC' },
     });
+    this.colorsCache.set('__default__', data);
+    return data;
   }
 
   generateColorCodeFromName(name: string): string {
@@ -350,7 +371,10 @@ export class ProductsService implements OnApplicationBootstrap {
       hex_code,
     });
 
-    return this.colorRepo.save(newColor);
+    const saved = await this.colorRepo.save(newColor);
+    this.clearColorCache();
+    this.clearProductCache();
+    return saved;
   }
 
   async updateColor(id: string, dto: UpdateColorDto) {
@@ -387,7 +411,10 @@ export class ProductsService implements OnApplicationBootstrap {
       color.hex_code = dto.hex_code.trim().toUpperCase();
     }
 
-    return this.colorRepo.save(color);
+    const saved = await this.colorRepo.save(color);
+    this.clearColorCache();
+    this.clearProductCache();
+    return saved;
   }
 
   async deleteColor(id: string) {
@@ -405,11 +432,17 @@ export class ProductsService implements OnApplicationBootstrap {
 
     await this.imageRepo.update({ color_id: id }, { color_id: null });
     await this.colorRepo.remove(color);
+    this.clearColorCache();
+    this.clearProductCache();
 
     return { success: true, message: `Đã xóa màu "${color.name}" thành công.` };
   }
 
   async findAll(filter: FilterProductDto) {
+    const cacheKey = JSON.stringify(filter);
+    const cached = this.productsCache.get(cacheKey);
+    if (cached) return cached;
+
     try {
       const page = filter.page || 1;
       const limit = filter.limit || 12;
@@ -419,9 +452,7 @@ export class ProductsService implements OnApplicationBootstrap {
         .leftJoinAndSelect('product.brand', 'brand')
         .leftJoinAndSelect('product.category', 'category')
         .leftJoinAndSelect('product.images', 'images')
-        .leftJoinAndSelect('product.variants', 'variants')
-        .leftJoinAndSelect('variants.size', 'size')
-        .leftJoinAndSelect('variants.color', 'color');
+        .leftJoinAndSelect('product.variants', 'variants');
 
       if (filter.all === 'true') {
         query.where('1=1');
@@ -489,7 +520,7 @@ export class ProductsService implements OnApplicationBootstrap {
         })),
       }));
 
-      return {
+      const result = {
         data: formattedItems,
         meta: {
           total,
@@ -498,6 +529,10 @@ export class ProductsService implements OnApplicationBootstrap {
           totalPages: Math.ceil(total / limit),
         },
       };
+
+      this.productsCache.set(cacheKey, result);
+
+      return result;
     } catch (err: any) {
       console.error('Error in findAll:', err);
       throw new InternalServerErrorException(err.message || 'Lỗi lấy danh sách sản phẩm');
@@ -643,6 +678,7 @@ export class ProductsService implements OnApplicationBootstrap {
       );
     }
 
+    this.clearProductCache();
     return result;
   }
 
@@ -768,6 +804,7 @@ export class ProductsService implements OnApplicationBootstrap {
       );
     }
 
+    this.clearProductCache();
     return this.findOne(id);
   }
 
@@ -818,6 +855,7 @@ export class ProductsService implements OnApplicationBootstrap {
       );
     }
 
+    this.clearProductCache();
     return savedVariant;
   }
 
@@ -848,6 +886,7 @@ export class ProductsService implements OnApplicationBootstrap {
       );
     }
 
+    this.clearProductCache();
     return { message: `Đã xóa biến thể ${variant.sku} thành công`, id: variantId };
   }
 
@@ -919,6 +958,7 @@ export class ProductsService implements OnApplicationBootstrap {
       );
     }
 
+    this.clearProductCache();
     return {
       success: true,
       deleted: true,

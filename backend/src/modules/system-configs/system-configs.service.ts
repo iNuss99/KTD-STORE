@@ -91,12 +91,15 @@ export class SystemConfigsService implements OnApplicationBootstrap {
     }
   }
 
+  private cachedList: SystemConfig[] | null = null;
+
   async reloadCache() {
     const configs = await this.configRepo.find();
     this.cacheMap.clear();
     for (const c of configs) {
       this.cacheMap.set(c.key, c.value);
     }
+    this.cachedList = configs;
   }
 
   async getValue(key: string, defaultValue: string = ''): Promise<string> {
@@ -118,7 +121,12 @@ export class SystemConfigsService implements OnApplicationBootstrap {
   }
 
   async findAll(): Promise<SystemConfig[]> {
-    return this.configRepo.find();
+    if (this.cachedList && this.cachedList.length > 0) {
+      return this.cachedList;
+    }
+    const configs = await this.configRepo.find();
+    this.cachedList = configs;
+    return configs;
   }
 
   async update(
@@ -138,6 +146,7 @@ export class SystemConfigsService implements OnApplicationBootstrap {
 
     const saved = await this.configRepo.save(config);
     this.cacheMap.set(key, saved.value);
+    this.cachedList = null;
 
     await this.auditLogsService.log(
       performedByUserId,

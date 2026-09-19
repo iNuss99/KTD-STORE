@@ -15,7 +15,7 @@ export function useSystemConfigs() {
       const data = await res.json();
       return Array.isArray(data) ? data : [];
     },
-    staleTime: 10_000,
+    staleTime: 1000 * 60 * 10, // 10 phút (tránh refetch lặp lại liên tục khi chuyển trang)
   });
 }
 

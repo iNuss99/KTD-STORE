@@ -7,8 +7,13 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
 
+import { MemoryCache } from '../../common/utils/cache.util';
+
 @Injectable()
 export class CategoriesService {
+  private treeCache = new MemoryCache<Category[]>(5 * 60 * 1000);
+  private listCache = new MemoryCache<Category[]>(5 * 60 * 1000);
+
   constructor(
     @InjectRepository(Category)
     private categoryRepo: Repository<Category>,
@@ -32,17 +37,30 @@ export class CategoriesService {
     return clean || 'danh-muc';
   }
 
+  clearCache() {
+    this.treeCache.clear();
+    this.listCache.clear();
+  }
+
   async getCategoryTree() {
+    const cached = this.treeCache.get();
+    if (cached) return cached;
+
     // Get top-level categories (parent_id IS NULL) with 3 levels of children
     const rootCategories = await this.categoryRepo.find({
       where: { parent_id: IsNull(), is_active: true },
       relations: ['children', 'children.children'],
       order: { name: 'ASC' },
     });
+    this.treeCache.set('__default__', rootCategories);
     return rootCategories;
   }
 
   async findAll(all: boolean = false) {
+    const cacheKey = all ? 'all' : 'active';
+    const cached = this.listCache.get(cacheKey);
+    if (cached) return cached;
+
     const qb = this.categoryRepo
       .createQueryBuilder('category')
       .leftJoinAndSelect('category.parent', 'parent')
@@ -56,7 +74,9 @@ export class CategoriesService {
       qb.loadRelationCountAndMap('category.products_count', 'category.products');
     }
 
-    return qb.getMany();
+    const data = await qb.getMany();
+    this.listCache.set(cacheKey, data);
+    return data;
   }
 
   async findOne(id: string) {
@@ -110,6 +130,7 @@ export class CategoriesService {
     });
 
     const saved = await this.categoryRepo.save(category);
+    this.clearCache();
 
     if (this.auditLogsService && performedByUserId) {
       await this.auditLogsService.log(
@@ -167,6 +188,7 @@ export class CategoriesService {
     }
 
     const updated = await this.categoryRepo.save(category);
+    this.clearCache();
 
     if (this.auditLogsService && performedByUserId) {
       await this.auditLogsService.log(
@@ -191,6 +213,7 @@ export class CategoriesService {
     await this.categoryRepo.update({ parent_id: id }, { parent_id: null as any });
 
     await this.categoryRepo.remove(category);
+    this.clearCache();
 
     if (this.auditLogsService && performedByUserId) {
       await this.auditLogsService.log(

@@ -131,8 +131,8 @@ import { LoyaltyModule } from './modules/loyalty/loyalty.module';
           ],
           ssl: isSsl ? { rejectUnauthorized: false } : false,
           extra: {
-            max: 20,
-            idleTimeoutMillis: 30000,
+            max: 15,
+            idleTimeoutMillis: 300000, // 5 phút (giữ kết nối ấm, tránh bắt tay SSL/TLS lại liên tục)
             connectionTimeoutMillis: 10000,
             keepAlive: true,
           },
