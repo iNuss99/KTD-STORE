@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import * as bcrypt from 'bcrypt';
 import { User } from '../users/entities/user.entity';
 import { UserRole } from '../../common/enums/role.enum';
@@ -19,6 +20,7 @@ export class AuthService {
     private userRepo: Repository<User>,
     private jwtService: JwtService,
     private configService: ConfigService,
+    private eventEmitter: EventEmitter2,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -42,6 +44,19 @@ export class AuthService {
     await this.userRepo.save(user);
     const tokens = await this.generateTokens(user);
     await this.updateRefreshTokenHash(user.id, tokens.refresh_token);
+
+    // Kích hoạt tự động gửi email chào mừng cho thành viên mới
+    try {
+      const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'https://ktd-store.vercel.app';
+      this.eventEmitter.emit('user.registered', {
+        customerName: user.full_name || 'Quý khách',
+        customerEmail: user.email,
+        welcomeVoucherCode: 'KTDSTORE10',
+        shopUrl: `${frontendUrl}/products`,
+      });
+    } catch {
+      // Đảm bảo lỗi gửi email không làm gián đoạn việc đăng ký tài khoản
+    }
 
     return {
       message: 'Đăng ký tài khoản thành công',

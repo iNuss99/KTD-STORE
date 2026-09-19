@@ -47,14 +47,15 @@ export class EmailConsumer {
           total: Number(order.total_amount || order.total),
           shippingAddress: {
             receiverName: snapshot.receiver_name || 'Khách hàng',
-            phoneNumber: snapshot.phone_number || '',
+            phoneNumber: snapshot.phone || snapshot.phoneNumber || snapshot.phone_number || '',
             addressLine: snapshot.address_line || '',
             ward: snapshot.ward,
             district: snapshot.district,
-            city: snapshot.city,
+            city: snapshot.province || snapshot.city || '',
           },
-          paymentMethod: order.payments?.[0]?.payment_method || 'COD',
+          paymentMethod: order.payments?.[0]?.method || order.payments?.[0]?.payment_method || 'COD',
           orderDate: new Date(order.created_at || Date.now()).toLocaleDateString('vi-VN'),
+          trackingUrl: `${process.env.FRONTEND_URL || 'https://ktd-store.vercel.app'}/orders/${order.id}`,
         });
         return;
       }

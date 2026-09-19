@@ -51,6 +51,9 @@ export class EmailService {
             user: smtpUser,
             pass: smtpPass,
           },
+          connectionTimeout: 5000,
+          greetingTimeout: 5000,
+          socketTimeout: 7000,
         });
         this.logger.log(`SMTP configured successfully with ${smtpHost}:${smtpPort} (User: ${smtpUser})`);
       } catch (err: any) {
@@ -133,6 +136,11 @@ export class EmailService {
         };
       } catch (err: any) {
         this.logger.error(`Error sending email via SMTP: ${err.message}`);
+        // Tự động chuyển sang Resend API nếu cấu hình SMTP bị lỗi hoặc bị hosting chặn cổng
+        if (this.resendApiKey && !this.resendApiKey.includes('placeholder')) {
+          this.logger.warn(`SMTP failed, falling back to Resend API for ${to.join(', ')}...`);
+          return this.sendViaResend(options, from, to);
+        }
         return {
           success: false,
           provider: 'smtp',
@@ -143,47 +151,7 @@ export class EmailService {
 
     // Mode 2: Resend API
     if (this.resendApiKey && !this.resendApiKey.includes('placeholder')) {
-      try {
-        const response = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${this.resendApiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            from,
-            to,
-            subject: options.subject,
-            html: options.html,
-            text: options.text,
-          }),
-        });
-
-        if (!response.ok) {
-          const errorBody = await response.text();
-          this.logger.error(`Resend API failed: ${response.status} - ${errorBody}`);
-          return {
-            success: false,
-            provider: 'resend',
-            error: `HTTP ${response.status}: ${errorBody}`,
-          };
-        }
-
-        const data: any = await response.json();
-        this.logger.log(`Email sent successfully via Resend to ${to.join(', ')} (ID: ${data.id})`);
-        return {
-          success: true,
-          messageId: data.id,
-          provider: 'resend',
-        };
-      } catch (err: any) {
-        this.logger.error(`Error sending email via Resend: ${err.message}`);
-        return {
-          success: false,
-          provider: 'resend',
-          error: err.message,
-        };
-      }
+      return this.sendViaResend(options, from, to);
     }
 
     // Mode 3: Dev Mock / Local Simulation
@@ -195,6 +163,50 @@ export class EmailService {
       messageId: `mock_${Date.now()}_${Math.random().toString(36).substring(7)}`,
       provider: 'mock',
     };
+  }
+
+  private async sendViaResend(options: SendEmailOptions, from: string, to: string[]): Promise<SendEmailResult> {
+    try {
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.resendApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from,
+          to,
+          subject: options.subject,
+          html: options.html,
+          text: options.text,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.text();
+        this.logger.error(`Resend API failed: ${response.status} - ${errorBody}`);
+        return {
+          success: false,
+          provider: 'resend',
+          error: `HTTP ${response.status}: ${errorBody}`,
+        };
+      }
+
+      const data: any = await response.json();
+      this.logger.log(`Email sent successfully via Resend to ${to.join(', ')} (ID: ${data.id})`);
+      return {
+        success: true,
+        messageId: data.id,
+        provider: 'resend',
+      };
+    } catch (err: any) {
+      this.logger.error(`Error sending email via Resend: ${err.message}`);
+      return {
+        success: false,
+        provider: 'resend',
+        error: err.message,
+      };
+    }
   }
 
   async sendOrderConfirmation(data: OrderConfirmationData): Promise<SendEmailResult> {

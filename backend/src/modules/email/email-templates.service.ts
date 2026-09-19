@@ -46,15 +46,15 @@ export class EmailTemplatesService {
 <body>
   <div class="container">
     <div class="header">
-      <h1>MENWEAR HUB</h1>
+      <h1>KTD STORE</h1>
       <p>Phong Cách & Đẳng Cấp Thời Trang Nam</p>
     </div>
     <div class="content">
       ${contentHtml}
     </div>
     <div class="footer">
-      <p>Cảm ơn bạn đã tin tưởng và đồng hành cùng <strong>MenWear Hub</strong>.</p>
-      <p>Hotline: 1900 8888 | Email: support@menwearhub.vn | Website: https://menwearhub.vn</p>
+      <p>Cảm ơn bạn đã tin tưởng và đồng hành cùng <strong>KTD Store</strong>.</p>
+      <p>Hotline: 1900 8888 | Email: support@ktdstore.vn | Website: https://ktd-store.vercel.app</p>
       <p style="font-size: 11px; color: #94a3b8; margin-top: 8px;">Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email này.</p>
     </div>
   </div>
@@ -63,7 +63,7 @@ export class EmailTemplatesService {
   }
 
   generateOrderConfirmation(data: OrderConfirmationData): { subject: string; html: string } {
-    const subject = `[MenWear Hub] Xác nhận đơn hàng #${data.orderNumber} thành công`;
+    const subject = `[KTD Store] Xác nhận đơn hàng #${data.orderNumber} thành công`;
 
     const itemsRows = data.items
       .map(
@@ -150,7 +150,7 @@ export class EmailTemplatesService {
   }
 
   generateRefundConfirmation(data: RefundConfirmationData): { subject: string; html: string } {
-    const subject = `[MenWear Hub] Xác nhận hoàn tiền đơn hàng #${data.orderNumber}`;
+    const subject = `[KTD Store] Xác nhận hoàn tiền đơn hàng #${data.orderNumber}`;
 
     const htmlContent = `
       <div style="text-align: center; margin-bottom: 24px;">
@@ -181,7 +181,7 @@ export class EmailTemplatesService {
   }
 
   generateAbandonedCartReminder(data: AbandonedCartData): { subject: string; html: string } {
-    const subject = `[MenWear Hub] Bạn còn để quên giỏ hàng chưa thanh toán! 🎁 Tặng bạn mã giảm 5%`;
+    const subject = `[KTD Store] Bạn còn để quên giỏ hàng chưa thanh toán! 🎁 Tặng bạn mã giảm 5%`;
 
     const itemsList = data.items
       .map(
@@ -230,18 +230,18 @@ export class EmailTemplatesService {
   }
 
   generateWelcomeEmail(data: WelcomeEmailData): { subject: string; html: string } {
-    const subject = `[MenWear Hub] Chào mừng bạn gia nhập gia đình MenWear Hub! 🎉`;
+    const subject = `[KTD Store] Chào mừng bạn gia nhập gia đình KTD Store! 🎉`;
 
     const htmlContent = `
       <div style="text-align: center; margin-bottom: 24px;">
         <h2 style="margin: 0 0 8px; color: #0f172a; font-size: 22px;">Chào mừng ${data.customerName}!</h2>
-        <p style="margin: 0; color: #64748b; font-size: 14px;">Cảm ơn bạn đã đăng ký tài khoản thành viên tại <strong>MenWear Hub</strong>.</p>
+        <p style="margin: 0; color: #64748b; font-size: 14px;">Cảm ơn bạn đã đăng ký tài khoản thành viên tại <strong>KTD Store</strong>.</p>
       </div>
 
       <div style="background: #f8fafc; border-radius: 12px; padding: 20px; margin-bottom: 24px; text-align: center;">
         <p style="margin: 0 0 10px; font-size: 14px; color: #334155;">Món quà đặc biệt dành tặng bạn cho đơn hàng đầu tiên:</p>
         <div style="display: inline-block; background: #4f46e5; color: #ffffff; padding: 8px 18px; border-radius: 8px; font-size: 18px; font-weight: 800; letter-spacing: 2px;">
-          ${data.welcomeVoucherCode || 'HELLOMENWEAR'}
+          ${data.welcomeVoucherCode || 'KTDSTORE10'}
         </div>
         <p style="margin: 10px 0 0; font-size: 12px; color: #64748b;">(Giảm ngay 10% áp dụng cho toàn bộ danh mục sản phẩm mới)</p>
       </div>
@@ -260,7 +260,7 @@ export class EmailTemplatesService {
   }
 
   generatePasswordReset(data: PasswordResetEmailData): { subject: string; html: string } {
-    const subject = `[MenWear Hub] Yêu cầu đặt lại mật khẩu`;
+    const subject = `[KTD Store] Yêu cầu đặt lại mật khẩu`;
 
     const htmlContent = `
       <div style="text-align: center; margin-bottom: 24px;">
