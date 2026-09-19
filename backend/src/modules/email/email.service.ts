@@ -65,13 +65,16 @@ export class EmailService {
   getStatus() {
     const smtpUser = this.configService.get<string>('SMTP_USER');
     const maskedUser = smtpUser ? smtpUser.replace(/^(.{2})(.*)(@.*)$/, '$1***$3') : null;
+    const hasResend = !!(this.resendApiKey && !this.resendApiKey.includes('placeholder'));
+    const preferred = this.configService.get<string>('EMAIL_PROVIDER', hasResend ? 'resend' : 'smtp');
     return {
       smtp_configured: !!this.smtpTransporter,
       smtp_host: this.configService.get<string>('SMTP_HOST') || 'smtp.gmail.com',
       smtp_port: Number(this.configService.get<number>('SMTP_PORT') || 465),
       smtp_user: maskedUser,
+      resend_configured: hasResend,
       mail_from: this.fromEmail,
-      active_provider: this.smtpTransporter ? 'smtp' : (this.resendApiKey ? 'resend' : 'mock'),
+      active_provider: (preferred === 'resend' && hasResend) ? 'resend' : (this.smtpTransporter ? 'smtp' : (hasResend ? 'resend' : 'mock')),
       timestamp: new Date().toISOString(),
     };
   }
@@ -91,7 +94,7 @@ export class EmailService {
     });
   }
 
-  async sendTestEmail(targetEmail: string = 'domjnhkhoa45@gmail.com') {
+  async sendTestEmail(targetEmail: string = 'domjnhkhoa@gmail.com') {
     const subject = `[KTD Store] Email kiểm tra kết nối hệ thống - ${new Date().toLocaleTimeString('vi-VN')}`;
     const html = `
       <div style="font-family: sans-serif; padding: 20px; border: 1px solid #e2e8f0; border-radius: 10px; max-width: 500px;">
@@ -117,44 +120,41 @@ export class EmailService {
     const from = options.from || this.fromEmail;
     const to = Array.isArray(options.to) ? options.to : [options.to];
 
-    // Mode 1: SMTP (Gmail / Custom SMTP)
-    if (this.smtpTransporter) {
-      try {
-        const info = await this.smtpTransporter.sendMail({
-          from,
-          to,
-          subject: options.subject,
-          html: options.html,
-          text: options.text,
-        });
+    const hasResend = !!(this.resendApiKey && !this.resendApiKey.includes('placeholder'));
+    const preferredProvider = this.configService.get<string>('EMAIL_PROVIDER', hasResend ? 'resend' : 'smtp');
 
-        this.logger.log(`Email sent successfully via SMTP to ${to.join(', ')} (ID: ${info.messageId})`);
-        return {
-          success: true,
-          messageId: info.messageId,
-          provider: 'smtp',
-        };
-      } catch (err: any) {
-        this.logger.error(`Error sending email via SMTP: ${err.message}`);
-        // Tự động chuyển sang Resend API nếu cấu hình SMTP bị lỗi hoặc bị hosting chặn cổng
-        if (this.resendApiKey && !this.resendApiKey.includes('placeholder')) {
-          this.logger.warn(`SMTP failed, falling back to Resend API for ${to.join(', ')}...`);
-          return this.sendViaResend(options, from, to);
-        }
-        return {
-          success: false,
-          provider: 'smtp',
-          error: err.message,
-        };
+    // Ưu tiên Resend API nếu được chỉ định hoặc có key (gửi qua HTTPS 443 không lo bị Render chặn cổng)
+    if (preferredProvider === 'resend' && hasResend) {
+      const res = await this.sendViaResend(options, from, to);
+      if (res.success) return res;
+
+      // Nếu Resend lỗi, dự phòng sang SMTP
+      if (this.smtpTransporter) {
+        this.logger.warn(`Resend failed, attempting fallback to SMTP...`);
+        return this.sendViaSmtp(options, from, to);
       }
+      return res;
     }
 
-    // Mode 2: Resend API
-    if (this.resendApiKey && !this.resendApiKey.includes('placeholder')) {
+    // Mode 2: SMTP (Gmail / Custom SMTP)
+    if (this.smtpTransporter) {
+      const res = await this.sendViaSmtp(options, from, to);
+      if (res.success) return res;
+
+      // Nếu SMTP lỗi (ví dụ Render chặn port 465), tự động chuyển sang Resend
+      if (hasResend) {
+        this.logger.warn(`SMTP failed, falling back to Resend API for ${to.join(', ')}...`);
+        return this.sendViaResend(options, from, to);
+      }
+      return res;
+    }
+
+    // Mode 3: Resend API nếu chưa xử lý ở trên
+    if (hasResend) {
       return this.sendViaResend(options, from, to);
     }
 
-    // Mode 3: Dev Mock / Local Simulation
+    // Mode 4: Dev Mock / Local Simulation
     this.logger.log(
       `[DEV EMAIL SIMULATION] To: ${to.join(', ')} | Subject: "${options.subject}" | Provider: mock`,
     );
@@ -165,8 +165,40 @@ export class EmailService {
     };
   }
 
+  private async sendViaSmtp(options: SendEmailOptions, from: string, to: string[]): Promise<SendEmailResult> {
+    try {
+      const info = await this.smtpTransporter!.sendMail({
+        from,
+        to,
+        subject: options.subject,
+        html: options.html,
+        text: options.text,
+      });
+
+      this.logger.log(`Email sent successfully via SMTP to ${to.join(', ')} (ID: ${info.messageId})`);
+      return {
+        success: true,
+        messageId: info.messageId,
+        provider: 'smtp',
+      };
+    } catch (err: any) {
+      this.logger.error(`Error sending email via SMTP: ${err.message}`);
+      return {
+        success: false,
+        provider: 'smtp',
+        error: err.message,
+      };
+    }
+  }
+
   private async sendViaResend(options: SendEmailOptions, from: string, to: string[]): Promise<SendEmailResult> {
     try {
+      // Khi dùng Resend với domain mặc định chưa verify, sender dùng 'KTD Store <onboarding@resend.dev>'
+      let resendFrom = this.configService.get<string>('RESEND_FROM') || 'KTD Store <onboarding@resend.dev>';
+      if (from && !from.includes('@gmail.com') && !from.includes('localhost')) {
+        resendFrom = from;
+      }
+
       const response = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
@@ -174,7 +206,7 @@ export class EmailService {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          from,
+          from: resendFrom,
           to,
           subject: options.subject,
           html: options.html,
