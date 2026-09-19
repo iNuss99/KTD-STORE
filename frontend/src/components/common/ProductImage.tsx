@@ -60,15 +60,12 @@ export const ProductImage: React.FC<ProductImageProps> = ({
   // Determine current image to display:
   // errorCount = 0: try primary src if available, else smart fallback
   // errorCount = 1: try smart fallback
-  // errorCount = 2: try local bundled asset
-  // errorCount >= 3: show vector luxury placeholder
+  // errorCount >= 2: show vector luxury placeholder
   let currentSrc: string | null = null;
   if (errorCount === 0 && src && src.trim() !== '') {
     currentSrc = src;
-  } else if (errorCount <= 1) {
+  } else if (errorCount === 1) {
     currentSrc = smartFallback;
-  } else if (errorCount === 2) {
-    currentSrc = '/atelier_fashion_editorial.png';
   }
 
   const handleImageError = () => {

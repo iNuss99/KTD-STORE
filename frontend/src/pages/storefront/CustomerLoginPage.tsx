@@ -714,7 +714,7 @@ export const CustomerLoginPage: React.FC = () => {
             }`}
           >
             <img
-              src="/atelier_fashion_editorial.png"
+              src="https://images.unsplash.com/photo-1617137984095-74e4e5e3613f?w=1200&auto=format&fit=crop&q=80"
               alt="Fashion Editorial"
               className="overlay-bg-img"
             />
