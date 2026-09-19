@@ -16,6 +16,7 @@ export const ProductListPage: React.FC = () => {
   const [gridCols, setGridCols] = useState<'gallery' | 'grid'>('grid');
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const [sortOrder, setSortOrder] = useState<'default' | 'price-asc' | 'price-desc'>('default');
+  const [isWarmingUp, setIsWarmingUp] = useState(false);
 
   useEffect(() => {
     if (mobileFilterOpen) {
@@ -98,6 +99,16 @@ export const ProductListPage: React.FC = () => {
   const { data: productsData, isLoading: loadingProducts, isError, refetch } = useProducts(filters);
   const { data: allCatalogData } = useProducts({ limit: 100 });
   const { data: metadata } = useProductMetadata();
+
+  // Thông báo khởi động server (Render free tier sleep sau 15 phút)
+  useEffect(() => {
+    if (!loadingProducts) {
+      setIsWarmingUp(false);
+      return;
+    }
+    const timer = setTimeout(() => setIsWarmingUp(true), 5000);
+    return () => clearTimeout(timer);
+  }, [loadingProducts]);
 
   const priceBounds = useMemo(() => {
     const list = allCatalogData?.data || [];
@@ -346,14 +357,21 @@ export const ProductListPage: React.FC = () => {
           {/* Product Grid / Skeleton / Empty State */}
           <div className="flex-1 w-full">
             {loadingProducts ? (
-              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-6">
-                {[...Array(6)].map((_, i) => (
-                  <div key={i} className="animate-pulse bg-white border border-[#1A1A1A]/10 p-4 space-y-4">
-                    <div className="aspect-[3/4] bg-[#EFECE6]" />
-                    <div className="h-4 bg-[#EFECE6] w-3/4" />
-                    <div className="h-4 bg-[#EFECE6] w-1/2" />
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-6">
+                  {[...Array(6)].map((_, i) => (
+                    <div key={i} className="animate-pulse bg-white border border-[#1A1A1A]/10 p-4 space-y-4">
+                      <div className="aspect-[3/4] bg-[#EFECE6]" />
+                      <div className="h-4 bg-[#EFECE6] w-3/4" />
+                      <div className="h-4 bg-[#EFECE6] w-1/2" />
+                    </div>
+                  ))}
+                </div>
+                {isWarmingUp && (
+                  <div className="text-center py-4 px-6 bg-amber-50 border border-amber-200 rounded text-sm text-amber-800">
+                    ⏳ Máy chủ đang khởi động (có thể mất 30-60 giây lần đầu). Vui lòng chờ...
                   </div>
-                ))}
+                )}
               </div>
             ) : isError ? (
               <EmptyState

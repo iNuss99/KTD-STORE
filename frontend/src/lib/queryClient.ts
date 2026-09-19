@@ -6,8 +6,10 @@ export const queryClient = new QueryClient({
       staleTime: 1000 * 60 * 5, // 5 phút cache dữ liệu
       gcTime: 1000 * 60 * 15, // Giữ cached data trong 15 phút
       refetchOnWindowFocus: false, // Tránh bão refetch khi chuyển tab/cửa sổ
-      retry: 1, // Retry 1 lần nhẹ nhàng tránh nghẽn UI/lag khi có lỗi mạng
-      retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 3000), // 1s → 2s (tối đa 3s)
+      // Render free tier có thể mất 50-60s để wake up sau khi sleep
+      // Retry 3 lần với tổng thời gian chờ ~60s
+      retry: 3,
+      retryDelay: (attempt) => Math.min(5000 * (attempt + 1), 20000), // 5s → 10s → 20s
     },
   },
 });
