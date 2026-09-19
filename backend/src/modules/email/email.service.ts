@@ -27,8 +27,6 @@ export class EmailService {
     private readonly templatesService: EmailTemplatesService,
   ) {
     this.resendApiKey = this.configService.get<string>('RESEND_API_KEY');
-    this.fromEmail =
-      this.configService.get<string>('MAIL_FROM') || 'KTD Store <support@ktdstore.vn>';
 
     // Configure SMTP if credentials are provided
     const smtpUser = this.configService.get<string>('SMTP_USER');
@@ -36,6 +34,12 @@ export class EmailService {
     const smtpHost = this.configService.get<string>('SMTP_HOST') || 'smtp.gmail.com';
     const smtpPort = Number(this.configService.get<number>('SMTP_PORT') || 465);
     const smtpSecure = this.configService.get<string>('SMTP_SECURE', 'true') === 'true';
+
+    // Đảm bảo MAIL_FROM trùng khớp với tài khoản gửi SMTP để Google ký DKIM/SPF hợp lệ (tránh bị Gmail chặn hoặc vào spam)
+    const defaultFrom = smtpUser
+      ? `KTD Store <${smtpUser}>`
+      : 'KTD Store <domjnhkhoa@gmail.com>';
+    this.fromEmail = this.configService.get<string>('MAIL_FROM') || defaultFrom;
 
     if (smtpUser && smtpPass && !smtpPass.includes('placeholder')) {
       try {
@@ -53,6 +57,42 @@ export class EmailService {
         this.logger.error(`Failed to initialize SMTP transporter: ${err.message}`);
       }
     }
+  }
+
+  getStatus() {
+    const smtpUser = this.configService.get<string>('SMTP_USER');
+    const maskedUser = smtpUser ? smtpUser.replace(/^(.{2})(.*)(@.*)$/, '$1***$3') : null;
+    return {
+      smtp_configured: !!this.smtpTransporter,
+      smtp_host: this.configService.get<string>('SMTP_HOST') || 'smtp.gmail.com',
+      smtp_port: Number(this.configService.get<number>('SMTP_PORT') || 465),
+      smtp_user: maskedUser,
+      mail_from: this.fromEmail,
+      active_provider: this.smtpTransporter ? 'smtp' : (this.resendApiKey ? 'resend' : 'mock'),
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  async sendTestEmail(targetEmail: string = 'domjnhkhoa45@gmail.com') {
+    const subject = `[KTD Store] Email kiểm tra kết nối hệ thống - ${new Date().toLocaleTimeString('vi-VN')}`;
+    const html = `
+      <div style="font-family: sans-serif; padding: 20px; border: 1px solid #e2e8f0; border-radius: 10px; max-width: 500px;">
+        <h2 style="color: #d97706; margin-top: 0;">✅ Kết nối Email KTD Store hoạt động tốt!</h2>
+        <p>Email này được gửi tự động từ máy chủ để xác nhận tính năng gửi thư đang hoạt động bình thường.</p>
+        <ul style="color: #475569; font-size: 14px;">
+          <li><b>Người gửi:</b> ${this.fromEmail}</li>
+          <li><b>Thời gian:</b> ${new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })}</li>
+        </ul>
+        <p style="font-size: 12px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 10px; margin-bottom: 0;">
+          KTD Store Management System
+        </p>
+      </div>
+    `;
+    return this.send({
+      to: targetEmail,
+      subject,
+      html,
+    });
   }
 
   async send(options: SendEmailOptions): Promise<SendEmailResult> {

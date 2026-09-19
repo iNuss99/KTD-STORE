@@ -179,7 +179,7 @@ export class UsersService implements OnApplicationBootstrap {
 
     // Gửi email chào mừng và thông tin tài khoản cho nhân sự nội bộ (trừ khách hàng CUSTOMER)
     if (savedUser.role !== UserRole.CUSTOMER) {
-      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      const frontendUrl = process.env.FRONTEND_URL || 'https://ktd-store.vercel.app';
       this.eventEmitter.emit('staff.created', {
         staffName: savedUser.full_name,
         staffEmail: savedUser.email,
@@ -240,7 +240,7 @@ export class UsersService implements OnApplicationBootstrap {
       dto.is_locked !== wasLocked &&
       updatedUser.role !== UserRole.CUSTOMER
     ) {
-      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      const frontendUrl = process.env.FRONTEND_URL || 'https://ktd-store.vercel.app';
       this.eventEmitter.emit('staff.status_changed', {
         staffName: updatedUser.full_name,
         staffEmail: updatedUser.email,
@@ -262,7 +262,7 @@ export class UsersService implements OnApplicationBootstrap {
       hasProfileUpdate &&
       (oldRole !== UserRole.CUSTOMER || updatedUser.role !== UserRole.CUSTOMER)
     ) {
-      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      const frontendUrl = process.env.FRONTEND_URL || 'https://ktd-store.vercel.app';
       this.eventEmitter.emit('staff.updated', {
         staffName: updatedUser.full_name,
         staffEmail: updatedUser.email,
@@ -330,7 +330,7 @@ export class UsersService implements OnApplicationBootstrap {
       { email: user.email, role: user.role },
     );
 
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const frontendUrl = process.env.FRONTEND_URL || 'https://ktd-store.vercel.app';
     this.eventEmitter.emit('staff.created', {
       staffName: user.full_name,
       staffEmail: user.email,

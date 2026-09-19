@@ -49,7 +49,7 @@ export class AbandonedCartService {
           customerEmail: cart.email,
           items: cart.items || [],
           totalAmount: Number(cart.total_amount || 0),
-          recoveryUrl: `http://localhost:5173/cart?restore=${cart.cart_id}`,
+          recoveryUrl: `https://ktd-store.vercel.app/cart?restore=${cart.cart_id}`,
           discountCode: 'COMEBACK5',
         });
         dispatched++;

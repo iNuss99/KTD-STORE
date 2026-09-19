@@ -137,8 +137,8 @@ export class EmailTemplatesService {
       </div>
 
       <div style="text-align: center; margin-top: 32px;">
-        <a href="${data.trackingUrl || `http://localhost:5173/orders/${data.orderId}`}" class="btn">
-          🔍 Theo Dõi Tiến Độ Đơn Hàng
+        <a href="${data.trackingUrl || `https://ktd-store.vercel.app/orders/${data.orderId}`}" class="btn">
+          📦 Theo Dõi Đơn Hàng Của Bạn
         </a>
       </div>
     `;
@@ -247,7 +247,7 @@ export class EmailTemplatesService {
       </div>
 
       <div style="text-align: center;">
-        <a href="${data.shopUrl || 'http://localhost:5173/products'}" class="btn">
+        <a href="${data.shopUrl || 'https://ktd-store.vercel.app/products'}" class="btn">
           🛍️ Khám Phá Bộ Sưu Tập Mới
         </a>
       </div>
@@ -426,7 +426,7 @@ export class EmailTemplatesService {
         </div>
 
         <div style="text-align: center; margin: 28px 0;">
-          <a href="${data.loginUrl || 'http://localhost:5173/admin/login'}" class="btn" style="background: #16a34a; text-decoration: none;">
+          <a href="${data.loginUrl || 'https://ktd-store.vercel.app/admin/login'}" class="btn" style="background: #16a34a; text-decoration: none;">
             🔑 Đăng Nhập Hệ Thống Ngay
           </a>
         </div>
