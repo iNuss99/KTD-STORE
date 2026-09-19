@@ -73,6 +73,21 @@ export class EmailService {
     };
   }
 
+  async verifyConnection(): Promise<{ success: boolean; message?: string; error?: string }> {
+    if (!this.smtpTransporter) {
+      return { success: false, error: 'SMTP transporter chưa được khởi tạo (thiếu biến môi trường)' };
+    }
+    return new Promise((resolve) => {
+      this.smtpTransporter!.verify((error, success) => {
+        if (error) {
+          resolve({ success: false, error: error.message });
+        } else {
+          resolve({ success: true, message: 'Kết nối máy chủ Gmail SMTP thành công 100%' });
+        }
+      });
+    });
+  }
+
   async sendTestEmail(targetEmail: string = 'domjnhkhoa45@gmail.com') {
     const subject = `[KTD Store] Email kiểm tra kết nối hệ thống - ${new Date().toLocaleTimeString('vi-VN')}`;
     const html = `

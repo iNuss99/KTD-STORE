@@ -1,4 +1,4 @@
-﻿import { Controller, Get, Post, Body } from '@nestjs/common';
+import { Controller, Get, Post, Body } from '@nestjs/common';
 import { EmailService } from './email.service';
 
 @Controller('email')
@@ -8,6 +8,11 @@ export class EmailController {
   @Get('status')
   getStatus() {
     return this.emailService.getStatus();
+  }
+
+  @Get('verify')
+  async verify() {
+    return this.emailService.verifyConnection();
   }
 
   @Post('test')
