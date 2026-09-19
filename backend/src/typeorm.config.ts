@@ -32,6 +32,7 @@ import { LoyaltyPoint } from './modules/loyalty/entities/loyalty-point.entity';
 import { InitialSchema1700000000000 } from './migrations/1700000000000-InitialSchema';
 import { AddColorToProductImages1700000000001 } from './migrations/1700000000001-AddColorToProductImages';
 import { AddAvatarUrlToUsers1700000000002 } from './migrations/1700000000002-AddAvatarUrlToUsers';
+import { AddLoginAttemptsToUsers1700000000003 } from './migrations/1700000000003-AddLoginAttemptsToUsers';
 
 config();
 
@@ -80,6 +81,7 @@ export default new DataSource({
     InitialSchema1700000000000,
     AddColorToProductImages1700000000001,
     AddAvatarUrlToUsers1700000000002,
+    AddLoginAttemptsToUsers1700000000003,
   ],
   synchronize: false,
   ssl: isSsl ? { rejectUnauthorized: false } : false,

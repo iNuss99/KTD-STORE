@@ -136,15 +136,27 @@ async function run() {
   }
   console.log(`📦 Tìm thấy ${variants.length} biến thể sản phẩm thật sẵn sàng liên kết.`);
 
-  // 4. Tạo danh sách trạng thái cho 100 đơn hàng:
-  // 70 DELIVERED, 10 SHIPPING, 8 PROCESSING, 7 PENDING, 5 CANCELLED
+  // 4. Tạo danh sách trạng thái cho 30 đơn hàng (hoặc theo MOCK_ORDER_COUNT):
+  // 70% DELIVERED (21), 10% SHIPPING (3), 7% PROCESSING (2), 7% PENDING (2), 6% CANCELLED (2)
+  const TOTAL_ORDERS = process.env.MOCK_ORDER_COUNT ? parseInt(process.env.MOCK_ORDER_COUNT, 10) : 30;
+
+  const deliveredCount = Math.round(TOTAL_ORDERS * 0.70);
+  const shippingCount = Math.max(1, Math.round(TOTAL_ORDERS * 0.10));
+  const processingCount = Math.max(1, Math.round(TOTAL_ORDERS * 0.07));
+  const pendingCount = Math.max(1, Math.round(TOTAL_ORDERS * 0.07));
+  const cancelledCount = Math.max(1, TOTAL_ORDERS - deliveredCount - shippingCount - processingCount - pendingCount);
+
   const statusList: OrderStatus[] = [
-    ...Array(70).fill(OrderStatus.DELIVERED),
-    ...Array(10).fill(OrderStatus.SHIPPING),
-    ...Array(8).fill(OrderStatus.PROCESSING),
-    ...Array(7).fill(OrderStatus.PENDING),
-    ...Array(5).fill(OrderStatus.CANCELLED),
+    ...Array(deliveredCount).fill(OrderStatus.DELIVERED),
+    ...Array(shippingCount).fill(OrderStatus.SHIPPING),
+    ...Array(processingCount).fill(OrderStatus.PROCESSING),
+    ...Array(pendingCount).fill(OrderStatus.PENDING),
+    ...Array(cancelledCount).fill(OrderStatus.CANCELLED),
   ];
+
+  // Cắt hoặc bù vừa vặn TOTAL_ORDERS
+  while (statusList.length < TOTAL_ORDERS) statusList.push(OrderStatus.DELIVERED);
+  statusList.length = TOTAL_ORDERS;
 
   // Shuffle status list để phân bố ngẫu nhiên
   for (let i = statusList.length - 1; i > 0; i--) {
@@ -165,26 +177,26 @@ async function run() {
   let totalRevenue = 0;
   const statusCount: Record<string, number> = {};
 
-  console.log('⏳ Bắt đầu tạo 100 đơn hàng ảo chuẩn Việt Nam...');
+  console.log(`⏳ Bắt đầu tạo ${TOTAL_ORDERS} đơn hàng ảo rải đều trong 30 ngày gần đây...`);
 
-  for (let i = 0; i < 100; i++) {
+  for (let i = 0; i < TOTAL_ORDERS; i++) {
     const status = statusList[i];
     statusCount[status] = (statusCount[status] || 0) + 1;
 
-    // Thời gian tạo đơn: rải trong 45 ngày qua
+    // Thời gian tạo đơn: rải trong 30 ngày qua
     let dayAgo: number;
     if (status === OrderStatus.DELIVERED) {
-      // Đơn đã giao rải từ 3 đến 45 ngày trước
-      dayAgo = Math.floor(3 + Math.random() * 42);
+      // Đơn đã giao rải từ 3 đến 29 ngày trước
+      dayAgo = Math.floor(3 + Math.random() * 26);
     } else if (status === OrderStatus.SHIPPING) {
       dayAgo = Math.floor(1 + Math.random() * 3);
     } else if (status === OrderStatus.PROCESSING) {
-      dayAgo = Math.floor(1 + Math.random() * 2);
+      dayAgo = Math.floor(0 + Math.random() * 2);
     } else if (status === OrderStatus.PENDING) {
-      dayAgo = Math.floor(1 + Math.random() * 3);
+      dayAgo = Math.floor(0 + Math.random() * 2);
     } else {
       // CANCELLED
-      dayAgo = Math.floor(1 + Math.random() * 40);
+      dayAgo = Math.floor(1 + Math.random() * 28);
     }
 
     // Giờ tạo đơn từ 08:00 đến 22:30
@@ -306,13 +318,36 @@ async function run() {
     await paymentRepo.save(payment);
 
     totalCreated++;
-    if (totalCreated % 20 === 0) {
-      console.log(`  -> Đã tạo xong ${totalCreated}/100 đơn...`);
+    if (totalCreated % 5 === 0 || totalCreated === TOTAL_ORDERS) {
+      console.log(`  -> Đã tạo xong ${totalCreated}/${TOTAL_ORDERS} đơn...`);
     }
   }
 
+  // Đồng bộ các cột tương thích (total_amount, order_number, unit_price, payment_method)
+  await dataSource.query(`
+    UPDATE orders 
+    SET total_amount = total,
+        order_number = 'ORD-' || to_char(created_at, 'YYYYMMDD') || '-' || substring(id::text, 1, 6)
+    WHERE total_amount IS NULL OR total_amount = 0 OR order_number IS NULL;
+  `);
+
+  await dataSource.query(`
+    UPDATE order_items 
+    SET unit_price = price, 
+        total_price = price * quantity 
+    WHERE unit_price IS NULL OR total_price IS NULL;
+  `);
+
+  await dataSource.query(`
+    UPDATE payments p 
+    SET amount = o.total, 
+        payment_method = p.method::text 
+    FROM orders o 
+    WHERE p.order_id = o.id AND (p.amount IS NULL OR p.payment_method IS NULL);
+  `);
+
   console.log('\n=========================================');
-  console.log('🎉 TẠO THÀNH CÔNG 100 ĐƠN HÀNG ẢO VIỆT NAM!');
+  console.log(`🎉 TẠO THÀNH CÔNG ${totalCreated} ĐƠN HÀNG ẢO VIỆT NAM!`);
   console.log('=========================================');
   console.log(`Tổng số đơn tạo: ${totalCreated}`);
   console.log(`Tổng doanh thu đơn thành công (DELIVERED): ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(totalRevenue)}`);

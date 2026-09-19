@@ -198,6 +198,7 @@ export class ProductsService implements OnApplicationBootstrap {
           this.productRepo.create({
             name: item.name,
             code: item.code,
+            slug: item.slug,
             description: item.description,
             base_price: item.base_price,
             brand_id: brand.id,

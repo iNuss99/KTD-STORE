@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { ShoppingBag, User, Package, Heart, LogOut, ChevronDown, Menu, X } from 'lucide-react';
+import { ShoppingBag, User, Package, Heart, LogOut, ChevronDown, Menu, X, LayoutDashboard } from 'lucide-react';
 import { NotificationBell } from '../widgets/NotificationBell';
 import { SearchAutocomplete } from '../widgets/SearchAutocomplete';
 import { useCart } from '../../hooks/useCart';
@@ -8,7 +8,13 @@ import { useMaintenanceMode } from '../../hooks/useSystemConfig';
 import {
   getAuthToken,
   clearAuthToken,
+  clearAllAuth,
   getUserName,
+  getUserRole,
+  getUser,
+  getRefreshToken,
+  getAdminAuthToken,
+  setAdminActiveSession,
 } from '../../lib/auth-storage';
 
 export const SiteHeader: React.FC = () => {
@@ -19,6 +25,7 @@ export const SiteHeader: React.FC = () => {
   const location = useLocation();
 
   const [userName, setUserName] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -26,10 +33,37 @@ export const SiteHeader: React.FC = () => {
     const token = getAuthToken();
     if (token) {
       setUserName(getUserName() || 'Tài khoản');
+      setUserRole(getUserRole());
     } else {
       setUserName(null);
+      setUserRole(null);
     }
   }, []);
+
+  const isInternalStaff = Boolean(
+    userRole && ['SUPER_ADMIN', 'CEO', 'MANAGER', 'STAFF'].includes(userRole)
+  );
+
+  const handleNavigateToCrm = () => {
+    setShowUserMenu(false);
+    setMobileMenuOpen(false);
+
+    // Tự động đồng bộ phiên từ Storefront sang CRM namespace nếu chưa có admin token
+    if (!getAdminAuthToken()) {
+      const token = getAuthToken();
+      const user = getUser();
+      const role = getUserRole();
+      if (token && role && ['SUPER_ADMIN', 'CEO', 'MANAGER', 'STAFF'].includes(role)) {
+        setAdminActiveSession({
+          accessToken: token,
+          refreshToken: getRefreshToken() || undefined,
+          user: user || { id: '', role, full_name: userName || 'Admin' },
+        });
+      }
+    }
+
+    navigate('/admin/dashboard');
+  };
 
   useEffect(() => {
     checkAuth();
@@ -53,8 +87,8 @@ export const SiteHeader: React.FC = () => {
   }, [mobileMenuOpen]);
 
   const handleLogout = () => {
-    // Contextual Logout: Chỉ đăng xuất khỏi Storefront
-    clearAuthToken();
+    // Đăng xuất toàn diện: Xóa sạch cả phiên Storefront và tàn dư Admin trên thiết bị
+    clearAllAuth();
     setShowUserMenu(false);
     setMobileMenuOpen(false);
     navigate('/login');
@@ -164,6 +198,24 @@ export const SiteHeader: React.FC = () => {
 
                 {showUserMenu && (
                   <div className="absolute right-0 mt-2 w-56 bg-card rounded-2xl border border-line py-2 z-50 shadow-md font-sans text-xs font-medium space-y-1">
+                    {/* CRM CTA Button for Internal Members */}
+                    {isInternalStaff && (
+                      <div className="px-2 pb-1.5 mb-1 border-b border-line/60">
+                        <button
+                          type="button"
+                          onClick={handleNavigateToCrm}
+                          className="w-full flex items-center justify-between px-3 py-2 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white rounded-xl font-semibold shadow-xs transition-all group cursor-pointer"
+                        >
+                          <span className="flex items-center gap-2">
+                            <LayoutDashboard className="w-4 h-4 text-amber-100 group-hover:rotate-6 transition-transform" />
+                            Truy cập CRM
+                          </span>
+                          <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 bg-white/20 rounded-md">
+                            {userRole || 'Admin'}
+                          </span>
+                        </button>
+                      </div>
+                    )}
 
                     <Link
                       to="/my-orders"
@@ -362,6 +414,24 @@ export const SiteHeader: React.FC = () => {
                       <p className="text-sm font-bold text-ink truncate">{userName}</p>
                     </div>
                   </div>
+
+                  {/* CRM CTA for Internal Members in Mobile Drawer */}
+                  {isInternalStaff && (
+                    <button
+                      type="button"
+                      onClick={handleNavigateToCrm}
+                      className="w-full flex items-center justify-between px-3.5 py-2.5 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white rounded-xl font-bold text-xs shadow-xs transition cursor-pointer"
+                    >
+                      <span className="flex items-center gap-2">
+                        <LayoutDashboard className="w-4 h-4 text-amber-100" />
+                        Truy cập CRM
+                      </span>
+                      <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 bg-white/20 rounded-md">
+                        {userRole || 'Admin'}
+                      </span>
+                    </button>
+                  )}
+
                   <div className="flex items-center gap-2 pt-1">
                     <Link
                       to="/addresses"
